@@ -1,0 +1,4 @@
+# Lab 7: Simultaneous Auctions (Part 2)
+# Dependencies for histogram-based price prediction and self-play learning
+
+numpy>=1.21.0 

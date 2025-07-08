@@ -1,0 +1,5 @@
+Agent,Random1,Random2,Rock,FictitiousPlay,Total Score,Average Score,Wins,Losses,Ties,Win Rate
+Random1,0.0,0.0,3.0,-45.0,-42.0,-14.0,1,1,1,0.3333333333333333
+Random2,0.0,0.0,-31.0,-8.0,-39.0,-13.0,0,2,1,0.0
+Rock,-3.0,31.0,0.0,-946.0,-918.0,-306.0,1,2,0,0.3333333333333333
+FictitiousPlay,45.0,8.0,946.0,0.0,999.0,333.0,3,0,0,1.0

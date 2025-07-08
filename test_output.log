@@ -1,0 +1,214 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.1, pytest-8.4.0, pluggy-1.6.0
+rootdir: /Users/fluffy/projects/brown/agt/agt_server_new
+plugins: xdist-3.7.0, seleniumbase-4.39.4, anyio-4.9.0, html-4.0.2, metadata-3.1.1, hypothesis-6.131.21, rerunfailures-15.1, ordering-0.6, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests/labs/lab01/test_stencil.py ..                                      [  6%]
+tests/labs/lab02/test_bos_finite_state.py F                              [  9%]
+tests/labs/lab02/test_bosii_competition.py F                             [ 12%]
+tests/labs/lab03/test_chicken_q_learning.py F                            [ 15%]
+tests/labs/lab03/test_collusion_environment.py F                         [ 18%]
+tests/labs/lab04/test_stencils.py ...                                    [ 28%]
+tests/labs/lab06/test_auction_game.py ..........                         [ 59%]
+tests/labs/lab06/test_marginal_value.py FF                               [ 65%]
+tests/test_agent_connection.py .                                         [ 68%]
+tests/test_game_restrictions.py .                                        [ 71%]
+tests/test_local_arena.py .                                              [ 75%]
+tests/test_rps_game.py ...                                               [ 84%]
+tests/test_server_system.py .                                            [ 87%]
+tests/test_system_comprehensive.py ....                                  [100%]
+
+=================================== FAILURES ===================================
+____________________________ test_bos_finite_state _____________________________
+
+    def test_bos_finite_state():
+        """Test the BOS finite state machine stencil."""
+        print("Testing BOS Finite State Machine Stencil")
+        print("=" * 50)
+    
+        # Create agents
+        fsm_agent = BOSFiniteStateAgent("FSM_Agent")
+>       random_agent = RandomBOSAgent("Random")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Can't instantiate abstract class RandomBOSAgent without an implementation for abstract method 'get_action'
+
+tests/labs/lab02/test_bos_finite_state.py:21: TypeError
+----------------------------- Captured stdout call -----------------------------
+Testing BOS Finite State Machine Stencil
+==================================================
+____________________________ test_bosii_competition ____________________________
+
+    def test_bosii_competition():
+        """Test the BOSII competition stencil."""
+        print("Testing BOSII Competition Stencil")
+        print("=" * 50)
+    
+        # Create agents
+        competition_agent = BOSIICompetitionAgent("Competition_Agent")
+>       random_agent = RandomBOSAgent("Random")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Can't instantiate abstract class RandomBOSAgent without an implementation for abstract method 'get_action'
+
+tests/labs/lab02/test_bosii_competition.py:21: TypeError
+----------------------------- Captured stdout call -----------------------------
+Testing BOSII Competition Stencil
+==================================================
+___________________________ test_chicken_q_learning ____________________________
+
+    def test_chicken_q_learning():
+        """Test the Chicken Q-Learning stencil."""
+        print("Testing Chicken Q-Learning Stencil")
+        print("=" * 50)
+    
+        # Create agents
+        q_agent = ChickenQLearningAgent("QL_Agent")
+>       random_agent = RandomChickenAgent("Random")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Can't instantiate abstract class RandomChickenAgent without an implementation for abstract method 'get_action'
+
+tests/labs/lab03/test_chicken_q_learning.py:24: TypeError
+----------------------------- Captured stdout call -----------------------------
+Testing Chicken Q-Learning Stencil
+==================================================
+__________________________ test_collusion_environment __________________________
+
+    def test_collusion_environment():
+        """Test the Collusion Environment stencil."""
+        print("Testing Collusion Environment Stencil")
+        print("=" * 50)
+    
+        # Create agents
+        agent1 = CollusionQLearningAgent("CollusionQL1")
+        agent2 = CollusionQLearningAgent("CollusionQL2")
+    
+        # Test basic functionality
+        print("Testing basic agent functionality...")
+    
+        # Test price conversion
+        action = 5
+        price = agent1.get_price(action)
+        print(f"  Action {action} -> Price {price:.3f}")
+    
+        # Test demand calculation
+        my_price = 1.5
+        opponent_price = 1.8
+        demand = agent1.calculate_demand(my_price, opponent_price)
+        print(f"  Demand at price {my_price} vs {opponent_price}: {demand:.3f}")
+    
+        # Test profit calculation
+        profit = agent1.calculate_profit(my_price, opponent_price)
+        print(f"  Profit at price {my_price} vs {opponent_price}: {profit:.3f}")
+    
+        # Test environment creation
+        print("\nTesting environment creation...")
+        env = CollusionEnvironment(agent1, agent2)
+        print(f"  Environment created successfully")
+        print(f"  Agent 1 Q-table shape: {agent1.get_q_table().shape}")
+        print(f"  Agent 2 Q-table shape: {agent2.get_q_table().shape}")
+    
+        # Test short simulation
+        print("\nTesting short simulation...")
+        try:
+            price_history, profit_history = env.run_simulation(num_rounds=10, save_plots=False)
+            print(f"  Simulation completed successfully")
+            print(f"  Price history length: {len(price_history)}")
+            print(f"  Profit history length: {len(profit_history)}")
+    
+            # Show final prices
+            if price_history:
+                final_prices = price_history[-1]
+                print(f"  Final prices: Agent 1 = {final_prices[0]:.3f}, Agent 2 = {final_prices[1]:.3f}")
+    
+        except NotImplementedError as e:
+            print(f"  FAIL: Simulation failed: {e}")
+            print("  This is expected - implement determine_state() to fix")
+    
+        # Test new simulation
+        print("\nTesting new simulation...")
+        try:
+            game = ChickenGame()
+>           agents = [RandomChickenAgent("Random"), RandomChickenAgent("Random2")]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: Can't instantiate abstract class RandomChickenAgent without an implementation for abstract method 'get_action'
+
+tests/labs/lab03/test_collusion_environment.py:71: TypeError
+----------------------------- Captured stdout call -----------------------------
+Testing Collusion Environment Stencil
+==================================================
+Testing basic agent functionality...
+  Action 5 -> Price 1.556
+  Demand at price 1.5 vs 1.8: 0.234
+  Profit at price 1.5 vs 1.8: 0.117
+
+Testing environment creation...
+  Environment created successfully
+  Agent 1 Q-table shape: (10, 10)
+  Agent 2 Q-table shape: (10, 10)
+
+Testing short simulation...
+Running collusion simulation for 10 rounds...
+  FAIL: Simulation failed: 
+  This is expected - implement determine_state() to fix
+
+Testing new simulation...
+_____________________ TestMarginalValue.test_example_case ______________________
+
+self = <tests.labs.lab06.test_marginal_value.TestMarginalValue testMethod=test_example_case>
+
+    def test_example_case(self):
+        goods = {"A", "B"}
+        bids = {"A": 95, "B": 90}
+        prices = {"A": 80, "B": 80}
+    
+        def valuation(bundle):
+            if "A" in bundle and "B" in bundle:
+                return 100
+            elif "A" in bundle:
+                return 90
+            elif "B" in bundle:
+                return 70
+            return 0
+    
+        mv_a = calculate_marginal_value(goods, "A", valuation, bids, prices)
+    
+        expected_mv_a = 30
+    
+>       self.assertAlmostEqual(mv_a, expected_mv_a, places=3, msg=f"Incorrect marginal value for A: expected {expected_mv_a}, got {mv_a}")
+E       AssertionError: 0 != 30 within 3 places (30 difference) : Incorrect marginal value for A: expected 30, got 0
+
+tests/labs/lab06/test_marginal_value.py:24: AssertionError
+_____________________ TestMarginalValue.test_no_goods_won ______________________
+
+self = <tests.labs.lab06.test_marginal_value.TestMarginalValue testMethod=test_no_goods_won>
+
+    def test_no_goods_won(self):
+        goods = {"A", "B"}
+        bids = {"A": 50, "B": 50}
+        prices = {"A": 100, "B": 100}
+    
+        def valuation(bundle):
+            return len(bundle) * 10
+    
+        mv_a = calculate_marginal_value(goods, "A", valuation, bids, prices)
+        mv_b = calculate_marginal_value(goods, "B", valuation, bids, prices)
+    
+>       self.assertEqual(mv_a, 10, "Incorrect marginal value for A")
+E       AssertionError: 0 != 10 : Incorrect marginal value for A
+
+tests/labs/lab06/test_marginal_value.py:38: AssertionError
+=============================== warnings summary ===============================
+tests/test_server_system.py:14
+  /Users/fluffy/projects/brown/agt/agt_server_new/tests/test_server_system.py:14: PytestCollectionWarning: cannot collect test class 'TestAgent' because it has a __init__ constructor (from: tests/test_server_system.py)
+    class TestAgent(AGTAgent):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/labs/lab02/test_bos_finite_state.py::test_bos_finite_state - Typ...
+FAILED tests/labs/lab02/test_bosii_competition.py::test_bosii_competition - T...
+FAILED tests/labs/lab03/test_chicken_q_learning.py::test_chicken_q_learning
+FAILED tests/labs/lab03/test_collusion_environment.py::test_collusion_environment
+FAILED tests/labs/lab06/test_marginal_value.py::TestMarginalValue::test_example_case
+FAILED tests/labs/lab06/test_marginal_value.py::TestMarginalValue::test_no_goods_won
+=================== 6 failed, 26 passed, 1 warning in 0.93s ====================

@@ -1,0 +1,90 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core.agents.common.base_agent import BaseAgent
+from core.engine import Engine
+from core.game.BOSGame import BOSGame
+from core.agents.lab02.random_bos_agent import RandomBOSAgent
+
+
+class BOSFiniteStateAgent(BaseAgent):
+    """Finite State Machine agent for Battle of the Sexes."""
+    
+    def __init__(self, name: str = "BOSFSM"):
+        super().__init__(name)
+        self.COMPROMISE, self.STUBBORN = 0, 1
+        self.actions = [self.COMPROMISE, self.STUBBORN]
+        self.curr_state = 0  # Initial state
+    
+    def get_action(self, obs):
+        """
+        Return either self.STUBBORN or self.COMPROMISE based on the current state.
+        """
+        # TODO: Implement your finite state machine logic here
+        # Use self.curr_state to determine which action to take
+        raise NotImplementedError
+    
+    def update(self, reward: float):
+        """
+        Update the current state based on the game history.
+        This should update self.curr_state based on your FSM transition rules.
+        """
+        self.reward_history.append(reward)
+        
+        # TODO: Implement your state transition logic here
+        # Use self.get_last_action() and self.get_opponent_last_action() 
+        # to determine how to update self.curr_state
+        raise NotImplementedError
+    
+    def get_opponent_last_action(self):
+        """Helper method to get opponent's last action (inferred from reward)."""
+        if len(self.action_history) == 0:
+            return None
+        
+        my_last_action = self.action_history[-1]
+        my_last_reward = self.reward_history[-1]
+        
+        # Infer opponent's action from reward and my action
+        if my_last_action == self.COMPROMISE:
+            if my_last_reward == 0:
+                return self.COMPROMISE  # Both compromised
+            elif my_last_reward == 3:
+                return self.STUBBORN     # I compromised, they were stubborn
+        elif my_last_action == self.STUBBORN:
+            if my_last_reward == 7:
+                return self.COMPROMISE   # I was stubborn, they compromised
+            elif my_last_reward == 0:
+                return self.STUBBORN     # Both were stubborn
+        
+        return None  # Can't determine
+
+
+if __name__ == "__main__":
+    # TODO: Give your agent a name
+    agent_name = "YourName_BOSFSM"
+    
+    # Create agents
+    agent = BOSFiniteStateAgent(agent_name)
+    opponent = RandomBOSAgent("Random")
+    
+    # Create game and run
+    game = BOSGame(rounds=100)
+    agents = [agent, opponent]
+    
+    engine = Engine(game, agents, rounds=100)
+    final_rewards = engine.run()
+    
+    print(f"Final rewards: {final_rewards}")
+    print(f"Cumulative rewards: {engine.cumulative_reward}")
+    
+    # Print statistics
+    print(f"\n{agent.name} statistics:")
+    action_counts = [0, 0]  # Compromise, Stubborn
+    for action in agent.action_history:
+        action_counts[action] += 1
+    
+    print(f"Compromise: {action_counts[0]}, Stubborn: {action_counts[1]}")
+    print(f"Total reward: {sum(agent.reward_history)}")
+    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
+    print(f"Final state: {agent.curr_state}") 
