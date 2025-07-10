@@ -131,9 +131,9 @@ def expected_local_bid_example(goods, valuation_function, price_distribution, nu
 
 
 
-class ExampleSCPPAgent:
-    def __init__(self):
-        self.name = "ExampleSCPPAgent"
+class ExampleSCPPAgent(object):
+    def __init__(self, name="ExampleSCPPAgent"):
+        self.name = name
     
     def get_action(self, state):
         # Simple SCPP strategy

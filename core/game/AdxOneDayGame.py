@@ -1,10 +1,12 @@
 # games/adx_one_day.py
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import random
 from core.game.market_segment import MarketSegment
 from core.game.campaign import Campaign
 from core.game.bid_entry import SimpleBidEntry
 from dataclasses import dataclass, field
+from core.game.base_game import BaseGame
+from core.game import ObsDict, ActionDict, RewardDict, InfoDict
 
 # --- OneDayBidBundle ---
 @dataclass
@@ -21,7 +23,7 @@ class OneDayBidBundle:
             self.impressions_won[entry.market_segment] = 0
 
 # --- AdxOneDayGame ---
-class AdxOneDayGame:
+class AdxOneDayGame(BaseGame):
     """
     TAC AdX Game (One-Day Variant).
     Each agent is assigned a campaign and submits a OneDayBidBundle before the day starts.
@@ -41,12 +43,14 @@ class AdxOneDayGame:
     REACH_FACTORS = [0.3, 0.5, 0.7]
 
     def __init__(self, num_agents: int = 10):
+        super().__init__()
         self.num_agents = num_agents
         self.campaigns: Dict[int, Campaign] = {}
         self.bid_bundles: Dict[int, OneDayBidBundle] = {}
         self.user_arrivals: List[MarketSegment] = []
         self.agent_campaigns: Dict[int, Campaign] = {}
         self._generate_user_arrivals()
+        self.metadata = {"num_players": num_agents}
 
     def reset(self, seed: Optional[int] = None) -> Dict[int, Dict]:
         if seed is not None:
@@ -93,6 +97,23 @@ class AdxOneDayGame:
         done = True
         obs = {}
         return obs, rewards, done, info
+
+    def players_to_move(self) -> List[int]:
+        """Return the subset of players whose actions are required now."""
+        return list(range(self.num_agents))
+
+    def num_players(self) -> int:
+        """Get number of players in the game."""
+        return self.num_agents
+
+    def get_game_state(self) -> Dict[str, Any]:
+        """Get the current game state."""
+        return {
+            "num_agents": self.num_agents,
+            "campaigns": self.campaigns,
+            "bid_bundles": self.bid_bundles,
+            "agent_campaigns": self.agent_campaigns
+        }
 
     def _generate_campaign(self, agent_id: int) -> Campaign:
         # Pick a random segment with at least two attributes

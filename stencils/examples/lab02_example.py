@@ -17,9 +17,9 @@ from core.agents.lab02.random_bos_agent import RandomBOSAgent
 import random
 import numpy as np
 
-class CompromiseAgent:
-    def __init__(self):
-        self.name = "CompromiseAgent"
+class CompromiseAgent(object):
+    def __init__(self, name="CompromiseAgent"):
+        self.name = name
     
     def get_action(self, state):
         # Compromise by choosing a middle action

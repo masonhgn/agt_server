@@ -127,9 +127,9 @@ class ExampleCollusionQLearningAgent(QLearningAgent):
         pass
 
 
-class ContinueAgent:
-    def __init__(self):
-        self.name = "ContinueAgent"
+class ContinueAgent(object):
+    def __init__(self, name="ContinueAgent"):
+        self.name = name
     
     def get_action(self, state):
         # Always continue (swerve)

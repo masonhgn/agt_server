@@ -8,12 +8,12 @@ from core.game.AdxTwoDayGame import TwoDayBidBundle
 from core.game.bid_entry import SimpleBidEntry
 from core.game.market_segment import MarketSegment
 
-class ExampleAdXAgent:
+class ExampleAdXAgent(object):
     """
     Example solution for Lab 9: bids $1 on all matching segments, uses full budget as limits.
     """
-    def __init__(self):
-        self.name = "example_solution"
+    def __init__(self, name="ExampleAdXAgent"):
+        self.name = name
         self.campaign_day1 = None  # Will be set by the game environment
         self.campaign_day2 = None  # Will be set by the game environment
 

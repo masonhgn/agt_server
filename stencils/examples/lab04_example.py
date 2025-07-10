@@ -7,9 +7,14 @@ from core.local_arena import LocalArena
 from core.agents.lab04.base_lemonade_agent import BaseLemonadeAgent
 from core.agents.lab04.stick_agent import StickAgent
 from core.agents.lab04.random_lemonade_agent import RandomLemonadeAgent
-from core.agents.lab04.always_stay_agent import AlwaysStayAgent
+from core.agents.lab04.always_stay_agent import AlwaysStayAgent as CoreAlwaysStayAgent
 import numpy as np
 import random
+
+
+class AlwaysStayAgent(CoreAlwaysStayAgent):
+    def __init__(self, name="AlwaysStayAgent"):
+        super().__init__(name)
 
 
 class ExampleNRLAgent(BaseLemonadeAgent):

@@ -29,6 +29,8 @@ from core.game.BOSIIGame import BOSIIGame
 from core.game.ChickenGame import ChickenGame
 from core.game.LemonadeGame import LemonadeGame
 from core.game.AuctionGame import AuctionGame
+from core.game.AdxTwoDayGame import AdxTwoDayGame
+from core.game.AdxOneDayGame import AdxOneDayGame
 
 
 @dataclass
@@ -119,6 +121,20 @@ class AGTServer:
                 "num_players": 4,
                 "num_rounds": 10,
                 "description": "Simultaneous sealed bid auction"
+            },
+            "adx_twoday": {
+                "name": "Ad Exchange (Two Day)",
+                "game_class": AdxTwoDayGame,
+                "num_players": 2,
+                "num_rounds": 2,
+                "description": "Two-day ad exchange game"
+            },
+            "adx_oneday": {
+                "name": "Ad Exchange (One Day)",
+                "game_class": AdxOneDayGame,
+                "num_players": 2,
+                "num_rounds": 1,
+                "description": "One-day ad exchange game"
             }
         }
         
@@ -136,6 +152,7 @@ class AGTServer:
         """Handle a new client connection."""
         address = writer.get_extra_info('peername')
         self.logger.info(f"new connection from {address}")
+        player_name = None
         
         try:
             # Request device ID
@@ -193,11 +210,14 @@ class AGTServer:
         except Exception as e:
             self.logger.error(f"error handling client {address}: {e}")
         finally:
-            if player_name in self.players:
+            if player_name and player_name in self.players:
                 del self.players[player_name]
             writer.close()
             await writer.wait_closed()
-            self.logger.info(f"player {player_name} disconnected")
+            if player_name:
+                self.logger.info(f"player {player_name} disconnected")
+            else:
+                self.logger.info(f"unknown player from {address} disconnected")
     
     async def client_loop(self, player: PlayerConnection):
         """Main loop for handling client messages."""
@@ -305,13 +325,20 @@ class AGTServer:
                     def valuation(bundle):
                         return sum(10 for item in bundle)  # simple additive valuation
                     return valuation
-                valuation_functions[player.name] = make_valuation(player.name)
+                valuation_functions[i] = make_valuation(player.name)  # Use integer index
             
             game = game_config["game_class"](
                 goods={"A", "B", "C", "D"},
                 valuation_functions=valuation_functions,
                 num_rounds=game_config["num_rounds"]
             )
+        elif game_type in ["adx_twoday", "adx_oneday"]:
+            # ADX games don't accept rounds parameter
+            num_players = game_config["num_players"]
+            if game_type == "adx_twoday":
+                game = game_config["game_class"](num_players=num_players)
+            else:  # adx_oneday
+                game = game_config["game_class"](num_agents=num_players)
         else:
             # For other games, create simple game instances
             game = game_config["game_class"](rounds=game_config["num_rounds"])
@@ -527,10 +554,10 @@ async def main():
     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--port', type=int, default=8080, help='Port to bind to')
     parser.add_argument('--config', type=str, help='Configuration file (optional)')
-    parser.add_argument('--game', type=str, choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction'],
+    parser.add_argument('--game', type=str, choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
                        help='Restrict server to a specific game type')
     parser.add_argument('--games', type=str, nargs='+', 
-                       choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction'],
+                       choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
                        help='Restrict server to specific game types (multiple allowed)')
     
     args = parser.parse_args()
