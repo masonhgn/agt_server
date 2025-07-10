@@ -116,7 +116,7 @@ class AdxOfflineStage(BaseStage):
         """Toy simulator: each auction draws a random segment and rival price."""
         for _ in range(self.n_auctions): 
             seg = random.choice(self.SEGMENTS) #uniformly draw a segment
-            rival_price = self.rival_sampler() #get rival price
+            rival_price = self.rival_sampler(seg) #get rival price
 
             # determine best external bid
             best_pid, best_bid = None, -1.0

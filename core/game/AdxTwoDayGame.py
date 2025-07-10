@@ -29,10 +29,39 @@ class AdxTwoDayGame(BaseGame):
     def players_to_move(self):
         return [0]
 
+    def _convert_two_day_bundle_to_bid_bundle(self, two_day_bundle: 'TwoDayBidBundle') -> BidBundle:
+        """Convert TwoDayBidBundle to BidBundle format for AdxOfflineStage."""
+        bids = {}
+        limits = {}
+        
+        # Convert bid_entries to bids and limits dictionaries
+        for entry in two_day_bundle.bid_entries:
+            # Convert MarketSegment to segment ID (0-25)
+            seg_id = list(MarketSegment).index(entry.market_segment)
+            bids[seg_id] = entry.bid
+            limits[seg_id] = int(entry.spending_limit / entry.bid) if entry.bid > 0 else 0
+        
+        # Create BidBundle with dummy values for budget and reach_goal
+        # These will be overridden by the stage logic
+        return BidBundle(
+            bids=bids,
+            limits=limits,
+            budget=two_day_bundle.day_limit,
+            reach_goal=1000  # Default reach goal
+        )
+
     def step(
         self, actions: ActionDict
     ) -> Tuple[ObsDict, RewardDict, bool, InfoDict]:
-        obs, rew, done, info = self.stage.step(actions)
+        # Convert TwoDayBidBundle to BidBundle format
+        converted_actions = {}
+        for player_id, action in actions.items():
+            if isinstance(action, TwoDayBidBundle):
+                converted_actions[player_id] = self._convert_two_day_bundle_to_bid_bundle(action)
+            else:
+                converted_actions[player_id] = action
+        
+        obs, rew, done, info = self.stage.step(converted_actions)
 
         if self.day == 0:
             # Extract QC from Stage info

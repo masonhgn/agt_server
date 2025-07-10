@@ -40,7 +40,7 @@ class MatrixGame(BaseGame):
     ) -> Tuple[ObsDict, RewardDict, bool, InfoDict]:
         obs, rew, _, info = self.stage.step(actions)
         
-        # Accumulate rewards
+        # accumulate rewards
         for player in [0, 1]:
             self.cumulative_rewards[player] += rew[player]
         
