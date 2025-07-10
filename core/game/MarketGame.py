@@ -1,10 +1,10 @@
 from typing import Dict, Tuple
 
-from core.game import ObsDict, ActionDict, RewardDict, InfoDict, base_game
-from stage.PriceStage import PriceStage
+from core.game import ObsDict, ActionDict, RewardDict, InfoDict, BaseGame
+from core.stage.PriceStage import PriceStage
 
 
-class MarketGame(base_game):
+class MarketGame(BaseGame):
     """
     One long price-posting Stage (20,000+ learning rounds happen
     *outside* in the RL agent; this Game is a single atomic episode).

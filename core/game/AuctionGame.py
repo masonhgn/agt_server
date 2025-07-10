@@ -214,7 +214,6 @@ class AuctionGame(BaseGame):
         for player in self.players:
             obs[player] = {
                 "goods": self.goods,
-                "valuation_function": self.valuation_functions[player],
                 "kth_price": self.kth_price,
                 "round": 0
             }
@@ -243,7 +242,6 @@ class AuctionGame(BaseGame):
         for player in self.players:
             obs[player] = {
                 "goods": self.goods,
-                "valuation_function": self.valuation_functions[player],
                 "kth_price": self.kth_price,
                 "round": self.current_round,
                 "last_allocation": results['allocation'],

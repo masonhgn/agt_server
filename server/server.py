@@ -42,6 +42,12 @@ class PlayerConnection:
     connected_at: float
     game_history: List[Dict[str, Any]]
     current_game: Optional[str] = None
+    read_lock: Optional[asyncio.Lock] = None
+    pending_action: Optional[Any] = None
+    
+    def __post_init__(self):
+        if self.read_lock is None:
+            self.read_lock = asyncio.Lock()
 
 
 class AGTServer:
@@ -111,7 +117,7 @@ class AGTServer:
                 "name": "Simultaneous Auction",
                 "game_class": AuctionGame,
                 "num_players": 4,
-                "num_rounds": 50,
+                "num_rounds": 10,
                 "description": "Simultaneous sealed bid auction"
             }
         }
@@ -197,7 +203,7 @@ class AGTServer:
         """Main loop for handling client messages."""
         try:
             while True:
-                message = await self.receive_message(player.reader)
+                message = await self.receive_message(player.reader, player)
                 if not message:
                     break
                 
@@ -215,6 +221,12 @@ class AGTServer:
             pass
         elif msg_type == "join_game":
             await self.handle_join_game(player, message)
+        elif msg_type == "provide_action":
+            # Store the action for the current round
+            player.pending_action = message.get("action")
+        elif msg_type == "action":
+            # Store the action for the current round
+            player.pending_action = message.get("action")
         elif msg_type == "get_action":
             await self.handle_get_action(player, message)
         elif msg_type == "ready_next_round":
@@ -322,52 +334,64 @@ class AGTServer:
         """Run a game with the given players."""
         game_data = self.games[game_type]
         game = game_data["game"]
-        
         try:
             # Initialize game
             obs = game.reset()
-            
+            self.logger.info(f"GAME {game_type} started with players: {[p.name for p in players]}")
             for round_num in range(game_data["config"]["num_rounds"]):
-                self.logger.info(f"round {round_num + 1} for {game_type}")
-                
+                self.logger.info(f"ROUND {round_num + 1} for {game_type}")
                 # Get actions from all players
                 actions = {}
                 for i, player in enumerate(players):
+                    # Clear any pending action
+                    player.pending_action = None
+                    self.logger.info(f"Requesting action from {player.name}")
                     await self.send_message(player.writer, {
                         "message": "request_action",
                         "round": round_num + 1,
                         "observation": obs.get(i, {})
                     })
-                    
-                    # Wait for action response
-                    action_response = await self.receive_message(player.reader)
-                    if action_response and action_response.get("message") == "provide_action":
-                        actions[i] = action_response.get("action")
+                    # Wait for action response with timeout
+                    timeout = 5.0  # 5 second timeout
+                    start_time = time.time()
+                    while player.pending_action is None and (time.time() - start_time) < timeout:
+                        await asyncio.sleep(0.1)
+                    if player.pending_action is not None:
+                        actions[i] = player.pending_action  # Use integer index
+                        self.logger.info(f"Collected action from {player.name}: {player.pending_action}")
                     else:
-                        # Default action if no response
-                        actions[i] = self.get_default_action(game_type)
+                        # Use default action if timeout
+                        actions[i] = 0  # Default action
+                        self.logger.warning(f"Timeout waiting for action from {player.name}, using default")
                 
                 # Step the game
                 obs, rewards, done, info = game.step(actions)
-                
+                self.logger.info(f"Actions: {actions}, Rewards: {rewards}")
                 # Send results to players
                 for i, player in enumerate(players):
                     await self.send_message(player.writer, {
                         "message": "round_result",
                         "round": round_num + 1,
-                        "reward": rewards.get(i, 0),
-                        "info": info.get(i, {})
+                        "reward": rewards.get(i, 0),  # Use integer index
+                        "info": info.get(i, {})  # Use integer index
                     })
-                
+                # Check if game is over
                 if done:
+                    print(f"SERVER: Game is terminal after round {round_num + 1}")
                     break
                 
-                # Small delay between rounds
-                await asyncio.sleep(0.1)
+                # Check if we've reached max rounds
+                if round_num + 1 >= game_data["config"]["num_rounds"]:
+                    print(f"SERVER: Reached max rounds ({game_data['config']['num_rounds']}) after round {round_num + 1}")
+                    break
+                
+                round_num += 1
+                print(f"SERVER: Starting round {round_num + 1}")
             
-            # Game finished
+            print(f"SERVER: Game loop finished, calling finish_game")
             await self.finish_game(game_type, players)
-            
+            print(f"SERVER: finish_game completed")
+            self.logger.info(f"GAME {game_type} ended.")
         except Exception as e:
             self.logger.error(f"error running {game_type} game: {e}")
             await self.finish_game(game_type, players, error=True)
@@ -389,8 +413,8 @@ class AGTServer:
     
     async def finish_game(self, game_type: str, players: List[PlayerConnection], error: bool = False):
         """Finish a game and send results to players."""
+        print(f"SERVER: finish_game called for {game_type} with {len(players)} players")
         game_data = self.games[game_type]
-        
         # Calculate final results
         results = {
             "game_type": game_type,
@@ -398,23 +422,23 @@ class AGTServer:
             "total_rounds": game_data["config"]["num_rounds"],
             "error": error
         }
-        
         if not error and game_data["game"]:
             # Get game state for results
             game_state = game_data["game"].get_game_state()
             results.update(game_state)
-        
         # Send final results to players
+        print(f"SERVER: Sending game_end to all players for {game_type}")
         for player in players:
-            await self.send_message(player.writer, {
+            game_end_msg = {
                 "message": "game_end",
                 "results": results
-            })
-            
-            # Clear current game
-            player.current_game = None
-            player.game_history.append(results)
+            }
+            print(f"SERVER: Sending game_end to {player.name}: {game_end_msg}")
+            await self.send_message(player.writer, game_end_msg)
         
+        # Add a small delay to ensure messages are sent
+        await asyncio.sleep(0.1)
+        print(f"SERVER: Sent game_end to all players for {game_type}")
         # Store results
         self.results.append(results)
         
@@ -437,20 +461,30 @@ class AGTServer:
                     return [convert_sets(item) for item in obj]
                 else:
                     return obj
-            
             message = convert_sets(message)
-            data = json.dumps(message).encode()
+            data = json.dumps(message).encode() + b'\n'
+            self.logger.info(f"SENDING to client: {message}")
             writer.write(data)
             await writer.drain()
         except Exception as e:
             self.logger.error(f"error sending message: {e}")
     
-    async def receive_message(self, reader: asyncio.StreamReader) -> Optional[Dict[str, Any]]:
+    async def receive_message(self, reader: asyncio.StreamReader, player: Optional[PlayerConnection] = None) -> Optional[Dict[str, Any]]:
         """Receive a message from a client."""
         try:
-            data = await reader.read(1024)
-            if data:
-                return json.loads(data.decode())
+            if player and player.read_lock:
+                async with player.read_lock:
+                    data = await reader.readline()
+                    if data:
+                        msg = json.loads(data.decode().strip())
+                        self.logger.info(f"RECEIVED from client {getattr(player, 'name', '?')}: {msg}")
+                        return msg
+            else:
+                data = await reader.readline()
+                if data:
+                    msg = json.loads(data.decode().strip())
+                    self.logger.info(f"RECEIVED from client: {msg}")
+                    return msg
         except Exception as e:
             self.logger.error(f"error receiving message: {e}")
         return None

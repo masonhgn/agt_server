@@ -14,7 +14,7 @@ from typing import Dict, Any, List
 # add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from server.client import AGTAgent
+from client import AGTAgent
 
 
 class RPSAdapter(AGTAgent):
@@ -255,6 +255,48 @@ class AuctionAdapter(AGTAgent):
             self.auction_agent.update(reward, info)
 
 
+class ADXAdapter(AGTAgent):
+    """adapter for adx agents from lab 9."""
+    
+    def __init__(self, adx_agent):
+        super().__init__(adx_agent.name)
+        self.adx_agent = adx_agent
+        self.game_history = []
+    
+    def get_action(self, observation: Dict[str, Any]) -> Dict[str, Any]:
+        """convert server observation to adx agent format."""
+        # adx agents expect campaign information
+        campaign = observation.get("campaign", None)
+        day = observation.get("day", 1)
+        
+        # get action from adx agent
+        if hasattr(self.adx_agent, 'get_bid_bundle'):
+            action = self.adx_agent.get_bid_bundle(day)
+        else:
+            action = self.adx_agent.get_action(observation)
+        
+        # store history
+        self.game_history.append({
+            "campaign": campaign,
+            "day": day,
+            "my_action": action
+        })
+        
+        return action
+    
+    def reset(self):
+        """reset the adx agent."""
+        super().reset()
+        if hasattr(self.adx_agent, 'reset'):
+            self.adx_agent.reset()
+    
+    def update(self, reward: float, info: Dict[str, Any]):
+        """update the adx agent with results."""
+        super().update(reward, info)
+        if hasattr(self.adx_agent, 'update'):
+            self.adx_agent.update(reward, info)
+
+
 # helper function to create adapters
 def create_adapter(agent, game_type: str) -> AGTAgent:
     """create an appropriate adapter for the given agent and game type."""
@@ -270,6 +312,8 @@ def create_adapter(agent, game_type: str) -> AGTAgent:
         return LemonadeAdapter(agent)
     elif game_type == "auction":
         return AuctionAdapter(agent)
+    elif game_type == "adx_twoday":
+        return ADXAdapter(agent)
     else:
         raise ValueError(f"unknown game type: {game_type}")
 
@@ -304,7 +348,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='AGT Agent Adapter')
     parser.add_argument('--stencil', type=str, required=True, help='Path to completed stencil')
     parser.add_argument('--game', type=str, required=True, 
-                       choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction'],
+                       choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction', 'adx_twoday'],
                        help='Game type')
     parser.add_argument('--name', type=str, help='Agent name (optional)')
     

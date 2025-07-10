@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Tuple, Any
 
-from core.stage import (
+from core.stage.BaseStage import (
     BaseStage,
     PlayerId,
     ObsDict,
@@ -78,6 +78,6 @@ class PriceStage(BaseStage):
 
         self._done = True
         obs: ObsDict = {0: {"p_opp": p1}, 1: {"p_opp": p0}}
-        info: InfoDict = {"quantities": (q0, q1)}
+        info: InfoDict = {0: {"quantities": (q0, q1)}, 1: {"quantities": (q0, q1)}}
 
         return obs, reward, True, info

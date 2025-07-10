@@ -66,6 +66,7 @@ class AGTClient:
         self.reader = None
         self.writer = None
         self.connected = False
+        self.should_exit = False  # Add exit flag
     
     async def connect(self):
         """connect to the agt server."""
@@ -160,88 +161,96 @@ class AGTClient:
         if not self.connected:
             print("not connected to server")
             return
-        
         try:
-            while True:
+            while not self.should_exit:
                 message = await self.receive_message()
                 if not message:
                     break
-                
-                await self.handle_message(message)
-                
+                # If game_end, break after handling
+                should_exit = await self.handle_message(message)
+                if should_exit:
+                    print(f"CLIENT {self.agent.name} exiting run loop after game_end")
+                    self.should_exit = True
+                    break
         except Exception as e:
             print(f"error in client loop: {e}")
         finally:
             await self.disconnect()
+        print(f"CLIENT {self.agent.name} run() coroutine has returned")
     
     async def handle_message(self, message: Dict[str, Any]):
         """handle messages from the server."""
-        msg_type = message.get("message")
+        msg_type = message.get("message", "")
+        print(f"CLIENT {self.agent.name}: Received message type: {msg_type}")
         
-        if msg_type == "game_start":
-            print(f"game starting: {message.get('game_type')}")
-            self.agent.reset()
-            
+        if msg_type == "game_end":
+            print(f"CLIENT {self.agent.name}: Received game_end, will exit")
+            return True  # Signal to exit
         elif msg_type == "request_action":
+            # Handle action request
             observation = message.get("observation", {})
-            round_num = message.get("round", 0)
-            
-            # get action from agent
             action = self.agent.get_action(observation)
-            
-            # send action to server
             await self.send_message({
-                "message": "provide_action",
+                "message": "action",
                 "action": action
             })
-            
-            print(f"round {round_num}: sent action {action}")
-            
         elif msg_type == "round_result":
+            # Handle round result
             reward = message.get("reward", 0)
             info = message.get("info", {})
-            
-            # update agent
             self.agent.update(reward, info)
-            
-            # send ready for next round
-            await self.send_message({
-                "message": "ready_next_round"
-            })
-            
-            print(f"round result: reward={reward}")
-            
-        elif msg_type == "game_end":
-            results = message.get("results", {})
-            print(f"game ended. final results: {results}")
-            
-        elif msg_type == "error":
-            error = message.get("error", "unknown error")
-            print(f"server error: {error}")
+        else:
+            print(f"CLIENT {self.agent.name}: Unknown message type: {msg_type}")
+        
+        return False  # Continue running
     
     async def send_message(self, message: Dict[str, Any]):
         """send a message to the server."""
         if self.writer:
-            data = json.dumps(message).encode()
+            print(f"CLIENT SENDING: {message}")
+            data = json.dumps(message).encode() + b'\n'
             self.writer.write(data)
             await self.writer.drain()
     
-    async def receive_message(self) -> Optional[Dict[str, Any]]:
-        """receive a message from the server."""
-        if self.reader:
+    async def receive_message(self):
+        print(f"CLIENT {self.agent.name}: receive_message() called")
+        try:
+            if self.should_exit:
+                print(f"CLIENT {self.agent.name}: receive_message() early exit due to should_exit")
+                return None
+            if not self.reader:
+                print(f"CLIENT {self.agent.name}: receive_message() no reader available")
+                return None
+            
+            # Add timeout to prevent hanging
             try:
-                data = await self.reader.read(1024)
-                if data:
-                    return json.loads(data.decode())
-            except Exception as e:
-                print(f"error receiving message: {e}")
-        return None
+                data = await asyncio.wait_for(self.reader.readline(), timeout=1.0)
+            except asyncio.TimeoutError:
+                print(f"CLIENT {self.agent.name}: receive_message() timeout")
+                return None
+                
+            if not data:
+                print(f"CLIENT {self.agent.name}: receive_message() got no data (connection closed)")
+                return None
+            message = json.loads(data.decode())
+            print(f"CLIENT {self.agent.name}: receive_message() got message: {message}")
+            return message
+        except Exception as e:
+            print(f"CLIENT {self.agent.name}: receive_message() exception: {e}")
+            return None
     
     async def disconnect(self):
         """disconnect from the server."""
+        print(f"CLIENT {self.agent.name}: disconnect() called")
         if self.writer:
-            self.writer.close()
-            await self.writer.wait_closed()
+            try:
+                print(f"CLIENT {self.agent.name}: closing writer...")
+                self.writer.close()
+                print(f"CLIENT {self.agent.name}: writer.close() called, awaiting wait_closed()...")
+                await self.writer.wait_closed()
+                print(f"CLIENT {self.agent.name}: writer.wait_closed() finished")
+            except Exception as e:
+                print(f"CLIENT {self.agent.name}: error during disconnect: {e}")
         self.connected = False
         print("disconnected from server")
 

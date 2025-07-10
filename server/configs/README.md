@@ -11,6 +11,9 @@ each lab has its own configuration file that restricts the server to only allow 
 - `lab03_chicken.json` - lab 3: chicken game only
 - `lab04_lemonade.json` - lab 4: lemonade stand only
 - `lab06_auction.json` - lab 6: simultaneous auction only
+- `lab07_auction.json` - lab 7: advanced auction only
+- `lab08_adx.json` - lab 8: ad exchange (one day) only
+- `lab09_adx.json` - lab 9: ad exchange (two day) only
 
 ## usage
 
@@ -31,6 +34,15 @@ python server.py --config configs/lab04_lemonade.json
 
 # run lab 6 server (auction only)
 python server.py --config configs/lab06_auction.json
+
+# run lab 7 server (advanced auction only)
+python server.py --config configs/lab07_auction.json
+
+# run lab 8 server (ad exchange one day only)
+python server.py --config configs/lab08_adx.json
+
+# run lab 9 server (ad exchange two day only)
+python server.py --config configs/lab09_adx.json
 ```
 
 ### using command line arguments
