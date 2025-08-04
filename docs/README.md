@@ -2,6 +2,11 @@
 
 Welcome to the Algorithmic Game Theory (AGT) Server documentation. This system provides a modern implementation of game theory lab competitions for educational purposes.
 
+## Documentation Versions
+
+- **Online**: [ReadTheDocs](https://agt-server.readthedocs.io/) - Full documentation with search and navigation
+- **Local**: This directory contains the source files for building documentation locally
+
 ## Quick Navigation
 
 - [System Overview](#system-overview) - High-level architecture
@@ -163,11 +168,93 @@ agt_server_new/
 ├── tests/                  # Test suite
 └── docs/                   # Documentation
     ├── README.md           # This file
+    ├── conf.py             # Sphinx configuration
+    ├── index.rst           # Main documentation index
+    ├── Makefile            # Build automation
+    ├── requirements-docs.txt # Documentation dependencies
     └── diagrams/           # Detailed diagrams
         ├── architecture.md  # System architecture
         ├── game-system.md   # Game system details
         ├── agent-system.md  # Agent system details
         └── execution-flow.md # Execution flow details
+```
+
+---
+
+## Building Documentation Locally
+
+### Prerequisites
+
+```bash
+pip install -r docs/requirements-docs.txt
+```
+
+### Build Commands
+
+```bash
+# Build HTML documentation
+cd docs
+make html
+
+# Serve documentation locally
+make serve
+
+# Build PDF documentation
+make pdf
+
+# Check links
+make linkcheck
+
+# Check spelling
+make spelling
+```
+
+### Development
+
+```bash
+# Start development server with auto-reload
+make dev
+
+# Watch for changes and rebuild
+make watch
+```
+
+---
+
+## ReadTheDocs Setup
+
+### Automatic Deployment
+
+1. **Connect to ReadTheDocs**:
+   - Go to [readthedocs.org](https://readthedocs.org/)
+   - Import your GitHub repository
+   - Configure build settings
+
+2. **Build Configuration**:
+   - **Documentation Type**: Sphinx
+   - **Python Interpreter**: 3.9
+   - **Requirements File**: `docs/requirements-docs.txt`
+   - **Conf File**: `docs/conf.py`
+
+3. **Custom Build Commands**:
+   ```bash
+   pip install -r docs/requirements-docs.txt
+   cd docs
+   make html
+   ```
+
+### Manual Deployment
+
+```bash
+# Install documentation dependencies
+pip install -r docs/requirements-docs.txt
+
+# Build documentation
+cd docs
+make html
+
+# Deploy to GitHub Pages (if configured)
+make github
 ```
 
 ---
@@ -179,4 +266,13 @@ agt_server_new/
 3. Connect Client: Use provided client stencils
 4. Run Tests: `python -m pytest tests/`
 
-For detailed setup instructions, see the individual lab documentation in the `stencils/` directory. 
+For detailed setup instructions, see the individual lab documentation in the `stencils/` directory.
+
+## Contributing to Documentation
+
+1. **Edit source files** in the `docs/` directory
+2. **Build locally** to test changes: `make html`
+3. **Submit pull request** with documentation improvements
+4. **ReadTheDocs** will automatically build and deploy
+
+For more information, see the [Contributing Guide](contributing.md). 
