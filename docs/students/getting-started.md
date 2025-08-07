@@ -31,7 +31,7 @@ Every agent must implement these methods:
 
 #### `get_action(observation)`
 ```python
-def get_action(self, observation):
+def get_action(self, observation: Dict[str, Any]) -> Any:
     # observation: current game state (varies by lab)
     # Return: your chosen action (format varies by lab)
     return my_action
@@ -39,7 +39,7 @@ def get_action(self, observation):
 
 #### `update(reward, info)`
 ```python
-def update(self, reward, info):
+def update(self, reward: float, info: Dict[str, Any]):
     super().update(reward, info)
     # reward: points earned from last action
     # info: additional information (opponent action, etc.)

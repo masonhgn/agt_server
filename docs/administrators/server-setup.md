@@ -1,36 +1,27 @@
 # Server Setup for Administrators
 
-This guide is for TAs, instructors, and system administrators who need to set up and manage the AGT server for lab competitions.
+This guide covers setting up and managing the AGT server for instructors and teaching assistants.
 
 ## System Overview
 
-The AGT server is a distributed system that:
-- **Hosts game competitions** between student agents
-- **Manages client connections** from student machines
-- **Coordinates tournaments** and tracks results
-- **Provides real-time monitoring** of system status
+The AGT server is a Python-based game engine that manages student competitions across multiple game theory labs. It handles client connections, game execution, tournament management, and results collection.
 
 ## Prerequisites
 
 ### System Requirements
-- **OS**: Linux (Ubuntu 20.04+ recommended) or macOS
-- **Python**: 3.8+ with pip
-- **Memory**: 4GB+ RAM (8GB+ for large tournaments)
-- **Network**: Stable internet connection for client connections
-- **Storage**: 10GB+ free space for logs and results
+- **Python 3.8+** (3.13 recommended)
+- **Network access** for student connections
+- **Storage space** for results and logs
+- **Memory:** 2GB+ RAM for concurrent games
 
-### Software Dependencies
+### Dependencies
 ```bash
-# Core Python packages
-pip install asyncio pandas numpy
-
-# Optional: For enhanced monitoring
-pip install psutil matplotlib seaborn
+pip install -r requirements.txt
 ```
 
 ## Installation
 
-### 1. Clone the Repository
+### 1. Clone Repository
 ```bash
 git clone <repository-url>
 cd agt_server_new
@@ -41,54 +32,17 @@ cd agt_server_new
 pip install -r requirements.txt
 ```
 
-### 3. Verify Installation
-```bash
-# Test the server starts correctly
-python server/server.py --help
-```
-
-## Configuration
-
-### Server Configuration File
-
+### 3. Configure Server
 Create a configuration file `server_config.json`:
-
 ```json
 {
-  "server": {
     "host": "0.0.0.0",
     "port": 8080,
-    "max_connections": 100,
-    "timeout": 30
-  },
-  "games": {
     "allowed_games": ["rps", "bos", "chicken", "lemonade", "auction"],
-    "default_rounds": 100,
-    "tournament_mode": true
-  },
-  "logging": {
-    "level": "INFO",
-    "file": "server.log",
-    "max_size": "10MB",
-    "backup_count": 5
-  },
-  "results": {
-    "save_path": "./results",
-    "format": "csv",
-    "auto_backup": true
-  }
+    "max_players": 50,
+    "game_timeout": 300,
+    "results_dir": "results"
 }
-```
-
-### Environment Variables
-
-Set these environment variables for production:
-
-```bash
-export AGT_SERVER_HOST="0.0.0.0"
-export AGT_SERVER_PORT="8080"
-export AGT_LOG_LEVEL="INFO"
-export AGT_RESULTS_DIR="./results"
 ```
 
 ## Starting the Server
@@ -103,372 +57,186 @@ python server/server.py
 python server/server.py --config server_config.json
 ```
 
-### Production Start (with logging)
+### Production Deployment
 ```bash
-nohup python server/server.py --config server_config.json > server.log 2>&1 &
-```
-
-### Using Systemd (Linux)
-
-Create `/etc/systemd/system/agt-server.service`:
-
-```ini
-[Unit]
-Description=AGT Game Theory Server
-After=network.target
-
-[Service]
-Type=simple
-User=agt-user
-WorkingDirectory=/path/to/agt_server_new
-ExecStart=/usr/bin/python3 server/server.py --config server_config.json
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-```bash
-sudo systemctl enable agt-server
+# Using systemd service
 sudo systemctl start agt-server
-sudo systemctl status agt-server
+
+# Using screen for background
+screen -S agt-server python server/server.py
 ```
 
-## Monitoring the Server
+## Configuration Options
 
-### 1. Check Server Status
+### Network Settings
+- **host**: Server IP (0.0.0.0 for all interfaces)
+- **port**: Server port (default: 8080)
+- **max_connections**: Maximum concurrent connections
 
+### Game Settings
+- **allowed_games**: List of enabled game types
+- **game_timeout**: Maximum time per game (seconds)
+- **rounds_per_game**: Default rounds per game
+
+### Tournament Settings
+- **tournament_mode**: Enable tournament brackets
+- **match_timeout**: Time limit per match
+- **results_format**: CSV, JSON, or both
+
+## Monitoring
+
+### Log Files
+```bash
+# View server logs
+tail -f logs/server.log
+
+# View error logs
+tail -f logs/error.log
+```
+
+### Server Status
 ```bash
 # Check if server is running
 ps aux | grep server.py
 
-# Check server logs
-tail -f server.log
+# Check network connections
+netstat -an | grep 8080
+```
 
-# Check system resources
+### Performance Monitoring
+```bash
+# Monitor CPU and memory
 htop
-```
 
-### 2. Monitor Connections
-
-The server provides real-time connection information:
-
-```bash
-# View active connections
-netstat -an | grep :8080
-
-# Monitor connection rate
-watch -n 1 "netstat -an | grep :8080 | wc -l"
-```
-
-### 3. Check Game Status
-
-```bash
-# View current games
-grep "Game started" server.log | tail -10
-
-# View completed games
-grep "Game completed" server.log | tail -10
+# Monitor network traffic
+iftop
 ```
 
 ## Managing Tournaments
 
-### Starting a Tournament
-
+### Start Tournament
 ```bash
 # Start tournament mode
+python server/server.py --tournament
+
+# With specific configuration
 python server/server.py --tournament --config tournament_config.json
 ```
 
 ### Tournament Configuration
-
-Create `tournament_config.json`:
-
 ```json
 {
-  "tournament": {
-    "name": "Lab01_Competition",
-    "game_type": "rps",
-    "rounds_per_game": 100,
-    "max_players": 20,
-    "auto_start": true,
-    "timeout": 300
-  },
-  "brackets": {
-    "type": "round_robin",
-    "seeding": "random"
-  },
-  "results": {
-    "save_path": "./tournament_results",
-    "leaderboard": true,
-    "detailed_stats": true
-  }
+    "tournament": {
+        "type": "round_robin",
+        "games_per_match": 3,
+        "timeout": 600,
+        "brackets": true
+    }
 }
 ```
 
-### Monitoring Tournament Progress
-
+### Results Collection
 ```bash
-# Check tournament status
-tail -f tournament.log
+# Export results
+python tools/export_results.py --format csv
 
-# View leaderboard
-cat tournament_results/leaderboard.csv
-
-# Check player statistics
-python -c "
-import pandas as pd
-df = pd.read_csv('tournament_results/player_stats.csv')
-print(df.sort_values('total_score', ascending=False).head(10))
-"
+# Generate reports
+python tools/generate_report.py --output report.html
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### 1. Server Won't Start
-
-**Problem**: Port already in use
+#### Server Won't Start
 ```bash
-# Check what's using the port
-lsof -i :8080
+# Check Python version
+python --version
 
-# Kill the process
-kill -9 <PID>
+# Check dependencies
+pip list | grep -E "(numpy|pandas|asyncio)"
 
-# Or use a different port
-python server/server.py --port 8081
+# Check port availability
+netstat -an | grep 8080
 ```
 
-#### 2. Clients Can't Connect
-
-**Problem**: Firewall blocking connections
+#### Client Connection Issues
 ```bash
-# Check firewall status
+# Check firewall settings
 sudo ufw status
 
-# Allow the port
-sudo ufw allow 8080
-
-# Or disable firewall (development only)
-sudo ufw disable
+# Test network connectivity
+telnet localhost 8080
 ```
 
-#### 3. High Memory Usage
-
-**Problem**: Too many concurrent games
+#### Game Execution Errors
 ```bash
-# Check memory usage
-free -h
+# Check game configurations
+python -c "from core.game.RPSGame import RPSGame; print('RPS OK')"
 
-# Restart server with memory limits
-python server/server.py --max-games 10 --max-connections 50
-```
-
-#### 4. Slow Performance
-
-**Problem**: System resources exhausted
-```bash
-# Check CPU and memory
-top
-
-# Check disk space
-df -h
-
-# Restart with resource limits
-python server/server.py --max-games 5 --timeout 60
+# Test individual games
+python tests/test_games.py
 ```
 
 ### Debug Mode
-
-Enable debug logging for troubleshooting:
-
 ```bash
-python server/server.py --debug --log-level DEBUG
-```
+# Enable debug logging
+python server/server.py --debug
 
-### Health Checks
-
-Create a health check script `health_check.py`:
-
-```python
-import requests
-import sys
-
-def check_server():
-    try:
-        response = requests.get("http://localhost:8080/health", timeout=5)
-        if response.status_code == 200:
-            print("Server is healthy")
-            return True
-        else:
-            print(f"Server returned status {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"Server is not responding: {e}")
-        return False
-
-if __name__ == "__main__":
-    if not check_server():
-        sys.exit(1)
-```
-
-## Backup and Recovery
-
-### Automated Backups
-
-Create a backup script `backup.sh`:
-
-```bash
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/backups/agt_server"
-mkdir -p $BACKUP_DIR
-
-# Backup results
-tar -czf $BACKUP_DIR/results_$DATE.tar.gz results/
-
-# Backup logs
-tar -czf $BACKUP_DIR/logs_$DATE.tar.gz *.log
-
-# Backup configuration
-cp server_config.json $BACKUP_DIR/config_$DATE.json
-
-echo "Backup completed: $DATE"
-```
-
-### Recovery Procedures
-
-#### Restore Results
-```bash
-# Extract backup
-tar -xzf results_20240101_120000.tar.gz
-
-# Restore to server
-cp -r results/* /path/to/agt_server_new/results/
-```
-
-#### Restore Configuration
-```bash
-# Restore config
-cp config_20240101_120000.json server_config.json
-
-# Restart server
-sudo systemctl restart agt-server
+# Verbose output
+python server/server.py --verbose
 ```
 
 ## Security Considerations
 
 ### Network Security
-
-1. **Firewall Configuration**
-```bash
-# Allow only necessary ports
-sudo ufw allow 8080/tcp
-sudo ufw deny 22/tcp  # If not using SSH
-```
-
-2. **Rate Limiting**
-```bash
-# Install rate limiting
-sudo apt install iptables-persistent
-
-# Limit connections per IP
-sudo iptables -A INPUT -p tcp --dport 8080 -m limit --limit 10/minute --limit-burst 20 -j ACCEPT
-```
+- **Firewall**: Configure to allow only necessary ports
+- **SSL/TLS**: Consider HTTPS for production
+- **Rate limiting**: Prevent abuse
 
 ### Access Control
+- **Authentication**: Implement if needed
+- **IP whitelisting**: Restrict to campus networks
+- **Session management**: Track and limit connections
 
-1. **User Management**
+## Backup and Recovery
+
+### Data Backup
 ```bash
-# Create dedicated user
-sudo useradd -m -s /bin/bash agt-user
-sudo usermod -aG sudo agt-user
+# Backup results
+tar -czf results_backup_$(date +%Y%m%d).tar.gz results/
+
+# Backup configurations
+cp server_config.json backup/
 ```
 
-2. **File Permissions**
+### Recovery Procedures
 ```bash
-# Set proper permissions
-sudo chown -R agt-user:agt-user /path/to/agt_server_new
-sudo chmod 755 /path/to/agt_server_new
-sudo chmod 644 /path/to/agt_server_new/server_config.json
+# Restore from backup
+tar -xzf results_backup_20240101.tar.gz
+
+# Restart with backup config
+python server/server.py --config backup/server_config.json
 ```
 
 ## Performance Optimization
 
-### System Tuning
+### Server Tuning
+- **Connection pooling**: Optimize for concurrent clients
+- **Memory management**: Monitor and adjust buffer sizes
+- **CPU optimization**: Use async/await patterns
 
-1. **Increase File Descriptors**
-```bash
-# Edit limits
-sudo nano /etc/security/limits.conf
-
-# Add these lines:
-agt-user soft nofile 65536
-agt-user hard nofile 65536
-```
-
-2. **Optimize Network Settings**
-```bash
-# Edit sysctl
-sudo nano /etc/sysctl.conf
-
-# Add these lines:
-net.core.somaxconn = 65535
-net.ipv4.tcp_max_syn_backlog = 65535
-```
-
-### Monitoring Tools
-
-Install monitoring tools:
-
-```bash
-# System monitoring
-sudo apt install htop iotop nethogs
-
-# Network monitoring
-sudo apt install iftop nethogs
-
-# Log monitoring
-sudo apt install logwatch
-```
-
-## Scaling Considerations
-
-### Load Balancing
-
-For multiple servers, use a load balancer:
-
-```bash
-# Install nginx
-sudo apt install nginx
-
-# Configure load balancer
-sudo nano /etc/nginx/sites-available/agt-load-balancer
-```
-
-### Database Integration
-
-For large-scale deployments, consider adding a database:
-
-```bash
-# Install PostgreSQL
-sudo apt install postgresql postgresql-contrib
-
-# Create database
-sudo -u postgres createdb agt_server
-sudo -u postgres createuser agt_user
-```
+### Scaling Considerations
+- **Load balancing**: Multiple server instances
+- **Database**: Consider persistent storage for large tournaments
+- **Caching**: Cache frequently accessed data
 
 ## Next Steps
 
-1. **Test the setup** with a small group of students
-2. **Monitor performance** during the first competition
-3. **Gather feedback** from students and TAs
-4. **Optimize configuration** based on usage patterns
-5. **Plan for scaling** as the system grows
+1. **Test the server** with sample clients
+2. **Configure monitoring** and alerting
+3. **Set up automated backups**
+4. **Plan for scaling** as usage grows
+5. **Document procedures** for your team
 
-For more detailed information about managing tournaments and monitoring, see the other administrator guides. 
+The server is now ready to handle student competitions! 

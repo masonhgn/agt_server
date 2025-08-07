@@ -38,31 +38,6 @@ Welcome to AGT Server's documentation!
    administrators/troubleshooting
    administrators/adding-labs
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Labs
-
-   labs/lab01-rps
-   labs/lab02-bos
-   labs/lab03-chicken
-   labs/lab04-lemonade
-   labs/lab06-auction
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API Reference
-
-   api/games
-   api/agents
-   api/engine
-   api/server
-
-.. toctree::
-   :maxdepth: 2
-   :caption: System Diagrams
-
-   diagrams/architecture
-
 Indices and tables
 ==================
 

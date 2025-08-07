@@ -99,23 +99,23 @@ The tournament flow manages the higher-level competition structure, coordinating
 ### Agent Interface
 ```python
 class BaseAgent:
-    def get_action(self, observation) -> Any
-    def update(self, reward, info) -> None
+    def get_action(self, observation: Dict[str, Any]) -> Any
+    def update(self, reward: float, info: Dict[str, Any]) -> None
     def reset(self) -> None
 ```
 
 ### Game Interface
 ```python
 class BaseGame:
-    def reset(self) -> ObsDict
-    def step(self, actions) -> Tuple[ObsDict, RewardDict, bool, InfoDict]
+    def reset(self, seed: int | None = None) -> ObsDict
+    def step(self, actions: ActionDict) -> Tuple[ObsDict, RewardDict, bool, InfoDict]
     def players_to_move(self) -> List[PlayerId]
 ```
 
 ### Stage Interface
 ```python
 class BaseStage:
-    def step(self, actions) -> Tuple[ObsDict, RewardDict, bool, InfoDict]
-    def legal_actions(self, player) -> Any
+    def step(self, actions: ActionDict) -> Tuple[ObsDict, RewardDict, bool, InfoDict]
+    def legal_actions(self, player: PlayerId) -> Any
     def is_done(self) -> bool
 ``` 
