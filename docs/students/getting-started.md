@@ -4,23 +4,24 @@ This guide covers the essential setup and functions you'll use across all AGT la
 
 ## Quick Setup
 
-### 1. Install Dependencies
+### Install Dependencies
 ```bash
 git clone <repository-url>
 cd agt_server_new
 pip install -r requirements.txt
 ```
 
-### 2. Explore Stencils
-Each lab has starter code in the `stencils/` directory:
-```
-stencils/
-├── lab01_stencil/
-├── lab02_stencil/
-├── lab03_stencil/
-├── lab04_stencil/
-└── lab06_stencil/
-```
+## How Labs Work
+
+Each lab follows the same process:
+
+1. **Understand the Game** - Read the lab documentation to learn the game mechanics, state space, and rules
+2. **Create Your Agent** - Implement the three required methods (`get_action`, `update`, `reset`) with your strategy
+3. **Test Locally** - Run your agent against built-in opponents to make sure it works correctly
+4. **Connect to Server** - Submit your agent to compete against other students
+5. **Analyze Results** - Learn from your performance and improve your strategy
+
+The key is understanding the game structure first, then implementing your own creative strategies!
 
 ## Common Functions Across All Labs
 
@@ -119,10 +120,10 @@ Your agent will connect and start competing automatically.
 
 ## Next Steps
 
-1. **Read the lab overview** to understand common patterns
-2. **Choose a lab** and read its specific documentation
-3. **Implement your agent** using the patterns above
-4. **Test locally** before submitting
-5. **Connect to server** and compete
+1. **Read the lab documentation** to understand the game mechanics
+2. **Implement your agent** using the patterns above
+3. **Test locally** before submitting
+4. **Connect to server** and compete
+5. **Learn from results** and improve your strategy
 
 Each lab has its own game mechanics and state space. The patterns above work across all labs, but the specific details vary. 
