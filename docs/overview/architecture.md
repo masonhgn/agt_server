@@ -49,46 +49,20 @@ The architecture diagram illustrates how the system scales from individual stude
 
 ## Core Components
 
-### 1. Student Clients
-**Purpose:** Where students implement their agents
-- **Location:** Student machines
-- **Responsibility:** Implement intelligent decision-making
-- **Interface:** Three required methods (`get_action`, `update`, `reset`)
+### Student Clients
+Student clients run on individual student machines and contain the intelligent agents that students implement. Each agent must implement three core methods: `get_action()` to choose actions based on observations, `update()` to learn from rewards and feedback, and `reset()` to prepare for new games. Agents connect to the server over TCP sockets and communicate in real-time during games, sending their chosen actions and receiving game state updates and rewards.
 
-### 2. AGT Server
-**Purpose:** Central coordination and management
-- **Location:** Instructor/TA machine
-- **Responsibilities:**
-  - Handle client connections
-  - Coordinate game sessions
-  - Manage tournaments
-  - Collect and store results
+### AGT Server
+The AGT Server acts as the central coordination hub, running on the instructor's machine and managing all game sessions and tournaments. It handles client connections, coordinates game sessions between multiple students, manages tournament brackets and matchmaking, and collects and stores all competition results. The server communicates with student agents through TCP connections and orchestrates the game engine to execute actual game logic.
 
-### 3. Game Engine
-**Purpose:** Execute game logic and manage state
-- **Location:** Server
-- **Responsibilities:**
-  - Collect actions from all agents
-  - Execute game logic
-  - Distribute rewards and observations
-  - Track game progress
+### Game Engine
+The Game Engine is the core execution unit that manages individual game sessions. It collects actions from all participating agents, executes the game logic by calling the appropriate game implementation, distributes rewards and new observations back to agents, and tracks game progress and completion. The engine ensures all agents are synchronized and maintains consistent game state throughout each session.
 
-### 4. Game Layer
-**Purpose:** Define game rules and mechanics
-- **Types:** Matrix games, spatial games, auctions
-- **Responsibilities:**
-  - Define game rules
-  - Calculate payoffs
-  - Manage game state
-  - Determine game completion
+### Game Layer
+The Game Layer contains the actual game implementations that define the rules, mechanics, and payoff structures for different game types. Each game (RPS, BOS, Chicken, Lemonade, Auctions) implements a standard interface with methods for resetting the game state, processing player actions, calculating rewards, and determining when the game is complete. Games can contain multiple stages for complex scenarios like auctions.
 
-### 5. Stage Layer
-**Purpose:** Break complex games into manageable phases
-- **Types:** Single stage (matrix games), multi-stage (auctions)
-- **Responsibilities:**
-  - Process actions for current phase
-  - Manage state transitions
-  - Handle phase-specific logic
+### Stage Layer
+The Stage Layer breaks complex games into manageable phases or rounds. Simple games like matrix games use a single stage that repeats, while complex games like auctions use multiple stages with different rules and objectives. Each stage processes actions for the current phase, manages state transitions between phases, and handles phase-specific logic and reward calculations.
 
 ## Data Flow
 
@@ -120,45 +94,6 @@ Collect Results → Calculate Rankings → Save Results
 
 The tournament flow manages the higher-level competition structure, coordinating multiple games between different players and aggregating results to determine overall rankings and performance metrics.
 
-## Component Interactions
-
-### Student Agent ↔ Server
-- **Connection:** TCP socket connection
-- **Messages:** Join game, get action, send action, receive results
-- **Frequency:** Real-time during games
-
-### Server ↔ Game Engine
-- **Interface:** Direct method calls
-- **Data:** Game state, actions, results
-- **Timing:** Synchronous during game execution
-
-### Game Engine ↔ Games
-- **Interface:** Standard game interface
-- **Methods:** `reset()`, `step()`, `players_to_move()`
-- **Data:** Game state, actions, rewards
-
-### Games ↔ Stages
-- **Relationship:** Games contain stages
-- **Interface:** Stage interface
-- **Methods:** `step()`, `legal_actions()`, `is_done()`
-
-## System Characteristics
-
-### Scalability
-- **Multiple clients** can connect simultaneously
-- **Concurrent games** run independently
-- **Tournament mode** supports many players
-
-### Reliability
-- **Error handling** for client disconnections
-- **Timeout mechanisms** for unresponsive agents
-- **State persistence** for interrupted games
-
-### Extensibility
-- **Modular design** allows easy addition of new games
-- **Standard interfaces** enable new agent types
-- **Configuration-driven** game parameters
-
 ## Key Interfaces
 
 ### Agent Interface
@@ -183,13 +118,4 @@ class BaseStage:
     def step(self, actions) -> Tuple[ObsDict, RewardDict, bool, InfoDict]
     def legal_actions(self, player) -> Any
     def is_done(self) -> bool
-```
-
-## Next Steps
-
-This architecture enables:
-- **Students** to focus on implementing intelligent agents
-- **Instructors** to manage competitions effectively
-- **Researchers** to conduct experiments at scale
-
-The modular design ensures that each component can be developed, tested, and improved independently while maintaining a cohesive system. 
+``` 
