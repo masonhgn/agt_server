@@ -38,6 +38,7 @@ Welcome to AGT Server's documentation!
    administrators/monitoring-system
    administrators/troubleshooting
    administrators/adding-labs
+   administrators/creating-new-labs
 
 Indices and tables
 ==================
