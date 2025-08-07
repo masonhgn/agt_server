@@ -3,17 +3,9 @@ Welcome to AGT Server's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Started
-
-   getting-started/installation
-   getting-started/quick-start
-
-.. toctree::
-   :maxdepth: 2
-   :caption: System Overview
+   :caption: Overview
 
    overview/architecture
-   overview/lab-structure-guide
 
 .. toctree::
    :maxdepth: 2
