@@ -25,8 +25,9 @@ Welcome to AGT Server's documentation!
    students/lab03-q-learning
    students/lab04-spatial-games
    students/lab06-auctions
-   students/debugging-tips
-   students/competition-guide
+   students/lab07-auctions
+   students/lab08-adx-one-day
+   students/lab09-adx-two-day
 
 .. toctree::
    :maxdepth: 2
