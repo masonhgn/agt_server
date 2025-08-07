@@ -67,17 +67,6 @@ elif my_action == 1 and opponent_action == 0:  # Paper vs Rock
 - **Best response** - play optimally against opponent's strategy
 - **Nash equilibrium** - find unexploitable strategies
 
-## Key Concepts
-
-### Nash Equilibrium
-Strategy profile where no player can improve by changing strategy.
-
-### Best Response
-Optimal action given belief about opponent's strategy.
-
-### Fictitious Play
-Learn by observing opponent's empirical distribution and playing best response.
-
 ## Testing
 
 ### Local Testing
@@ -110,18 +99,6 @@ def analyze_performance(self):
         else:
             print("Performing at random level.")
 ```
-
-## Expected Outcomes
-
-### Against Random Opponent
-- **Random agent:** ~0 average reward
-- **Learning agent:** >0 average reward (should win)
-- **Nash equilibrium:** ~0 average reward (unexploitable)
-
-### Against Stubborn Opponent
-- **Random agent:** ~0 average reward
-- **Learning agent:** >0 average reward (should exploit)
-- **Nash equilibrium:** ~0 average reward (safe)
 
 ## Next Steps
 

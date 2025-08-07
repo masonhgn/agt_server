@@ -1,6 +1,6 @@
 # Getting Started for Students
 
-This guide covers the common setup and functions you'll use across all AGT labs.
+This guide covers the essential setup and functions you'll use across all AGT labs.
 
 ## Quick Setup
 
@@ -72,7 +72,7 @@ class MyAgent(BaseAgent):
 
 ## Running Labs Locally
 
-### 1. Test Your Agent
+### Test Your Agent
 ```python
 from core.engine import Engine
 from core.game.RPSGame import RPSGame
@@ -90,7 +90,7 @@ print(f"My score: {results[0]}")
 print(f"Opponent score: {results[1]}")
 ```
 
-### 2. Debug Your Agent
+### Debug Your Agent
 ```python
 def get_action(self, observation):
     print(f"Observation: {observation}")
@@ -116,68 +116,6 @@ python example_solution.py
 ```
 
 Your agent will connect and start competing automatically.
-
-## Common Patterns
-
-### Tracking Opponent Actions
-```python
-def update(self, reward, info):
-    super().update(reward, info)
-    if 'opponent_action' in info:
-        self.opponent_history.append(info['opponent_action'])
-```
-
-### Performance Monitoring
-```python
-def update(self, reward, info):
-    super().update(reward, info)
-    
-    if len(self.reward_history) % 10 == 0:
-        recent_rewards = self.reward_history[-10:]
-        avg_reward = sum(recent_rewards) / len(recent_rewards)
-        print(f"Average reward: {avg_reward}")
-```
-
-### Testing Against Different Opponents
-```python
-# Test against random agent
-random_opponent = RandomAgent("Random")
-engine = Engine(RPSGame(), [my_agent, random_opponent], rounds=100)
-results = engine.run()
-
-# Test against stubborn agent
-stubborn_opponent = StubbornAgent("Stubborn")
-engine = Engine(RPSGame(), [my_agent, stubborn_opponent], rounds=100)
-results = engine.run()
-```
-
-## Common Mistakes
-
-### 1. Missing Required Methods
-```python
-class MyAgent(BaseAgent):
-    def get_action(self, observation):  # Required
-        pass
-    
-    def update(self, reward, info):     # Required
-        super().update(reward, info)
-    
-    def reset(self):                    # Required
-        super().reset()
-```
-
-### 2. Not Testing Locally
-Always test your agent before submitting:
-- Test against different opponents
-- Check that your agent doesn't crash
-- Verify action format is correct
-
-### 3. Not Learning from Experience
-```python
-def update(self, reward, info):
-    super().update(reward, info)
-    # Use this information to improve your strategy!
-```
 
 ## Next Steps
 

@@ -21,7 +21,6 @@ Welcome to AGT Server's documentation!
    :caption: For Students
 
    students/getting-started
-   students/lab-overview
    students/lab01-matrix-games
    students/lab02-finite-state-machines
    students/lab03-q-learning
