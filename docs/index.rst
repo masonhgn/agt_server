@@ -12,7 +12,6 @@ Welcome to AGT Server's documentation!
    :maxdepth: 2
    :caption: System Overview
 
-   overview/core-concepts
    overview/architecture
    overview/lab-structure-guide
 
