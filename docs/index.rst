@@ -62,9 +62,6 @@ Welcome to AGT Server's documentation!
    :caption: System Diagrams
 
    diagrams/architecture
-   diagrams/game-system
-   diagrams/agent-system
-   diagrams/execution-flow
 
 Indices and tables
 ==================
