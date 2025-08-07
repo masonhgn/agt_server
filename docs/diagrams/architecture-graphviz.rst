@@ -1,4 +1,4 @@
-# System Architecture
+# System Architecture (Graphviz)
 
 ## High-Level Architecture
 
@@ -124,14 +124,4 @@ How data flows through the system:
      D -> E;
      E -> F;
      F -> G;
-   }
-
-## Component Responsibilities
-
-| Component | Responsibility |
-|-----------|---------------|
-| AGTServer | Client connection management, game session coordination |
-| Engine | Game execution, action collection, reward distribution |
-| BaseGame | Game state management, rule enforcement |
-| BaseAgent | Action selection, learning, state tracking |
-| Stage | Multi-phase game management | 
+   } 

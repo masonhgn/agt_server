@@ -4,126 +4,191 @@
 
 The typical flow of a game session:
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant S as Server
-    participant E as Engine
-    participant G as Game
-    participant A as Agent
-    
-    C->>S: Connect
-    S->>C: Confirm connection
-    C->>S: Join game
-    S->>E: Create game
-    E->>G: Initialize
-    G->>E: Initial state
-    E->>C: Game ready
-    
-    loop Game rounds
-        E->>C: Send observation
-        C->>A: Get action
-        A->>C: Return action
-        C->>E: Send action
-        E->>G: Step game
-        G->>E: New state
-        E->>C: Send results
-    end
-    
-    E->>S: Game complete
-    S->>C: Final results
-```
+.. graphviz::
+
+   digraph GameSession {
+     rankdir=TB;
+     node [shape=box, style=filled, fillcolor=lightblue];
+     
+     C [label="Client"];
+     S [label="Server"];
+     E [label="Engine"];
+     G [label="Game"];
+     A [label="Agent"];
+     
+     C -> S [label="Connect"];
+     S -> C [label="Confirm connection"];
+     C -> S [label="Join game"];
+     S -> E [label="Create game"];
+     E -> G [label="Initialize"];
+     G -> E [label="Initial state"];
+     E -> C [label="Game ready"];
+     
+     subgraph cluster_loop {
+       label="Game rounds";
+       style=filled;
+       color=lightgrey;
+       E -> C [label="Send observation"];
+       C -> A [label="Get action"];
+       A -> C [label="Return action"];
+       C -> E [label="Send action"];
+       E -> G [label="Step game"];
+       G -> E [label="New state"];
+       E -> C [label="Send results"];
+     }
+     
+     E -> S [label="Game complete"];
+     S -> C [label="Final results"];
+   }
 
 ## Tournament Management
 
 How tournaments are managed:
 
-```mermaid
-graph TD
-    T1[Start Tournament] --> T2[Match Players]
-    T2 --> T3[Run Games]
-    T3 --> T4[Collect Results]
-    T4 --> T5{More Matches?}
-    T5 -->|Yes| T2
-    T5 -->|No| T6[Calculate Rankings]
-    T6 --> T7[Save Results]
-```
+.. graphviz::
+
+   digraph TournamentFlow {
+     rankdir=TB;
+     node [shape=box, style=filled, fillcolor=lightblue];
+     
+     T1 [label="Start Tournament"];
+     T2 [label="Match Players"];
+     T3 [label="Run Games"];
+     T4 [label="Collect Results"];
+     T5 [label="More Matches?", shape=diamond];
+     T6 [label="Calculate Rankings"];
+     T7 [label="Save Results"];
+     
+     T1 -> T2;
+     T2 -> T3;
+     T3 -> T4;
+     T4 -> T5;
+     T5 -> T2 [label="Yes"];
+     T5 -> T6 [label="No"];
+     T6 -> T7;
+   }
 
 ## Game Round Flow
 
 Detailed flow of a single game round:
 
-```mermaid
-graph TD
-    R1[Round Start] --> R2[Send Observations]
-    R2 --> R3[Collect Actions]
-    R3 --> R4[Process Game Logic]
-    R4 --> R5[Calculate Rewards]
-    R5 --> R6[Update Agents]
-    R6 --> R7{Game Done?}
-    R7 -->|No| R1
-    R7 -->|Yes| R8[End Game]
-```
+.. graphviz::
+
+   digraph GameRound {
+     rankdir=TB;
+     node [shape=box, style=filled, fillcolor=lightblue];
+     
+     R1 [label="Round Start"];
+     R2 [label="Send Observations"];
+     R3 [label="Collect Actions"];
+     R4 [label="Process Game Logic"];
+     R5 [label="Calculate Rewards"];
+     R6 [label="Update Agents"];
+     R7 [label="Game Done?", shape=diamond];
+     R8 [label="End Game"];
+     
+     R1 -> R2;
+     R2 -> R3;
+     R3 -> R4;
+     R4 -> R5;
+     R5 -> R6;
+     R6 -> R7;
+     R7 -> R1 [label="No"];
+     R7 -> R8 [label="Yes"];
+   }
 
 ## Error Handling
 
 How the system handles various error conditions:
 
-```mermaid
-graph TD
-    E1[Error Occurs] --> E2{Error Type?}
-    E2 -->|Timeout| E3[Use Default Action]
-    E2 -->|Invalid Action| E4[Reject Action]
-    E2 -->|Connection Lost| E5[Disconnect Player]
-    E2 -->|Game Error| E6[End Game Early]
-    
-    E3 --> E7[Continue Game]
-    E4 --> E8[Request New Action]
-    E5 --> E9[Notify Other Players]
-    E6 --> E10[Save Partial Results]
-    
-    E7 --> E11[Log Error]
-    E8 --> E11
-    E9 --> E11
-    E10 --> E11
-```
+.. graphviz::
+
+   digraph ErrorHandling {
+     rankdir=TB;
+     node [shape=box, style=filled, fillcolor=lightblue];
+     
+     E1 [label="Error Occurs"];
+     E2 [label="Error Type?", shape=diamond];
+     E3 [label="Use Default Action"];
+     E4 [label="Reject Action"];
+     E5 [label="Disconnect Player"];
+     E6 [label="End Game Early"];
+     E7 [label="Continue Game"];
+     E8 [label="Request New Action"];
+     E9 [label="Notify Other Players"];
+     E10 [label="Save Partial Results"];
+     E11 [label="Log Error"];
+     
+     E1 -> E2;
+     E2 -> E3 [label="Timeout"];
+     E2 -> E4 [label="Invalid Action"];
+     E2 -> E5 [label="Connection Lost"];
+     E2 -> E6 [label="Game Error"];
+     E3 -> E7;
+     E4 -> E8;
+     E5 -> E9;
+     E6 -> E10;
+     E7 -> E11;
+     E8 -> E11;
+     E9 -> E11;
+     E10 -> E11;
+   }
 
 ## Performance Monitoring
 
 Metrics collection during execution:
 
-```mermaid
-graph TD
-    P1[Game Execution] --> P2[Collect Metrics]
-    P2 --> P3[Response Times]
-    P2 --> P4[Action Frequencies]
-    P2 --> P5[Reward Distributions]
-    P2 --> P6[Error Rates]
-    
-    P3 --> P7[Performance Analysis]
-    P4 --> P7
-    P5 --> P7
-    P6 --> P7
-    
-    P7 --> P8[Generate Reports]
-    P8 --> P9[Save to Results]
-```
+.. graphviz::
+
+   digraph PerformanceMonitoring {
+     rankdir=TB;
+     node [shape=box, style=filled, fillcolor=lightblue];
+     
+     P1 [label="Game Execution"];
+     P2 [label="Collect Metrics"];
+     P3 [label="Response Times"];
+     P4 [label="Action Frequencies"];
+     P5 [label="Reward Distributions"];
+     P6 [label="Error Rates"];
+     P7 [label="Performance Analysis"];
+     P8 [label="Generate Reports"];
+     P9 [label="Save to Results"];
+     
+     P1 -> P2;
+     P2 -> P3;
+     P2 -> P4;
+     P2 -> P5;
+     P2 -> P6;
+     P3 -> P7;
+     P4 -> P7;
+     P5 -> P7;
+     P6 -> P7;
+     P7 -> P8;
+     P8 -> P9;
+   }
 
 ## Communication Protocol
 
 Message flow between client and server:
 
-```mermaid
-graph LR
-    A[Client] -->|Join Game| B[Server]
-    B -->|Game Ready| A
-    A -->|Get Action| B
-    B -->|Observation| A
-    A -->|Action| B
-    B -->|Results| A
-    A -->|Ready Next| B
-    B -->|Next Round| A
-```
+.. graphviz::
+
+   digraph CommunicationProtocol {
+     rankdir=LR;
+     node [shape=box, style=filled, fillcolor=lightblue];
+     
+     A [label="Client"];
+     B [label="Server"];
+     
+     A -> B [label="Join Game"];
+     B -> A [label="Game Ready"];
+     A -> B [label="Get Action"];
+     B -> A [label="Observation"];
+     A -> B [label="Action"];
+     B -> A [label="Results"];
+     A -> B [label="Ready Next"];
+     B -> A [label="Next Round"];
+   }
 
 ## Message Types
 
