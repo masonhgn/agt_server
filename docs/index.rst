@@ -34,9 +34,6 @@ Welcome to AGT Server's documentation!
    :caption: For Administrators
 
    administrators/server-setup
-   administrators/managing-tournaments
-   administrators/monitoring-system
-   administrators/troubleshooting
    administrators/creating-new-labs
 
 Indices and tables
