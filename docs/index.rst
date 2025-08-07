@@ -7,24 +7,34 @@ Welcome to AGT Server's documentation!
 
    getting-started/installation
    getting-started/quick-start
-   lab-structure-guide
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
+   :caption: System Overview
 
-   user-guide/running-labs
-   user-guide/creating-agents
-   user-guide/tournaments
+   overview/core-concepts
+   overview/architecture
+   overview/lab-structure-guide
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developer Guide
+   :caption: For Students
 
-   developer-guide/architecture
-   developer-guide/adding-games
-   developer-guide/adding-agents
-   developer-guide/adding-labs
+   students/getting-started
+   students/creating-agents
+   students/running-labs
+   students/debugging-tips
+   students/competition-guide
+
+.. toctree::
+   :maxdepth: 2
+   :caption: For Administrators
+
+   administrators/server-setup
+   administrators/managing-tournaments
+   administrators/monitoring-system
+   administrators/troubleshooting
+   administrators/adding-labs
 
 .. toctree::
    :maxdepth: 2
