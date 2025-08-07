@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
 from core.game.RPSGame import RPSGame
@@ -62,4 +63,7 @@ if __name__ == "__main__":
         action_counts[action] += 1
     print(f"Rock: {action_counts[0]}, Paper: {action_counts[1]}, Scissors: {action_counts[2]}")
     print(f"Total reward: {sum(agent.reward_history)}")
-    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}") 
+    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
+
+# Export for server testing
+agent_submission = CompetitionAgent("TestCompetition") 

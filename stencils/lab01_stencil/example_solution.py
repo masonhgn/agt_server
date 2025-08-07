@@ -206,4 +206,7 @@ if __name__ == "__main__":
             print(f"{action_name}: 0 plays")
     
     print("\nExample solutions completed!")
-    print("Use these as reference for implementing your own agents.") 
+    print("Use these as reference for implementing your own agents.")
+
+# Export for server testing
+agent_submission = ExampleFictitiousPlayAgent("ExampleFP") 
