@@ -21,8 +21,12 @@ Welcome to AGT Server's documentation!
    :caption: For Students
 
    students/getting-started
-   students/creating-agents
-   students/running-labs
+   students/lab-overview
+   students/lab01-matrix-games
+   students/lab02-finite-state-machines
+   students/lab03-q-learning
+   students/lab04-spatial-games
+   students/lab06-auctions
    students/debugging-tips
    students/competition-guide
 
