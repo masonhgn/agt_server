@@ -254,60 +254,109 @@ class MyAgent(BaseAgent):
 Create `stencils/labXX_stencil/example_solution.py`:
 
 ```python
-import asyncio
-import json
-from my_agent import MyAgent
+#!/usr/bin/env python3
+"""
+Example solution for Lab XX - Coin Flip
+This shows what a completed implementation looks like.
+"""
 
-async def main():
-    agent = MyAgent("MyCoinFlipAgent")
-    reader, writer = await asyncio.open_connection("localhost", 8080)
-    
-    # Send device ID and join game
-    await send_message(writer, {"device_id": "coinflip_student_001"})
-    await send_message(writer, {
-        "message": "join_game",
-        "game_type": "coinflip",
-        "player_name": agent.name
-    })
-    
-    # Game loop
-    while True:
-        message = await receive_message(reader)
-        if message is None:
-            break
-        
-        if message.get("message") == "get_action":
-            observation = message.get("observation", {})
-            action = agent.get_action(observation)
-            await send_message(writer, {"message": "action", "action": action})
-        
-        elif message.get("message") == "update":
-            reward = message.get("reward", 0.0)
-            info = message.get("info", {})
-            agent.update(reward, info)
-            await send_message(writer, {"message": "ready_next_round"})
-        
-        elif message.get("message") == "game_complete":
-            print(f"Game complete! Final score: {message.get('final_score', 0)}")
-            break
-    
-    writer.close()
-    await writer.wait_closed()
+import sys
+import os
+import numpy as np
 
-async def send_message(writer, message):
-    data = json.dumps(message).encode()
-    writer.write(data + b'\n')
-    await writer.drain()
+from core.agents.common.base_agent import BaseAgent
+from core.engine import Engine
+from core.game.CoinFlipGame import CoinFlipGame
+from core.agents.labXX.random_coinflip_agent import RandomCoinFlipAgent
 
-async def receive_message(reader):
-    try:
-        data = await reader.readuntil(b'\n')
-        return json.loads(data.decode().strip())
-    except Exception:
-        return None
+
+class ExampleCoordinationAgent(BaseAgent):
+    """Example implementation of coordination strategy for Coin Flip."""
+    
+    def __init__(self, name: str = "ExampleCoord"):
+        super().__init__(name)
+        self.HEADS, self.TAILS = 0, 1
+        self.actions = [self.HEADS, self.TAILS]
+        self.opponent_history = []
+        self.coordination_count = 0
+    
+    def get_action(self, obs):
+        """Return action based on opponent analysis."""
+        if len(self.opponent_history) == 0:
+            return self.HEADS  # Start with Heads
+        else:
+            # Analyze opponent's behavior
+            opponent_freq = self.analyze_opponent()
+            return self.best_coordination_action(opponent_freq)
+    
+    def update(self, reward: float, info: Dict[str, Any]):
+        """Store the reward and update opponent action counts."""
+        super().update(reward, info)
+        
+        # Store opponent's action if available
+        if "opponent_action" in info:
+            self.opponent_history.append(info["opponent_action"])
+        
+        # Track coordination success
+        if reward > 0:
+            self.coordination_count += 1
+    
+    def analyze_opponent(self):
+        """Analyze opponent's action frequencies."""
+        if not self.opponent_history:
+            return {0: 0.5, 1: 0.5}  # Default to 50/50
+        
+        freq = {}
+        for action in self.actions:
+            freq[action] = self.opponent_history.count(action) / len(self.opponent_history)
+        return freq
+    
+    def best_coordination_action(self, opponent_freq):
+        """Choose action that maximizes coordination probability."""
+        if opponent_freq[self.HEADS] > opponent_freq[self.TAILS]:
+            return self.HEADS  # Opponent prefers Heads
+        else:
+            return self.TAILS  # Opponent prefers Tails
+    
+    def reset(self):
+        """Reset for new game."""
+        super().reset()
+        self.opponent_history = []
+        self.coordination_count = 0
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    print("Example Solution for Lab XX")
+    print("=" * 40)
+    
+    # Test coordination strategy vs Random
+    print("\nTesting Coordination vs Random:")
+    game = CoinFlipGame(rounds=100)
+    agents = [
+        ExampleCoordinationAgent("ExampleCoord"),
+        RandomCoinFlipAgent("Random")
+    ]
+    
+    engine = Engine(game, agents, rounds=100)
+    final_rewards = engine.run()
+    
+    print(f"Final rewards: {final_rewards}")
+    print(f"Cumulative rewards: {engine.cumulative_reward}")
+    
+    # Print detailed statistics
+    coord_agent = agents[0]
+    action_counts = [0, 0]  # Heads, Tails
+    for action in coord_agent.action_history:
+        action_counts[action] += 1
+    
+    print(f"\n{coord_agent.name} statistics:")
+    print(f"Heads: {action_counts[0]}, Tails: {action_counts[1]}")
+    print(f"Total reward: {sum(coord_agent.reward_history)}")
+    print(f"Average reward: {sum(coord_agent.reward_history) / len(coord_agent.reward_history):.3f}")
+    print(f"Coordination rate: {coord_agent.coordination_count / len(coord_agent.reward_history):.1%}")
+    
+    print("\nExample solution completed!")
+    print("Use this as reference for implementing your own agents.")
 ```
 
 ### 5.4 Test Script
