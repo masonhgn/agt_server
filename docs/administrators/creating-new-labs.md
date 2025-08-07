@@ -1,29 +1,28 @@
 # Creating New Labs
 
-This guide provides a step-by-step process for creating new labs in the AGT system. We'll use a simple "Coin Flip" game as an example to demonstrate the complete lab creation process.
+This guide provides a complete process for creating new labs in the AGT system. We'll use a simple "Coin Flip" game as an example.
 
 ## Lab Creation Overview
 
-Creating a new lab involves several components that work together:
-
-1. **Game Implementation** - Defines the game mechanics and rules
-2. **Agent Examples** - Provides reference implementations for students
+A new lab requires these components:
+1. **Game Implementation** - Defines game mechanics and rules
+2. **Agent Examples** - Reference implementations for students
 3. **Server Integration** - Enables the lab on the server
-4. **Student Stencil** - Gives students a starting point
-5. **Documentation** - Explains the lab to students
+4. **Student Stencil** - Starting point for students
+5. **Documentation** - Student and administrator guides
 6. **Testing** - Validates everything works correctly
 
 ## Step 1: Design Your Game
 
 ### Game Concept
-Start by clearly defining your game:
+Define your game clearly:
 - **Objective**: What are players trying to achieve?
 - **Actions**: What can players do on their turn?
 - **State**: What information do players have?
 - **Rewards**: How do players score points?
 
 ### Example: Coin Flip Game
-Let's create a simple 2-player game where:
+A simple 2-player coordination game:
 - Players simultaneously choose "Heads" or "Tails"
 - If both choose the same, they both get 1 point
 - If they choose differently, they both get 0 points
@@ -40,41 +39,21 @@ import numpy as np
 from core.game.MatrixGame import MatrixGame
 
 class CoinFlipGame(MatrixGame):
-    """
-    Coin Flip coordination game.
-    
-    Actions:
-    0 = Heads
-    1 = Tails
-    
-    Payoff matrix (both players get same reward):
-    H\T  H  T
-    H    1  0
-    T    0  1
-    
-    Players coordinate to choose the same action.
-    """
+    """Coin Flip coordination game."""
     
     def __init__(self, rounds: int = 100):
-        # Create the payoff tensor for Coin Flip
-        # Shape: (hidden_states=1, actions=2, actions=2, players=2)
+        # Payoff matrix: both players get same reward
         payoff_tensor = np.array([
-            # Heads vs Heads, Tails
-            [[1.0, 1.0], [0.0, 0.0]],
-            # Tails vs Heads, Tails
-            [[0.0, 0.0], [1.0, 1.0]]
-        ])
-        
-        # Reshape to (1, 2, 2, 2) for the tensor format
-        payoff_tensor = payoff_tensor.reshape(1, 2, 2, 2)
+            [[1.0, 1.0], [0.0, 0.0]],  # Heads vs Heads, Tails
+            [[0.0, 0.0], [1.0, 1.0]]   # Tails vs Heads, Tails
+        ]).reshape(1, 2, 2, 2)
         
         action_labels = ["Heads", "Tails"]
-        
         super().__init__(payoff_tensor, rounds)
         self.action_labels = action_labels
 ```
 
-### 2.2 Understanding the MatrixGame Pattern
+### 2.2 Understanding MatrixGame Pattern
 
 The `MatrixGame` class provides:
 - **Automatic stage management** - Creates new stages for each round
@@ -85,18 +64,12 @@ The `MatrixGame` class provides:
 - `__init__()` - Set up payoff matrix and game parameters
 - `action_labels` - Human-readable action names (optional)
 
-**Methods Inherited from MatrixGame:**
-- `reset()` - Initializes new game
-- `players_to_move()` - Returns [0, 1] for 2-player games
-- `step()` - Processes actions and returns results
-
 ### 2.3 Alternative: Custom Game Implementation
 
-For more complex games, implement `BaseGame` directly:
+For complex games, implement `BaseGame` directly:
 
 ```python
 from core.game.base_game import BaseGame, ObsDict, ActionDict, RewardDict, InfoDict
-from typing import List, Tuple
 
 class CustomGame(BaseGame):
     def __init__(self, rounds: int = 100):
@@ -105,19 +78,15 @@ class CustomGame(BaseGame):
         self.metadata = {"num_players": 2}
     
     def reset(self, seed: int | None = None) -> ObsDict:
-        """Initialize a fresh game."""
         if seed is not None:
             np.random.seed(seed)
-        
         self.current_round = 0
-        return {0: {}, 1: {}}  # Initial observations
+        return {0: {}, 1: {}}
     
     def players_to_move(self) -> List[int]:
-        """Return players who need to act."""
-        return [0, 1]  # Both players act simultaneously
+        return [0, 1]
     
     def step(self, actions: ActionDict) -> Tuple[ObsDict, RewardDict, bool, InfoDict]:
-        """Process actions and return results."""
         action1, action2 = actions[0], actions[1]
         
         # Calculate rewards based on game logic
@@ -130,10 +99,10 @@ class CustomGame(BaseGame):
         done = self.current_round >= self.rounds
         
         return (
-            {0: {}, 1: {}},  # Observations (empty for simple games)
-            {0: reward1, 1: reward2},  # Rewards
-            done,  # Game finished?
-            {0: {"opponent_action": action2}, 1: {"opponent_action": action1}}  # Info
+            {0: {}, 1: {}},
+            {0: reward1, 1: reward2},
+            done,
+            {0: {"opponent_action": action2}, 1: {"opponent_action": action1}}
         )
 ```
 
@@ -148,25 +117,18 @@ from core.agents.common.base_agent import BaseAgent
 import random
 
 class RandomCoinFlipAgent(BaseAgent):
-    """Random agent for Coin Flip game."""
-    
     def __init__(self, name: str):
         super().__init__(name)
         self.actions = [0, 1]  # Heads, Tails
     
     def get_action(self, observation: Dict[str, Any]) -> Any:
-        """Choose random action."""
         return random.choice(self.actions)
     
     def update(self, reward: float, info: Dict[str, Any]):
-        """Update agent with reward and info."""
         super().update(reward, info)
-        # Random agent doesn't learn, but you could add learning here
     
     def reset(self):
-        """Reset agent for new game."""
         super().reset()
-        # Clear any game-specific state
 ```
 
 ### 3.2 Example Solution
@@ -177,80 +139,34 @@ Create `core/agents/labXX/example_coinflip_solution.py`:
 from core.agents.common.base_agent import BaseAgent
 
 class ExampleCoinFlipSolution(BaseAgent):
-    """Example solution for Coin Flip game."""
-    
     def __init__(self, name: str):
         super().__init__(name)
         self.opponent_history = []
-        self.my_history = []
-        self.coordination_count = 0
     
     def get_action(self, observation: Dict[str, Any]) -> Any:
-        """Implement coordination strategy."""
         if len(self.opponent_history) == 0:
-            # First move: start with Heads
-            return 0
-        elif len(self.opponent_history) < 10:
-            # Early game: try to coordinate on most common opponent action
-            opponent_freq = self.analyze_opponent()
-            return self.best_coordination_action(opponent_freq)
+            return 0  # Start with Heads
         else:
-            # Late game: stick with what works
-            return self.find_best_coordination()
+            # Try to coordinate on most common opponent action
+            opponent_freq = self.analyze_opponent()
+            return 0 if opponent_freq[0] > opponent_freq[1] else 1
     
     def update(self, reward: float, info: Dict[str, Any]):
-        """Learn from experience."""
         super().update(reward, info)
-        
-        # Store opponent's action
         if "opponent_action" in info:
             self.opponent_history.append(info["opponent_action"])
-        
-        # Track coordination success
-        if reward > 0:
-            self.coordination_count += 1
     
     def reset(self):
-        """Reset for new game."""
         super().reset()
         self.opponent_history = []
-        self.my_history = []
-        self.coordination_count = 0
     
     def analyze_opponent(self):
-        """Analyze opponent's action frequencies."""
         if not self.opponent_history:
-            return {0: 0.5, 1: 0.5}  # Default to 50/50
-        
+            return {0: 0.5, 1: 0.5}
         freq = {}
         for action in [0, 1]:
             freq[action] = self.opponent_history.count(action) / len(self.opponent_history)
         return freq
-    
-    def best_coordination_action(self, opponent_freq):
-        """Choose action that maximizes coordination probability."""
-        if opponent_freq[0] > opponent_freq[1]:
-            return 0  # Opponent prefers Heads
-        else:
-            return 1  # Opponent prefers Tails
-    
-    def find_best_coordination(self):
-        """Find the action that led to most coordination."""
-        if len(self.my_history) == 0:
-            return 0
-        
-        # Count coordination success for each action
-        coordination_by_action = {0: 0, 1: 0}
-        for i, my_action in enumerate(self.my_history):
-            if i < len(self.opponent_history):
-                if my_action == self.opponent_history[i]:
-                    coordination_by_action[my_action] += 1
-        
-        # Return action with most coordination
-        if coordination_by_action[0] >= coordination_by_action[1]:
-            return 0
-        else:
-            return 1
 ```
 
 ## Step 4: Update Server Configuration
@@ -260,7 +176,6 @@ class ExampleCoinFlipSolution(BaseAgent):
 Add to `server/server.py` in the `game_configs` dictionary:
 
 ```python
-# Add this to the game_configs dictionary in AGTServer.__init__
 "coinflip": {
     "name": "Coin Flip",
     "game_class": CoinFlipGame,
@@ -315,54 +230,23 @@ Create `stencils/labXX_stencil/my_agent.py`:
 from core.agents.common.base_agent import BaseAgent
 
 class MyAgent(BaseAgent):
-    """Your agent implementation for the Coin Flip game."""
-    
     def __init__(self, name: str):
         super().__init__(name)
-        # Initialize your agent's state here
         self.opponent_history = []
-        self.my_history = []
     
     def get_action(self, observation: Dict[str, Any]) -> Any:
-        """
-        Implement your strategy here.
-        
-        Args:
-            observation: Current game state (empty for this game)
-            
-        Returns:
-            Your chosen action: 0 for Heads, 1 for Tails
-        """
         # TODO: Implement your coordination strategy
-        # You can access self.opponent_history to see what your opponent has done
-        # You can access self.my_history to see what you've done
-        
-        # Example: always choose Heads
-        return 0
+        # You can access self.opponent_history to see opponent's actions
+        return 0  # Example: always choose Heads
     
     def update(self, reward: float, info: Dict[str, Any]):
-        """
-        Learn from the result of your action.
-        
-        Args:
-            reward: Points earned (1 if coordinated, 0 if not)
-            info: Additional information (opponent's action, etc.)
-        """
         super().update(reward, info)
-        
-        # Store opponent's action if available
         if "opponent_action" in info:
             self.opponent_history.append(info["opponent_action"])
-        
-        # Store your action
-        if hasattr(self, 'last_action'):
-            self.my_history.append(self.last_action)
     
     def reset(self):
-        """Reset for a new game."""
         super().reset()
         self.opponent_history = []
-        self.my_history = []
 ```
 
 ### 5.3 Example Solution
@@ -372,77 +256,50 @@ Create `stencils/labXX_stencil/example_solution.py`:
 ```python
 import asyncio
 import json
-import socket
 from my_agent import MyAgent
 
 async def main():
-    """Connect agent to server."""
-    # Create your agent
     agent = MyAgent("MyCoinFlipAgent")
+    reader, writer = await asyncio.open_connection("localhost", 8080)
     
-    # Server connection details
-    host = "localhost"
-    port = 8080
+    # Send device ID and join game
+    await send_message(writer, {"device_id": "coinflip_student_001"})
+    await send_message(writer, {
+        "message": "join_game",
+        "game_type": "coinflip",
+        "player_name": agent.name
+    })
     
-    try:
-        # Connect to server
-        reader, writer = await asyncio.open_connection(host, port)
+    # Game loop
+    while True:
+        message = await receive_message(reader)
+        if message is None:
+            break
         
-        # Send device ID
-        device_id = "coinflip_student_001"
-        await send_message(writer, {"device_id": device_id})
+        if message.get("message") == "get_action":
+            observation = message.get("observation", {})
+            action = agent.get_action(observation)
+            await send_message(writer, {"message": "action", "action": action})
         
-        # Join game
-        await send_message(writer, {
-            "message": "join_game",
-            "game_type": "coinflip",
-            "player_name": agent.name
-        })
+        elif message.get("message") == "update":
+            reward = message.get("reward", 0.0)
+            info = message.get("info", {})
+            agent.update(reward, info)
+            await send_message(writer, {"message": "ready_next_round"})
         
-        # Game loop
-        while True:
-            message = await receive_message(reader)
-            if message is None:
-                break
-            
-            if message.get("message") == "get_action":
-                # Get action from agent
-                observation = message.get("observation", {})
-                action = agent.get_action(observation)
-                
-                # Send action
-                await send_message(writer, {
-                    "message": "action",
-                    "action": action
-                })
-            
-            elif message.get("message") == "update":
-                # Update agent with result
-                reward = message.get("reward", 0.0)
-                info = message.get("info", {})
-                agent.update(reward, info)
-                
-                # Ready for next round
-                await send_message(writer, {"message": "ready_next_round"})
-            
-            elif message.get("message") == "game_complete":
-                print(f"Game complete! Final score: {message.get('final_score', 0)}")
-                break
+        elif message.get("message") == "game_complete":
+            print(f"Game complete! Final score: {message.get('final_score', 0)}")
+            break
     
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        writer.close()
-        await writer.wait_closed()
+    writer.close()
+    await writer.wait_closed()
 
 async def send_message(writer, message):
-    """Send message to server."""
     data = json.dumps(message).encode()
     writer.write(data + b'\n')
     await writer.drain()
 
 async def receive_message(reader):
-    """Receive message from server."""
     try:
         data = await reader.readuntil(b'\n')
         return json.loads(data.decode().strip())
@@ -464,31 +321,16 @@ from core.agents.labXX.random_coinflip_agent import RandomCoinFlipAgent
 from my_agent import MyAgent
 
 def test_agent():
-    """Test your agent against a random opponent."""
-    # Create agents
     my_agent = MyAgent("MyAgent")
     random_agent = RandomCoinFlipAgent("Random")
     
-    # Create game
     game = CoinFlipGame(rounds=100)
-    
-    # Run test
     engine = Engine(game, [my_agent, random_agent], rounds=100)
     results = engine.run()
     
-    print(f"Test Results:")
     print(f"My score: {results[0]}")
     print(f"Random opponent score: {results[1]}")
     
-    # Analyze performance
-    if results[0] > results[1]:
-        print("✅ Your agent is performing well!")
-    elif results[0] == results[1]:
-        print("🤔 Your agent is performing at random level.")
-    else:
-        print("❌ Your agent needs improvement.")
-    
-    # Show coordination rate
     coordination_rate = results[0] / 100.0
     print(f"Coordination rate: {coordination_rate:.1%}")
 
@@ -573,19 +415,6 @@ print(f"My score: {results[0]}")
 print(f"Opponent score: {results[1]}")
 ```
 
-### Coordination Analysis
-```python
-def analyze_coordination(self):
-    if len(self.reward_history) > 0:
-        coordination_rate = sum(self.reward_history) / len(self.reward_history)
-        print(f"Coordination rate: {coordination_rate:.1%}")
-        
-        if coordination_rate > 0.5:
-            print("Good coordination!")
-        else:
-            print("Need to improve coordination.")
-```
-
 ## Next Steps
 
 1. **Implement a coordination agent** using the common patterns
@@ -609,15 +438,11 @@ from core.agents.labXX.random_coinflip_agent import RandomCoinFlipAgent
 from core.engine import Engine
 
 class TestCoinFlipGame(unittest.TestCase):
-    """Test Coin Flip game implementation."""
-    
     def test_game_creation(self):
-        """Test game can be created."""
         game = CoinFlipGame()
         self.assertIsNotNone(game)
     
     def test_game_execution(self):
-        """Test game can be executed."""
         game = CoinFlipGame(rounds=10)
         agent1 = RandomCoinFlipAgent("Agent1")
         agent2 = RandomCoinFlipAgent("Agent2")
@@ -630,7 +455,6 @@ class TestCoinFlipGame(unittest.TestCase):
         self.assertIsInstance(results[1], (int, float))
     
     def test_coordination_rewards(self):
-        """Test that coordination gives positive rewards."""
         game = CoinFlipGame(rounds=100)
         agent1 = RandomCoinFlipAgent("Agent1")
         agent2 = RandomCoinFlipAgent("Agent2")
@@ -642,7 +466,6 @@ class TestCoinFlipGame(unittest.TestCase):
         self.assertAlmostEqual(results[0], results[1], delta=20)
     
     def test_agent_interface(self):
-        """Test agent interface compliance."""
         agent = RandomCoinFlipAgent("TestAgent")
         
         # Test required methods exist
