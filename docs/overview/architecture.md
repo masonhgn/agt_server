@@ -185,26 +185,6 @@ class BaseStage:
     def is_done(self) -> bool
 ```
 
-## System Benefits
-
-### For Students
-- **Focus on strategy** - Infrastructure handled by system
-- **Real-time competition** - Compete against other students
-- **Immediate feedback** - See results instantly
-- **Iterative improvement** - Learn from experience
-
-### For Instructors
-- **Centralized management** - Control all competitions
-- **Automated evaluation** - System tracks performance
-- **Scalable deployment** - Handle many students
-- **Rich analytics** - Detailed performance data
-
-### For Researchers
-- **Standardized environment** - Consistent experimental setup
-- **Reproducible results** - Deterministic game execution
-- **Extensible platform** - Easy to add new games/agents
-- **Rich data collection** - Comprehensive logging
-
 ## Next Steps
 
 This architecture enables:
