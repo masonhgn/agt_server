@@ -8,4 +8,7 @@ sphinx-tabs>=3.4.0
 sphinxcontrib-plantuml>=0.20
 
 # For better code highlighting
-pygments>=2.19.0 
+pygments>=2.19.0
+
+# For system diagrams (optional - Graphviz is built into Sphinx)
+# graphviz>=0.20 

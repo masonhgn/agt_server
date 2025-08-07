@@ -36,6 +36,7 @@ extensions = [
     'sphinx_rtd_theme',
     'myst_parser',
     'sphinxcontrib.plantuml',
+    'sphinx.ext.graphviz',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -116,6 +117,12 @@ myst_enable_extensions = [
 # PlantUML configuration
 plantuml = 'java -jar /usr/share/plantuml/plantuml.jar'
 plantuml_output_format = 'svg'
+
+# -- Graphviz Configuration -------------------------------------------------
+
+# Graphviz configuration
+graphviz_dot = 'dot'
+graphviz_output_format = 'svg'
 
 # -- Options for intersphinx -------------------------------------------------
 
