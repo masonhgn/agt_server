@@ -8,6 +8,9 @@ import sys
 import os
 import numpy as np
 
+# Add the core directory to the path (same approach as server.py)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
 from core.game.RPSGame import RPSGame

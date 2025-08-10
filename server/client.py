@@ -20,7 +20,9 @@ class AGTAgent(ABC):
     
     def __init__(self, name: str):
         self.name = name
-        self.device_id = f"{name}_{int(time.time())}"
+        # Use more unique device ID with microseconds and random component
+        import random
+        self.device_id = f"{name}_{int(time.time() * 1000000)}_{random.randint(1000, 9999)}"
         self.game_type: Optional[str] = None
         self.current_round = 0
         self.total_reward = 0
@@ -186,6 +188,24 @@ class AGTClient:
         if msg_type == "game_end":
             print(f"CLIENT {self.agent.name}: Received game_end, will exit")
             return True  # Signal to exit
+        elif msg_type == "tournament_end":
+            print(f"CLIENT {self.agent.name}: Received tournament_end, will exit")
+            return True  # Signal to exit
+        elif msg_type == "server_shutdown":
+            print(f"CLIENT {self.agent.name}: Server is shutting down: {message.get('reason', 'Unknown reason')}")
+            return True  # Signal to exit
+        elif msg_type == "tournament_start":
+            print(f"CLIENT {self.agent.name}: Tournament starting!")
+            print(f"  Players: {message.get('players', [])}")
+            print(f"  Rounds: {message.get('num_rounds', 0)}")
+        elif msg_type == "tournament_status":
+            print(f"CLIENT {self.agent.name}: Tournament status update")
+            print(f"  Players connected: {message.get('players_connected', 0)}")
+            print(f"  Tournament started: {message.get('tournament_started', False)}")
+        elif msg_type == "heartbeat":
+            print(f"CLIENT {self.agent.name}: Heartbeat received")
+            print(f"  Players connected: {message.get('players_connected', 0)}")
+            print(f"  Tournament started: {message.get('tournament_started', False)}")
         elif msg_type == "request_action":
             # Handle action request
             observation = message.get("observation", {})
@@ -199,6 +219,12 @@ class AGTClient:
             reward = message.get("reward", 0)
             info = message.get("info", {})
             self.agent.update(reward, info)
+            print(f"CLIENT {self.agent.name}: Round {message.get('round', 0)} - Reward: {reward}")
+        elif msg_type == "round_summary":
+            # Handle round summary
+            rank = message.get("rank", 0)
+            total_reward = message.get("total_reward", 0)
+            print(f"CLIENT {self.agent.name}: Round {message.get('round', 0)} summary - Rank: {rank}, Total Reward: {total_reward}")
         else:
             print(f"CLIENT {self.agent.name}: Unknown message type: {msg_type}")
         
@@ -207,6 +233,23 @@ class AGTClient:
     async def send_message(self, message: Dict[str, Any]):
         """send a message to the server."""
         if self.writer:
+            # Convert numpy types to native Python types for JSON serialization
+            def convert_numpy(obj):
+                import numpy as np
+                if isinstance(obj, np.integer):
+                    return int(obj)
+                elif isinstance(obj, np.floating):
+                    return float(obj)
+                elif isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                elif isinstance(obj, dict):
+                    return {k: convert_numpy(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_numpy(item) for item in obj]
+                else:
+                    return obj
+            
+            message = convert_numpy(message)
             print(f"CLIENT SENDING: {message}")
             data = json.dumps(message).encode() + b'\n'
             self.writer.write(data)
@@ -224,7 +267,7 @@ class AGTClient:
             
             # Add timeout to prevent hanging
             try:
-                data = await asyncio.wait_for(self.reader.readline(), timeout=1.0)
+                data = await asyncio.wait_for(self.reader.readline(), timeout=30.0)
             except asyncio.TimeoutError:
                 print(f"CLIENT {self.agent.name}: receive_message() timeout")
                 return None
@@ -232,9 +275,21 @@ class AGTClient:
             if not data:
                 print(f"CLIENT {self.agent.name}: receive_message() got no data (connection closed)")
                 return None
-            message = json.loads(data.decode())
-            print(f"CLIENT {self.agent.name}: receive_message() got message: {message}")
-            return message
+            
+            # Decode and strip whitespace
+            decoded_data = data.decode().strip()
+            if not decoded_data:
+                print(f"CLIENT {self.agent.name}: receive_message() got empty data")
+                return None
+                
+            try:
+                message = json.loads(decoded_data)
+                print(f"CLIENT {self.agent.name}: receive_message() got message: {message}")
+                return message
+            except json.JSONDecodeError as e:
+                print(f"CLIENT {self.agent.name}: receive_message() JSON decode error: {e}")
+                print(f"CLIENT {self.agent.name}: Raw data: {repr(decoded_data)}")
+                return None
         except Exception as e:
             print(f"CLIENT {self.agent.name}: receive_message() exception: {e}")
             return None

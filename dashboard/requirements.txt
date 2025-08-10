@@ -1,0 +1,9 @@
+# AGT Dashboard Requirements
+
+# Core dependencies
+Flask>=2.0.0
+requests>=2.25.0
+psutil>=5.8.0
+
+# Optional dependencies
+# gunicorn>=20.0.0  # For production deployment

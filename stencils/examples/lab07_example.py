@@ -5,6 +5,11 @@ These are reference implementations to help you understand the concepts.
 Try to implement the stencils yourself first before looking at these solutions.
 """
 
+import sys
+import os
+# Add the core directory to the path (same approach as server.py)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import random
 import numpy as np
 from core.agents.lab06.base_auction_agent import BaseAuctionAgent

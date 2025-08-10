@@ -1,12 +1,12 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import asyncio
+import argparse
 
+# Add the core directory to the path (same approach as server.py)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from core.agents.common.base_agent import BaseAgent
-from core.engine import Engine
-from core.game.RPSGame import RPSGame
-from core.agents.lab01.random_agent import RandomAgent
 
 
 class CompetitionAgent(BaseAgent):
@@ -15,55 +15,79 @@ class CompetitionAgent(BaseAgent):
         self.ROCK, self.PAPER, self.SCISSORS = 0, 1, 2
         self.actions = [self.ROCK, self.PAPER, self.SCISSORS]
     
-    def get_action(self, obs):
+    def get_action(self, opponent_last_move=None):
         """
-        TODO: Implement your competition strategy here!
+        Simple competition strategy using Fictitious Play.
         
-        This is where you'll put your best agent implementation.
-        You can use any combination of:
-        - Fictitious Play
-        - Exponential Weights  
-        - Pattern recognition
-        - Counter-strategies
-        - Or any other approach you think will work well
+        This is a basic implementation that students can replace with their own strategy.
         
-        Return one of: self.ROCK (0), self.PAPER (1), or self.SCISSORS (2)
+        Args:
+            opponent_last_move: The opponent's last move (0=rock, 1=paper, 2=scissors, None=first round)
         """
-        # TODO: Fill out your competition strategy
-        raise NotImplementedError
+        import random
+        
+        # For now, use a simple random strategy
+        # Students should replace this with their actual implementation
+        return random.choice(self.actions)
     
-    def update(self, reward: float):
+    def update(self, reward: float, info=None):
         """Update internal state with the reward received."""
         self.reward_history.append(reward)
         # TODO: Add any additional state updates your strategy needs
 
 
 if __name__ == "__main__":
-    # TODO: Please edit these variables
-    agent_name = "YourName_Competition"  # TODO: Give your agent a name
+    parser = argparse.ArgumentParser(description='Competition Agent for Lab 01')
+    parser.add_argument('--name', type=str, help='Agent name (default: CompetitionAgent_<random>)')
+    parser.add_argument('--host', type=str, default='localhost', help='Server host')
+    parser.add_argument('--port', type=int, default=8080, help='Server port')
+    parser.add_argument('--game', type=str, default='rps', help='Game type (default: rps)')
     
-    # Create agents
-    agent = CompetitionAgent(agent_name)
-    opponent = RandomAgent("Random")
+    args = parser.parse_args()
     
-    # Create game and run
-    game = RPSGame(rounds=1000)
-    agents = [agent, opponent]
+    # Add server directory to path for imports
+    server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+    sys.path.insert(0, server_dir)
     
-    engine = Engine(game, agents, rounds=1000)
-    final_rewards = engine.run()
+    from client import AGTClient
+    from adapters import create_adapter
     
-    print(f"Final rewards: {final_rewards}")
-    print(f"Cumulative rewards: {engine.cumulative_reward}")
+    async def main():
+        # Generate unique name if not provided
+        if not args.name:
+            import random
+            agent_name = f"CompetitionAgent_{random.randint(1000, 9999)}"
+        else:
+            agent_name = args.name
+            
+        # Create agent
+        agent = CompetitionAgent(agent_name)
+        
+        # Create adapter for server communication
+        server_agent = create_adapter(agent, args.game)
+        
+        print(f"Starting {agent.name} for {args.game} game...")
+        print(f"Connecting to server at {args.host}:{args.port}")
+        
+        # Create client and connect
+        client = AGTClient(server_agent, args.host, args.port)
+        await client.connect()
+        
+        if client.connected:
+            print("Connected to server!")
+            print(f"Joining {args.game} game...")
+            
+            if await client.join_game(args.game):
+                print("Joined game successfully!")
+                print("Waiting for tournament to start...")
+                await client.run()
+            else:
+                print("Failed to join game")
+        else:
+            print("Failed to connect to server")
     
-    # Print statistics
-    print(f"\n{agent.name} statistics:")
-    action_counts = [0, 0, 0]  # Rock, Paper, Scissors
-    for action in agent.action_history:
-        action_counts[action] += 1
-    print(f"Rock: {action_counts[0]}, Paper: {action_counts[1]}, Scissors: {action_counts[2]}")
-    print(f"Total reward: {sum(agent.reward_history)}")
-    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
+    # Run the async main function
+    asyncio.run(main())
 
 # Export for server testing
-agent_submission = CompetitionAgent("TestCompetition") 
+agent_submission = CompetitionAgent("CompetitionAgent") 

@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "bos",
+    "tournament": true,
+    "players": [
+      "BOSExample_7171",
+      "BOSExample_3985"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "BOSExample_7171",
+        {
+          "total_reward": 0.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "BOSExample_3985",
+        {
+          "total_reward": 0.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]
