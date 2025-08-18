@@ -7,6 +7,7 @@ this directory contains configuration files for running lab-specific agt servers
 each lab has its own configuration file that restricts the server to only allow the relevant game(s):
 
 - `lab01_rps.json` - lab 1: rock paper scissors only
+- `lab01_matrix_games.json` - lab 1: all matrix games (rps, chicken, pd)
 - `lab02_bos.json` - lab 2: battle of the sexes (bos and bosii) only
 - `lab03_chicken.json` - lab 3: chicken game only
 - `lab04_lemonade.json` - lab 4: lemonade stand only
@@ -22,6 +23,9 @@ each lab has its own configuration file that restricts the server to only allow 
 ```bash
 # run lab 1 server (rps only)
 python server.py --config configs/lab01_rps.json
+
+# run lab 1 server (all matrix games)
+python server.py --config configs/lab01_matrix_games.json
 
 # run lab 2 server (bos and bosii only)
 python server.py --config configs/lab02_bos.json

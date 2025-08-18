@@ -1,0 +1,33 @@
+TODO:
+
+1. ~~implement prisoner's dilemna~~ COMPLETED
+2. lemonade live leaderboard
+3. add arnie's repo into this repo
+
+
+
+
+8/18/25
+1. add running log to lemonade server (15min)
+2. create test lemonade agent that uses pytorch and/or other libraries (1hr)
+3. add arnie's lab (2.5hr)
+
+
+
+
+
+
+4. rename spacial game (2min)
+- rename to lemonade game
+
+5. fix leaderboard on short-form labs dashboard, make leaderboard return to every agent (45min)
+- leaderboard should display all students
+- leaderboard should be sent out to all students via server connection
+
+6. figure out separation between student version of repo and TA access repo (15min)
+- what code should not be visible to students?
+- how can we separate that code in a clean, maintainable and intuitive way?
+
+7. figure out separate ip connections (1hr)
+- currently, the labs allow localhost connections only. we need to make sure that if we run the server on an open port, we
+ can connect to it with agents from other ips.

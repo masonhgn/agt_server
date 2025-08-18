@@ -30,6 +30,7 @@ from core.game.RPSGame import RPSGame
 from core.game.BOSGame import BOSGame
 from core.game.BOSIIGame import BOSIIGame
 from core.game.ChickenGame import ChickenGame
+from core.game.PDGame import PDGame
 from core.game.LemonadeGame import LemonadeGame
 from core.game.AuctionGame import AuctionGame
 from core.game.AdxTwoDayGame import AdxTwoDayGame
@@ -112,6 +113,13 @@ class AGTServer:
                 "num_players": 2,
                 "num_rounds": 100,
                 "description": "Chicken game with Q-Learning and collusion"
+            },
+            "pd": {
+                "name": "Prisoner's Dilemma",
+                "game_class": PDGame,
+                "num_players": 2,
+                "num_rounds": 100,
+                "description": "Classic Prisoner's Dilemma game"
             },
             "lemonade": {
                 "name": "Lemonade Stand",
@@ -733,10 +741,10 @@ async def main():
     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--port', type=int, default=8080, help='Port to bind to')
     parser.add_argument('--config', type=str, help='Configuration file (required if no game specified)')
-    parser.add_argument('--game', type=str, choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
+    parser.add_argument('--game', type=str, choices=['rps', 'bos', 'bosii', 'chicken', 'pd', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
                        help='Restrict server to a specific game type (required if no config specified)')
     parser.add_argument('--games', type=str, nargs='+', 
-                       choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
+                       choices=['rps', 'bos', 'bosii', 'chicken', 'pd', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
                        help='Restrict server to specific game types (multiple allowed, required if no config specified)')
     # Dashboard is now separate - run with: python dashboard/app.py
 

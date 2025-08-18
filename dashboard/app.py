@@ -89,6 +89,7 @@ def parse_console_line(line):
                     'bos': {'num_players': 2, 'num_rounds': 100},
                     'bosii': {'num_players': 2, 'num_rounds': 100},
                     'chicken': {'num_players': 2, 'num_rounds': 100},
+                    'pd': {'num_players': 2, 'num_rounds': 100},
                     'lemonade': {'num_players': 3, 'num_rounds': 100},
                     'auction': {'num_players': 4, 'num_rounds': 10},
                     'adx_twoday': {'num_players': 2, 'num_rounds': 2},

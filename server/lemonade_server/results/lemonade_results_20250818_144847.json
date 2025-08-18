@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-08-18T14:48:47.747487",
+  "rankings": [
+    {
+      "name": "rl_agent",
+      "score": 1608.5555555555559
+    },
+    {
+      "name": "smart_agent",
+      "score": 1601.0606060606062
+    },
+    {
+      "name": "random_agent",
+      "score": 1567.1333333333337
+    }
+  ],
+  "scores": {
+    "rl_agent": 1608.5555555555559,
+    "smart_agent": 1601.0606060606062,
+    "random_agent": 1567.1333333333337
+  },
+  "metadata": {
+    "total_agents": 6,
+    "competitions_run": 10,
+    "rounds_per_competition": 100
+  }
+}

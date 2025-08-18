@@ -16,15 +16,15 @@ This lab introduces basic game theory through simultaneous-move matrix games.
 - **Payoff Matrix:** Zero-sum game
 - **Key Concept:** No pure Nash equilibrium
 
-### Battle of the Sexes (BOS)
-- **Actions:** Action A (0), Action B (1)
-- **Payoff Matrix:** Coordination game
-- **Key Concept:** Multiple Nash equilibria
-
 ### Chicken Game
 - **Actions:** Swerve (0), Straight (1)
 - **Payoff Matrix:** Conflict game
 - **Key Concept:** Asymmetric equilibria
+
+### Prisoner's Dilemma (PD)
+- **Actions:** Cooperate (0), Defect (1)
+- **Payoff Matrix:** Classic dilemma game
+- **Key Concept:** Dominant strategy equilibrium
 
 ## State Space
 
@@ -40,9 +40,9 @@ action = 0  # Rock
 action = 1  # Paper
 action = 2  # Scissors
 
-# BOS/Chicken
-action = 0  # Action A / Swerve
-action = 1  # Action B / Straight
+# Chicken/PD
+action = 0  # Swerve / Cooperate
+action = 1  # Straight / Defect
 ```
 
 ### Rewards
@@ -73,8 +73,13 @@ elif my_action == 1 and opponent_action == 0:  # Paper vs Rock
 ```python
 from core.engine import Engine
 from core.game.RPSGame import RPSGame
+from core.game.ChickenGame import ChickenGame
+from core.game.PDGame import PDGame
 from core.agents.lab01.random_agent import RandomAgent
+from core.agents.lab01.random_chicken_agent import RandomChickenAgent
+from core.agents.lab01.random_pd_agent import RandomPDAgent
 
+# Test RPS
 my_agent = MyAgent("MyAgent")
 opponent = RandomAgent("Random")
 
@@ -83,6 +88,16 @@ results = engine.run()
 
 print(f"My score: {results[0]}")
 print(f"Opponent score: {results[1]}")
+
+# Test Chicken
+chicken_opponent = RandomChickenAgent("RandomChicken")
+engine = Engine(ChickenGame(), [my_agent, chicken_opponent], rounds=1000)
+results = engine.run()
+
+# Test Prisoner's Dilemma
+pd_opponent = RandomPDAgent("RandomPD")
+engine = Engine(PDGame(), [my_agent, pd_opponent], rounds=1000)
+results = engine.run()
 ```
 
 ### Performance Analysis

@@ -14,7 +14,11 @@ from typing import Dict, Any, List
 # add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from client import AGTAgent
+# Handle import from different working directories
+try:
+    from client import AGTAgent
+except ImportError:
+    from server.client import AGTAgent
 
 
 class RPSAdapter(AGTAgent):
@@ -179,6 +183,43 @@ class ChickenAdapter(AGTAgent):
             self.chicken_agent.update(reward, info)
 
 
+class PDAdapter(AGTAgent):
+    """adapter for pd agents from lab 1."""
+    
+    def __init__(self, pd_agent):
+        super().__init__(pd_agent.name)
+        self.pd_agent = pd_agent
+        self.game_history = []
+    
+    def get_action(self, observation: Dict[str, Any]) -> int:
+        """convert server observation to pd agent format."""
+        # pd agents expect opponent's last move
+        opponent_last_move = observation.get("opponent_last_move", None)
+        
+        # get action from pd agent
+        action = self.pd_agent.get_action(opponent_last_move)
+        
+        # store history
+        self.game_history.append({
+            "opponent_last_move": opponent_last_move,
+            "my_action": action
+        })
+        
+        return action
+    
+    def reset(self):
+        """reset the pd agent."""
+        super().reset()
+        if hasattr(self.pd_agent, 'reset'):
+            self.pd_agent.reset()
+    
+    def update(self, reward: float, info: Dict[str, Any]):
+        """update the pd agent with results."""
+        super().update(reward, info)
+        if hasattr(self.pd_agent, 'update'):
+            self.pd_agent.update(reward, info)
+
+
 class LemonadeAdapter(AGTAgent):
     """adapter for lemonade agents from lab 4."""
     
@@ -308,6 +349,8 @@ def create_adapter(agent, game_type: str) -> AGTAgent:
         return BOSIIAdapter(agent)
     elif game_type == "chicken":
         return ChickenAdapter(agent)
+    elif game_type == "pd":
+        return PDAdapter(agent)
     elif game_type == "lemonade":
         return LemonadeAdapter(agent)
     elif game_type == "auction":
@@ -348,7 +391,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='AGT Agent Adapter')
     parser.add_argument('--stencil', type=str, required=True, help='Path to completed stencil')
     parser.add_argument('--game', type=str, required=True, 
-                       choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction', 'adx_twoday'],
+                       choices=['rps', 'bos', 'bosii', 'chicken', 'pd', 'lemonade', 'auction', 'adx_twoday'],
                        help='Game type')
     parser.add_argument('--name', type=str, help='Agent name (optional)')
     
