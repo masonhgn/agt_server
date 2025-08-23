@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 import numpy as np
 from core.engine import Engine
 from core.game.RPSGame import RPSGame
+from core.game.ChickenGame import ChickenGame
 from core.agents.lab01.random_agent import RandomAgent
 from core.agents.lab01.rock_agent import RockAgent
 from core.agents.common.base_agent import BaseAgent
@@ -246,6 +247,69 @@ class StudentCompetitionAgent(BaseAgent):
         return exp_values / np.sum(exp_values)
 
 
+# Student implementation of Competition Agent for Chicken
+class StudentChickenCompetitionAgent(BaseAgent):
+    def __init__(self, name: str = "StudentChickenCompetition"):
+        super().__init__(name)
+        self.SWERVE, self.CONTINUE = 0, 1
+        self.actions = [self.SWERVE, self.CONTINUE]
+        self.opponent_action_counts = [0, 0]
+        self.action_rewards = np.zeros(2)
+        self.action_counts = [0, 0]
+        self.eta = 0.1
+    
+    def setup(self):
+        """Initialize the agent for each new game."""
+        self.opponent_action_counts = [0, 0]
+        self.action_rewards = np.zeros(2)
+        self.action_counts = [0, 0]
+    
+    def get_action(self, obs):
+        """Implement a strategy for Chicken game."""
+        # Use a mixed strategy that swerves 70% of the time
+        # This is a simple strategy that students can improve upon
+        import random
+        if random.random() < 0.7:
+            action = self.SWERVE
+        else:
+            action = self.CONTINUE
+        
+        self.action_history.append(action)
+        return action
+    
+    def update(self, reward: float, info=None):
+        """Update internal state with the reward received."""
+        self.reward_history.append(reward)
+        
+        # Update action rewards
+        if len(self.action_history) > 0:
+            last_action = self.action_history[-1]
+            self.action_rewards[last_action] += reward
+            self.action_counts[last_action] += 1
+        
+        # Infer opponent's action from reward and our action
+        if len(self.action_history) > 0:
+            my_action = self.action_history[-1]
+            
+            # Chicken payoff matrix (row player, column player):
+            # S\C  S  C
+            # S    0  -1
+            # C    1  -5
+            
+            if my_action == self.SWERVE:
+                if reward == 0:
+                    opp_action = self.SWERVE  # Both swerved
+                else:  # reward == -1
+                    opp_action = self.CONTINUE  # We swerved, they continued
+            else:  # my_action == self.CONTINUE
+                if reward == 1:
+                    opp_action = self.SWERVE  # We continued, they swerved
+                else:  # reward == -5
+                    opp_action = self.CONTINUE  # Both continued
+            
+            self.opponent_action_counts[opp_action] += 1
+
+
 def test_fictitious_play_agent():
     """Test the fictitious play agent implementation."""
     print("Testing Fictitious Play Agent...")
@@ -313,6 +377,33 @@ def test_competition_agent():
     assert len(agent.reward_history) == 100, "Agent should have 100 rewards"
     
     print("PASS: Competition Agent test passed!")
+
+
+def test_chicken_competition_agent():
+    """Test the competition agent implementation for Chicken game."""
+    print("Testing Chicken Competition Agent...")
+    
+    agent = StudentChickenCompetitionAgent("TestChickenComp")
+    opponent = RandomAgent("Random")
+    
+    game = ChickenGame()
+    agents = [agent, opponent]
+    engine = Engine(game, agents)
+    final_rewards = engine.run(100)
+    
+    print(f"Final rewards: {final_rewards}")
+    print(f"Chicken Comp Agent total reward: {sum(agent.reward_history)}")
+    print(f"Chicken Comp Agent average reward: {sum(agent.reward_history) / len(agent.reward_history):.3f}")
+    
+    # Verify the agent is working
+    assert len(agent.action_history) == 100, "Agent should have played 100 actions"
+    assert len(agent.reward_history) == 100, "Agent should have 100 rewards"
+    
+    # Check that actions are valid for Chicken game
+    for action in agent.action_history:
+        assert action in [0, 1], f"Invalid action {action} for Chicken game"
+    
+    print("PASS: Chicken Competition Agent test passed!")
 
 
 def test_agent_vs_rock():
@@ -386,6 +477,8 @@ if __name__ == "__main__":
     print()
     test_competition_agent()
     print()
+    test_chicken_competition_agent()
+    print()
     test_agent_vs_rock()
     print()
     test_agent_learning()
@@ -396,4 +489,5 @@ if __name__ == "__main__":
     print("1. All agent implementations work correctly")
     print("2. Agents can learn and improve over time")
     print("3. Agents can beat simple deterministic strategies")
-    print("4. The game engine and reward system work properly") 
+    print("4. The game engine and reward system work properly")
+    print("5. Competition agent works correctly for Chicken game") 
