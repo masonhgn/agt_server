@@ -188,7 +188,37 @@ class AGTClient:
         if msg_type == "game_end":
             print(f"CLIENT {self.agent.name}: Received game_end, will exit")
             return True  # Signal to exit
+        # elif msg_type == "tournament_end":
+        #     print(f"CLIENT {self.agent.name}: Received tournament_end, will exit")
+        #     return True  # Signal to exit
         elif msg_type == "tournament_end":
+            # Print final leaderboard to client terminal
+            results = message.get("results", {})
+            game_type = results.get("game_type", "unknown")
+            final_rankings = results.get("final_rankings", [])
+            print("")
+            print(f"FINAL LEADERBOARD for {game_type}:")
+            try:
+                # final_rankings is list of [name, stats] pairs
+                for rank, entry in enumerate(final_rankings, 1):
+                    if isinstance(entry, (list, tuple)) and len(entry) == 2:
+                        name, stats = entry
+                    else:
+                        name = entry.get("name") if isinstance(entry, dict) else str(entry)
+                        stats = entry.get("stats", {}) if isinstance(entry, dict) else {}
+                    total = float(stats.get("total_reward", 0))
+                    games = int(stats.get("games_played", 0))
+                    avg = total / max(games, 1)
+                    print(f"  #{rank}: {name} - Total: {total:.2f}, Games: {games}, Avg: {avg:.2f}")
+            except Exception as e:
+                print(f"(Could not render leaderboard: {e})")
+
+            # Also print this client's own summary
+            print(f"Your final rank: {message.get('final_rank')}, "
+                    f"Total: {message.get('final_reward'):.2f}, "
+                    f"Games: {message.get('games_played')}, "
+                    f"Avg: {message.get('average_reward'):.2f}")
+            print("")
             print(f"CLIENT {self.agent.name}: Received tournament_end, will exit")
             return True  # Signal to exit
         elif msg_type == "server_shutdown":

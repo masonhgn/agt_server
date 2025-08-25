@@ -211,7 +211,9 @@ def parse_console_line(line):
     elif line.strip().startswith("#") and ":" in line and ("Total:" in line or "Games:" in line):
         # Example: "  #1: CompetitionAgent - Total: 45.20, Games: 50, Avg: 0.90"
         import re
-        match = re.search(r'#(\d+): (\w+) - Total: ([\d.]+), Games: (\d+), Avg: ([\d.]+)', line.strip())
+        # match = re.search(r'#(\d+): (\w+) - Total: ([\d.]+), Games: (\d+), Avg: ([\d.]+)', line.strip())
+        match = re.search(r'#\s*(\d+):\s+(.+?)\s+-\s+Total:\s+([+-]?\d+(?:\.\d+)?),\s+Games:\s+(\d+),\s+Avg:\s+([+-]?\d+(?:\.\d+)?)',
+        line.strip())
         if match:
             rank = int(match.group(1))
             player_name = match.group(2)

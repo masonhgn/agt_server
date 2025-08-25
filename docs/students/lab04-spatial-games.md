@@ -1,6 +1,7 @@
-# Lab 04: Spatial Games
+# Lab 04: The Lemonade Stand Game
 
-This lab introduces spatial game theory through location-based competition.
+In this lab, you will be implement agent strategies for the Lemonade Stand Game,
+a generalization of a famous game of electoral politics studied by Hotelling.
 
 ## Game Overview
 
@@ -12,7 +13,7 @@ This lab introduces spatial game theory through location-based competition.
 ## Games
 
 ### Lemonade Stand Game
-- **Actions:** Location choices (0-9 on a line)
+- **Actions:** Location choices (0-11 on a circle)
 - **State Space:** Current locations and market dynamics
 - **Key Concept:** Spatial competition and location strategy
 
@@ -23,7 +24,7 @@ This lab introduces spatial game theory through location-based competition.
 observation = {
     "my_location": 3,           # My current location
     "opponent_location": 7,      # Opponent's current location
-    "market_demand": [0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
+    "market_demand": [0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0.0, 0.0],
     "round_count": 45           # Current round number
 }
 ```
@@ -32,8 +33,8 @@ observation = {
 ```python
 action = 0   # Location 0
 action = 1   # Location 1
-# ... up to location 9
-action = 9   # Location 9
+# ... up to location 11
+action = 11   # Location 11
 ```
 
 ### Rewards
