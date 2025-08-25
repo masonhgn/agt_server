@@ -8,6 +8,7 @@ this module provides the main engine for running games between multiple agents.
 import time
 import threading
 from typing import Any, Callable, Dict, Hashable, List, Tuple
+import random
 
 from core.game import ObsDict, ActionDict, RewardDict, BaseGame
 from core.agents.common.base_agent import BaseAgent
@@ -37,6 +38,32 @@ class Engine:
         self.rounds = rounds
         self.cumulative_reward = [0] * len(agents)
         
+    def _get_agent_action(self, agent: BaseAgent, obs: Dict[str, Any]) -> Any:
+        """
+        Get action from agent using the appropriate method based on agent type.
+        For Lab 1 agents, this calls predict()/optimize() or calc_move_probs() directly.
+        For other agents, this calls get_action().
+        """
+        # Check if this is a Lab 1 agent by looking for the specific method implementations
+        if hasattr(agent, 'predict') and hasattr(agent, 'optimize') and hasattr(agent, 'calc_move_probs'):
+            # This is a Lab 1 agent - use the new architecture
+            if hasattr(agent, '_is_fictitious_play') and agent._is_fictitious_play:
+                # Fictitious Play agent: call predict() then optimize()
+                dist = agent.predict()
+                action = agent.optimize(dist)
+            elif hasattr(agent, '_is_exponential_weights') and agent._is_exponential_weights:
+                # Exponential Weights agent: call calc_move_probs() then sample
+                move_probs = agent.calc_move_probs()
+                action = random.choices(agent.actions, weights=move_probs, k=1)[0]
+            else:
+                # Default: use get_action() for backward compatibility
+                action = agent.get_action(obs)
+        else:
+            # Regular agent: use get_action()
+            action = agent.get_action(obs)
+        
+        return action
+        
     def run(self, num_rounds: int = None) -> List[float]:
         """
         run the game for the specified number of rounds.
@@ -53,9 +80,10 @@ class Engine:
         # reset the game
         obs = self.game.reset()
         
-        # reset all agents
+        # reset all agents and call setup
         for agent in self.agents:
             agent.reset()
+            agent.setup()
         
         # run the game
         for round_num in range(num_rounds):
@@ -64,18 +92,28 @@ class Engine:
             for i, agent in enumerate(self.agents):
                 # get agent-specific observation
                 agent_obs = obs.get(i, {})
-                action = agent.get_action(agent_obs)
+                action = self._get_agent_action(agent, agent_obs)
                 actions[i] = action
+                agent.action_history.append(action)
             
             # step the game
             obs, rewards, done, info = self.game.step(actions)
             
-            # update agents with results
+            # update agents with results and track opponent actions
             for i, agent in enumerate(self.agents):
                 reward = rewards.get(i, 0)
                 agent_info = info.get(i, {})
                 agent.update(reward, agent_info)
                 self.cumulative_reward[i] += reward
+                
+                # Track opponent actions for 2-player games
+                if len(self.agents) == 2:
+                    opponent_idx = 1 - i  # Other player
+                    opponent_action = actions.get(opponent_idx)
+                    opponent_reward = rewards.get(opponent_idx, 0)
+                    if opponent_action is not None:
+                        agent.add_opponent_action(opponent_action)
+                        agent.add_opponent_reward(opponent_reward)
             
             # check if game is done
             if done:
@@ -97,18 +135,28 @@ class Engine:
         actions = {}
         for i, agent in enumerate(self.agents):
             agent_obs = obs.get(i, {})
-            action = agent.get_action(agent_obs)
+            action = self._get_agent_action(agent, agent_obs)
             actions[i] = action
+            agent.action_history.append(action)
         
         # step the game
         obs, rewards, done, info = self.game.step(actions)
         
-        # update agents with results
+        # update agents with results and track opponent actions
         for i, agent in enumerate(self.agents):
             reward = rewards.get(i, 0)
             agent_info = info.get(i, {})
             agent.update(reward, agent_info)
             self.cumulative_reward[i] += reward
+            
+            # Track opponent actions for 2-player games
+            if len(self.agents) == 2:
+                opponent_idx = 1 - i  # Other player
+                opponent_action = actions.get(opponent_idx)
+                opponent_reward = rewards.get(opponent_idx, 0)
+                if opponent_action is not None:
+                    agent.add_opponent_action(opponent_action)
+                    agent.add_opponent_reward(opponent_reward)
         
         return rewards, info
     

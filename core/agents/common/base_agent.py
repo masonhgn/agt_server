@@ -23,35 +23,49 @@ class BaseAgent(ABC):
         self.reward_history = []
         self.action_history = []
         self.observation_history = []
+        self.opp_action_history = []  # Track opponent's actions
+        self.opp_reward_history = []  # Track opponent's rewards
+        self.game_round = 0  # Current round number
         
     @abstractmethod
-    def get_action(self, observation: Dict[str, Any]) -> Any:
+    def get_action(self, observation: Dict[str, Any] = None) -> Any:
         """
         get the agent's action based on the current observation.
         
         args:
-            observation: current game state observation
+            observation: current game state observation (optional for backward compatibility)
             
         returns:
             the action to take
         """
         pass
     
-    def update(self, reward: float, info: Dict[str, Any]):
+    def update(self, reward: float = None, info: Dict[str, Any] = None):
         """
         update the agent with the reward and info from the last action.
         
         args:
-            reward: reward received from the last action
-            info: additional information from the last action
+            reward: reward received from the last action (optional for backward compatibility)
+            info: additional information from the last action (optional for backward compatibility)
         """
-        self.reward_history.append(reward)
+        if reward is not None:
+            self.reward_history.append(reward)
+        
+    def setup(self):
+        """
+        Initialize the agent for a new game.
+        Called at the beginning of each new game.
+        """
+        pass
         
     def reset(self):
         """reset the agent for a new game."""
         self.reward_history = []
         self.action_history = []
         self.observation_history = []
+        self.opp_action_history = []
+        self.opp_reward_history = []
+        self.game_round = 0
         
     def get_statistics(self) -> Dict[str, Any]:
         """
@@ -85,6 +99,91 @@ class BaseAgent(ABC):
     def get_reward_history(self) -> List[float]:
         """Get the complete reward history."""
         return self.reward_history.copy()
+    
+    # New methods for Lab 1 compatibility
+    def get_util_history(self) -> List[float]:
+        """Get the complete utility history (alias for reward_history)."""
+        return self.reward_history.copy()
+    
+    def get_last_util(self) -> float | None:
+        """Get the last utility received (alias for last_reward)."""
+        return self.reward_history[-1] if self.reward_history else None
+    
+    def get_opp_action_history(self) -> List[Any]:
+        """Get the complete opponent action history."""
+        return self.opp_action_history.copy()
+    
+    def get_opp_reward_history(self) -> List[float]:
+        """Get the complete opponent reward history."""
+        return self.opp_reward_history.copy()
+    
+    def get_opp_last_action(self) -> Any:
+        """Get the opponent's last action."""
+        return self.opp_action_history[-1] if self.opp_action_history else None
+    
+    def get_opp_last_util(self) -> float | None:
+        """Get the opponent's last utility."""
+        return self.opp_reward_history[-1] if self.opp_reward_history else None
+    
+    def calculate_utils(self, a1: Any, a2: Any) -> List[float]:
+        """
+        Calculate utilities for actions a1 and a2.
+        This is a placeholder - subclasses should override this.
+        
+        args:
+            a1: action of player 1
+            a2: action of player 2
+            
+        returns:
+            [u1, u2] where u1 is player 1's utility and u2 is player 2's utility
+        """
+        # Default implementation - subclasses should override
+        return [0, 0]
+    
+    def add_opponent_action(self, action: Any):
+        """Add opponent's action to history."""
+        self.opp_action_history.append(action)
+    
+    def add_opponent_reward(self, reward: float):
+        """Add opponent's reward to history."""
+        self.opp_reward_history.append(reward)
+    
+    # Abstract methods for Lab 1 - these will be called directly by the server
+    @abstractmethod
+    def predict(self) -> List[float]:
+        """
+        Predict opponent's next move distribution.
+        This method will be called directly by the server for Fictitious Play agents.
+        
+        returns:
+            probability distribution over opponent's next move
+        """
+        pass
+    
+    @abstractmethod
+    def optimize(self, dist: List[float]) -> Any:
+        """
+        Find best response to opponent's predicted distribution.
+        This method will be called directly by the server for Fictitious Play agents.
+        
+        args:
+            dist: probability distribution over opponent's next move
+            
+        returns:
+            the best action to take
+        """
+        pass
+    
+    @abstractmethod
+    def calc_move_probs(self) -> List[float]:
+        """
+        Calculate move probabilities using Exponential Weights strategy.
+        This method will be called directly by the server for Exponential Weights agents.
+        
+        returns:
+            probability distribution over your next move
+        """
+        pass
     
     def __str__(self) -> str:
         return self.name

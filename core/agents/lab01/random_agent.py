@@ -1,20 +1,20 @@
 import random
-from core.agents.common.base_agent import BaseAgent
+from core.agents.common.rps_agent import RPSAgent
 
 
-class RandomAgent(BaseAgent):
+class RandomAgent(RPSAgent):
     """Agent that plays random moves in Rock Paper Scissors."""
     
-    def __init__(self, name: str = "Random"):
-        super().__init__(name)
-        self.actions = [0, 1, 2]  # Rock, Paper, Scissors
-    
-    def get_action(self, obs):
+    def get_action(self, obs=None):
         """Return a random action."""
         action = random.choice(self.actions)
-        self.action_history.append(action)
         return action
     
-    def update(self, reward, info=None):
+    def update(self, reward=None, info=None):
         """Store the reward received."""
-        self.reward_history.append(reward) 
+        if reward is not None:
+            self.reward_history.append(reward)
+    
+    def setup(self):
+        """Initialize the agent for a new game."""
+        pass 

@@ -3,5 +3,4 @@ __pycache__
 .vscode
 *.log
 .pytest_cache
-.agt
 

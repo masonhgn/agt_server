@@ -5,30 +5,36 @@ import os
 # Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from core.agents.common.base_agent import BaseAgent
+from core.agents.common.rps_agent import RPSAgent
 from core.engine import Engine
 from core.game.RPSGame import RPSGame
 from core.agents.lab01.random_agent import RandomAgent
 
 
-class ExponentialAgent(BaseAgent):
+class ExponentialAgent(RPSAgent):
     def __init__(self, name: str = "Exponential"):
         super().__init__(name)
-        self.ROCK, self.PAPER, self.SCISSORS = 0, 1, 2
-        self.actions = [self.ROCK, self.PAPER, self.SCISSORS]
+        self._is_exponential_weights = True  # Flag to identify this as an Exponential Weights agent
+    
+    def setup(self):
+        """Initialize the agent for a new game."""
         self.action_rewards = np.zeros(len(self.actions))  # Cumulative rewards for each action
         self.action_counts = [0, 0, 0]  # Number of times each action was played
     
-    def get_action(self, obs):
-        """Return an action based on exponential weights strategy."""
+    def get_action(self, obs=None):
+        """
+        This method is not used in the new architecture.
+        The server will call calc_move_probs() directly and sample from the distribution.
+        """
+        # For backward compatibility, implement the old way
         move_probs = self.calc_move_probs()
         action = np.random.choice(self.actions, p=move_probs)
-        self.action_history.append(action)
         return action
     
-    def update(self, reward: float):
+    def update(self, reward=None, info=None):
         """Update action rewards and counts."""
-        self.reward_history.append(reward)
+        if reward is not None:
+            self.reward_history.append(reward)
         
         # Update the reward for the last action taken
         if len(self.action_history) > 0:
@@ -52,7 +58,18 @@ class ExponentialAgent(BaseAgent):
         # TODO: Calculate the average reward for each action over time and return the softmax of it
         # HINT: Use self.action_rewards and self.action_counts to compute averages
         # HINT: Use self.softmax() to convert averages to probabilities
-        raise NotImplementedError
+        
+        # Calculate average rewards for each action
+        avg_rewards = np.zeros(len(self.actions))
+        for i in range(len(self.actions)):
+            if self.action_counts[i] > 0:
+                avg_rewards[i] = self.action_rewards[i] / self.action_counts[i]
+            else:
+                # If action hasn't been played yet, give it a small positive value to encourage exploration
+                avg_rewards[i] = 0.1
+        
+        # Apply softmax to get probability distribution
+        return self.softmax(avg_rewards)
 
 
 if __name__ == "__main__":

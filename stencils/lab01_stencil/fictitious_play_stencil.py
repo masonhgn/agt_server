@@ -5,60 +5,42 @@ import os
 # Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from core.agents.common.base_agent import BaseAgent
+from core.agents.common.rps_agent import RPSAgent
 from core.engine import Engine
 from core.game.RPSGame import RPSGame
 from core.agents.lab01.random_agent import RandomAgent
 
 
-class FictitiousPlayAgent(BaseAgent):
+class FictitiousPlayAgent(RPSAgent):
     def __init__(self, name: str = "FictitiousPlay"):
         super().__init__(name)
-        self.ROCK, self.PAPER, self.SCISSORS = 0, 1, 2
-        self.actions = [self.ROCK, self.PAPER, self.SCISSORS]
+        self._is_fictitious_play = True  # Flag to identify this as a Fictitious Play agent
+    
+    def setup(self):
+        """Initialize the agent for a new game."""
         self.opponent_action_counts = [0, 0, 0]  # Count of each action by opponent
     
-    def get_action(self, obs):
-        """Return the best response to predicted opponent action."""
+    def get_action(self, obs=None):
+        """
+        This method is not used in the new architecture.
+        The server will call predict() and optimize() directly.
+        """
+        # For backward compatibility, implement the old way
         dist = self.predict()
         best_move = self.optimize(dist)
         action = self.actions[best_move]
-        self.action_history.append(action)
         return action
     
-    def update(self, reward: float):
+    def update(self, reward=None, info=None):
         """Store the reward and update opponent action counts."""
-        self.reward_history.append(reward)
+        if reward is not None:
+            self.reward_history.append(reward)
         
-        # Update opponent action counts based on the reward
-        # This is a simplified approach - in a real implementation,
-        # we'd need to know the opponent's actual action
-        # For now, we'll infer it from the reward and our action
-        if len(self.action_history) > 0:
-            my_action = self.action_history[-1]
-            
-            # Infer opponent's action from reward
-            if reward == 0:
-                # Tie - opponent played same as us
-                opp_action = my_action
-            elif reward == 1:
-                # We won - opponent played the action we beat
-                if my_action == 0:  # Rock beats Scissors
-                    opp_action = 2
-                elif my_action == 1:  # Paper beats Rock
-                    opp_action = 0
-                else:  # Scissors beats Paper
-                    opp_action = 1
-            else:  # reward == -1
-                # We lost - opponent played the action that beats us
-                if my_action == 0:  # Rock loses to Paper
-                    opp_action = 1
-                elif my_action == 1:  # Paper loses to Scissors
-                    opp_action = 2
-                else:  # Scissors loses to Rock
-                    opp_action = 0
-            
-            self.opponent_action_counts[opp_action] += 1
+        # Update opponent action counts using the tracked history
+        opp_actions = self.get_opp_action_history()
+        if len(opp_actions) > 0:
+            last_opp_action = opp_actions[-1]
+            self.opponent_action_counts[last_opp_action] += 1
     
     def predict(self):
         """
@@ -66,8 +48,22 @@ class FictitiousPlayAgent(BaseAgent):
         over the opponent's next move
         """
         # TODO: Return a probability distribution over the opponent's next move
-        # HINT: Use self.opponent_action_counts to build the distribution
-        raise NotImplementedError
+        # HINT: Use self.get_opp_action_history() to build the distribution
+        
+        opp_actions = self.get_opp_action_history()
+        
+        if len(opp_actions) == 0:
+            # No history yet, assume uniform distribution
+            return [1/3, 1/3, 1/3]
+        
+        # Calculate empirical distribution from opponent's action history
+        total_actions = len(opp_actions)
+        counts = [0, 0, 0]
+        for action in opp_actions:
+            counts[action] += 1
+        
+        # Return probability distribution
+        return [count / total_actions for count in counts]
     
     def optimize(self, dist):
         """
@@ -77,7 +73,17 @@ class FictitiousPlayAgent(BaseAgent):
         """
         # TODO: Calculate the expected payoff of each action and return the action with the highest payoff
         # HINT: Use the RPS payoff matrix and the opponent's predicted distribution
-        raise NotImplementedError
+        
+        # Calculate expected payoff for each action
+        expected_payoffs = []
+        for my_action in [self.ROCK, self.PAPER, self.SCISSORS]:
+            expected_payoff = 0
+            for opp_action in [self.ROCK, self.PAPER, self.SCISSORS]:
+                expected_payoff += dist[opp_action] * self.calculate_utils(my_action, opp_action)[0]
+            expected_payoffs.append(expected_payoff)
+        
+        # Return action with highest expected payoff
+        return [self.ROCK, self.PAPER, self.SCISSORS][np.argmax(expected_payoffs)]
 
 
 if __name__ == "__main__":
