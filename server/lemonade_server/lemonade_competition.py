@@ -5,6 +5,7 @@ import random
 import sys
 from datetime import datetime
 from typing import Dict, List, Any
+from collections import defaultdict
 
 # Add parent directories to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -29,6 +30,8 @@ class LemonadeCompetition:
         self.agents_dir = agents_dir
         self.submissions: Dict[str, AgentSubmission] = {}
         self.results = {}
+        self.game_log = []  # Store detailed game logs
+        self.game_counter = 0  # Track game numbers
         os.makedirs(agents_dir, exist_ok=True)
     
     def scan_for_agents(self) -> List[AgentSubmission]:
@@ -156,15 +159,113 @@ class LemonadeCompetition:
     def _run_single_competition(self, submissions: List[AgentSubmission], rounds: int) -> List[float]:
         """Run one competition between 3 agents"""
         agents = [sub.agent for sub in submissions]
+        agent_names = [sub.agent_name for sub in submissions]
+        
+        # Increment game counter
+        self.game_counter += 1
         
         # Create game
         game = LemonadeGame(rounds=rounds)
         
-        # Run the game
-        engine = Engine(game, agents)
-        final_rewards = engine.run()
+        # Track detailed game information
+        game_info = {
+            "game_number": self.game_counter,
+            "agents": agent_names,
+            "rounds": rounds,
+            "agent_actions": {name: defaultdict(int) for name in agent_names},
+            "agent_utilities": {name: 0.0 for name in agent_names}
+        }
+        
+        # Run the game with custom logging
+        final_rewards = self._run_game_with_logging(game, agents, agent_names, game_info)
+        
+        # Add final statistics to game info
+        for i, name in enumerate(agent_names):
+            game_info["agent_utilities"][name] = final_rewards[i]
+        
+        # Add game info to log
+        self.game_log.append(game_info)
+        
+        # Print game summary
+        self._print_game_summary(game_info)
         
         return final_rewards
+    
+    def _run_game_with_logging(self, game: LemonadeGame, agents: List, agent_names: List[str], game_info: Dict) -> List[float]:
+        """Run a game while logging detailed information"""
+        # Reset the game
+        obs = game.reset()
+        
+        # Reset all agents and call setup
+        for agent in agents:
+            agent.reset()
+            agent.setup()
+        
+        # Run the game
+        for round_num in range(game.rounds):
+            # Get actions from all agents
+            actions = {}
+            for i, agent in enumerate(agents):
+                agent_obs = obs.get(i, {})
+                action = self._get_agent_action(agent, agent_obs)
+                actions[i] = action
+                agent.action_history.append(action)
+                
+                # Log the action
+                game_info["agent_actions"][agent_names[i]][action] += 1
+            
+            # Step the game
+            obs, rewards, done, info = game.step(actions)
+            
+            # Update agents with results
+            for i, agent in enumerate(agents):
+                reward = rewards.get(i, 0)
+                agent_info = info.get(i, {})
+                agent.update(reward, agent_info)
+            
+            # Check if game is done
+            if done:
+                break
+        
+        return [rewards.get(i, 0) for i in range(len(agents))]
+    
+    def _get_agent_action(self, agent, obs):
+        """Get action from agent using the appropriate method"""
+        # Check if this is a Lab 1 agent by looking for the specific method implementations
+        if hasattr(agent, 'predict') and hasattr(agent, 'optimize') and hasattr(agent, 'calc_move_probs'):
+            # This is a Lab 1 agent - use the new architecture
+            if hasattr(agent, '_is_fictitious_play') and agent._is_fictitious_play:
+                # Fictitious Play agent: call predict() then optimize()
+                dist = agent.predict()
+                action = agent.optimize(dist)
+            elif hasattr(agent, '_is_exponential_weights') and agent._is_exponential_weights:
+                # Exponential Weights agent: call calc_move_probs() then sample
+                move_probs = agent.calc_move_probs()
+                action = random.choices(agent.actions, weights=move_probs, k=1)[0]
+            else:
+                # Default: use get_action() for backward compatibility
+                action = agent.get_action(obs)
+        else:
+            # Regular agent: use get_action()
+            action = agent.get_action(obs)
+        
+        return action
+    
+    def _print_game_summary(self, game_info: Dict):
+        """Print a summary of the game results"""
+        print(f"Game {game_info['game_number']}:")
+        print(f"I am currently playing against {' and '.join(game_info['agents'])}")
+        
+        for agent_name in game_info['agents']:
+            actions = game_info['agent_actions'][agent_name]
+            total_utility = game_info['agent_utilities'][agent_name]
+            avg_utility = total_utility / game_info['rounds'] if game_info['rounds'] > 0 else 0
+            
+            # Format location choices
+            location_str = ", ".join([f"Location {loc} {count} times" for loc, count in sorted(actions.items())])
+            
+            print(f"{agent_name}: set up their Lemonade Stand at {location_str}.")
+            print(f"{agent_name}: got a total utility of {total_utility:.0f} and a average utility of {avg_utility:.2f}")
     
     def save_results(self, filename: str = None):
         """Save results to file"""
@@ -173,7 +274,42 @@ class LemonadeCompetition:
             filename = f"results/lemonade_results_{timestamp}.json"
         
         os.makedirs("results", exist_ok=True)
+        
+        # Include game logs in results
+        results_with_logs = {
+            **self.results,
+            "game_logs": self.game_log
+        }
+        
         with open(filename, 'w') as f:
-            json.dump(self.results, f, indent=2)
+            json.dump(results_with_logs, f, indent=2)
         
         print(f"Results saved to {filename}")
+    
+    def save_game_log(self, filename: str = None):
+        """Save just the game log to a separate file"""
+        if not filename:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"results/lemonade_game_log_{timestamp}.txt"
+        
+        os.makedirs("results", exist_ok=True)
+        
+        with open(filename, 'w') as f:
+            for game_info in self.game_log:
+                f.write(f"Game {game_info['game_number']}:\n")
+                f.write(f"I am currently playing against {' and '.join(game_info['agents'])}\n")
+                
+                for agent_name in game_info['agents']:
+                    actions = game_info['agent_actions'][agent_name]
+                    total_utility = game_info['agent_utilities'][agent_name]
+                    avg_utility = total_utility / game_info['rounds'] if game_info['rounds'] > 0 else 0
+                    
+                    # Format location choices
+                    location_str = ", ".join([f"Location {loc} {count} times" for loc, count in sorted(actions.items())])
+                    
+                    f.write(f"{agent_name}: set up their Lemonade Stand at {location_str}.\n")
+                    f.write(f"{agent_name}: got a total utility of {total_utility:.0f} and a average utility of {avg_utility:.2f}\n")
+                
+                f.write("\n")
+        
+        print(f"Game log saved to {filename}")

@@ -10,7 +10,7 @@ TODO:
 8/18/25
 1. add running log to lemonade server (15min)
 2. create test lemonade agent that uses pytorch and/or other libraries (1hr)
-3. add arnie's lab (2.5hr)
+3. add arnie's lab (2.5hr) (copy arnies code into a new example agent for lemonade game)
 
 
 

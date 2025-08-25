@@ -49,6 +49,7 @@ HTML_TEMPLATE = """
         <p><a href="/run_tournament">Run Tournament</a></p>
         <p><a href="/results">View Results</a></p>
         <p><a href="/push_to_leaderboard">Push to Leaderboard</a></p>
+        <p><a href="/save_game_log">Save Game Log</a></p>
     </div>
     
     {% if message %}
@@ -77,7 +78,16 @@ def scan_agents():
 def run_tournament():
     results = competition.run_tournament()
     competition.save_results()
+    competition.save_game_log()  # Automatically save game log
     return jsonify(results)
+
+@app.route('/save_game_log')
+def save_game_log():
+    if not competition.game_log:
+        return "No game log to save. Run tournament first."
+    
+    competition.save_game_log()
+    return "Game log saved successfully!"
 
 @app.route('/results')
 def get_results():

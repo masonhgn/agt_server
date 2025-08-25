@@ -227,11 +227,20 @@ class LemonadeAdapter(AGTAgent):
         super().__init__(lemonade_agent.name)
         self.lemonade_agent = lemonade_agent
         self.game_history = []
+        # Add missing attributes for compatibility with BaseAgent
+        self.action_history = []
+        self.reward_history = []
+        self.observation_history = []
+        self.opp_action_history = []
+        self.opp_reward_history = []
+        self.game_round = 0
     
     def get_action(self, observation: Dict[str, Any]) -> int:
         """convert server observation to lemonade agent format."""
         # lemonade agents expect opponent positions
-        opponent_positions = observation.get("opponent_positions", [])
+        # Since we don't have opponent positions in observation yet, pass None
+        # The opponent positions will be available in the update method
+        opponent_positions = None
         
         # get action from lemonade agent
         action = self.lemonade_agent.get_action(opponent_positions)
@@ -250,11 +259,32 @@ class LemonadeAdapter(AGTAgent):
         if hasattr(self.lemonade_agent, 'reset'):
             self.lemonade_agent.reset()
     
+    def setup(self):
+        """setup the lemonade agent."""
+        if hasattr(self.lemonade_agent, 'setup'):
+            self.lemonade_agent.setup()
+    
     def update(self, reward: float, info: Dict[str, Any]):
         """update the lemonade agent with results."""
         super().update(reward, info)
+        
+        # Extract opponent positions from info if available
+        opponent_positions = None
+        if info and 'actions' in info:
+            actions = info['actions']
+            if len(actions) >= 3:
+                # Assuming this agent is player 0, opponents are players 1 and 2
+                opponent_positions = [actions[1], actions[2]]
+        
+        # Update the lemonade agent
         if hasattr(self.lemonade_agent, 'update'):
             self.lemonade_agent.update(reward, info)
+        
+        # Also update the agent's opponent history if it has the methods
+        if opponent_positions and len(opponent_positions) >= 2:
+            if hasattr(self.lemonade_agent, 'add_opponent_action'):
+                for pos in opponent_positions:
+                    self.lemonade_agent.add_opponent_action(pos)
 
 
 class AuctionAdapter(AGTAgent):

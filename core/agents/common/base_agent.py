@@ -148,23 +148,24 @@ class BaseAgent(ABC):
         """Add opponent's reward to history."""
         self.opp_reward_history.append(reward)
     
-    # Abstract methods for Lab 1 - these will be called directly by the server
-    @abstractmethod
+    # Optional methods for Lab 1 - these have default implementations for non-Lab1 agents
     def predict(self) -> List[float]:
         """
         Predict opponent's next move distribution.
         This method will be called directly by the server for Fictitious Play agents.
+        Default implementation for non-Lab1 agents.
         
         returns:
             probability distribution over opponent's next move
         """
-        pass
+        # Default implementation - Lab 1 agents should override this
+        raise NotImplementedError("predict() method not implemented - this agent is not a Lab 1 Fictitious Play agent")
     
-    @abstractmethod
     def optimize(self, dist: List[float]) -> Any:
         """
         Find best response to opponent's predicted distribution.
         This method will be called directly by the server for Fictitious Play agents.
+        Default implementation for non-Lab1 agents.
         
         args:
             dist: probability distribution over opponent's next move
@@ -172,18 +173,20 @@ class BaseAgent(ABC):
         returns:
             the best action to take
         """
-        pass
+        # Default implementation - Lab 1 agents should override this
+        raise NotImplementedError("optimize() method not implemented - this agent is not a Lab 1 Fictitious Play agent")
     
-    @abstractmethod
     def calc_move_probs(self) -> List[float]:
         """
         Calculate move probabilities using Exponential Weights strategy.
         This method will be called directly by the server for Exponential Weights agents.
+        Default implementation for non-Lab1 agents.
         
         returns:
             probability distribution over your next move
         """
-        pass
+        # Default implementation - Lab 1 agents should override this
+        raise NotImplementedError("calc_move_probs() method not implemented - this agent is not a Lab 1 Exponential Weights agent")
     
     def __str__(self) -> str:
         return self.name

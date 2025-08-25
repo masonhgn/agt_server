@@ -1,0 +1,9 @@
+Game 1:
+I am currently playing against random_agent and smart_agent and smart_agent
+random_agent: set up their Lemonade Stand at Location 0 2 times, Location 1 2 times, Location 2 1 times, Location 8 1 times, Location 9 1 times, Location 10 2 times, Location 11 1 times.
+random_agent: got a total utility of 61 and a average utility of 6.07
+smart_agent: set up their Lemonade Stand at Location 0 10 times, Location 6 10 times.
+smart_agent: got a total utility of 77 and a average utility of 7.67
+smart_agent: set up their Lemonade Stand at Location 0 10 times, Location 6 10 times.
+smart_agent: got a total utility of 77 and a average utility of 7.67
+
