@@ -20,15 +20,19 @@ class SingleGoodHistogram:
         Add a price to the histogram.
         Increment the frequency of the bucket that contains the price.
         """
-        # bucket = ???
-        # Update the bucket frequencies
-        raise NotImplementedError
+        # TODO: Implement add_record method
+        # 1. Get the bucket for the price using self.get_bucket(price)
+        # 2. Increment the frequency of that bucket
+        # 3. Increment the total frequency
+        raise NotImplementedError("Implement add_record method")
 
     def smooth(self, alpha):
         """
         Smooth the histogram using the technique described in the handout.
         """
-        raise NotImplementedError
+        # TODO: Implement smooth method
+        # Iterate over each bucket and multiply its frequency by (1 - alpha)
+        raise NotImplementedError("Implement smooth method")
 
     def update(self, new_hist, alpha):
         """ 
@@ -36,13 +40,19 @@ class SingleGoodHistogram:
         1. Smooth the current histogram.
         2. Add the new histogram to the current histogram.
         """
-        raise NotImplementedError
+        # TODO: Implement update method
+        # 1. Smooth the current histogram using self.smooth(alpha)
+        # 2. For each bucket, increase its frequency by alpha times the corresponding frequency in new_hist
+        raise NotImplementedError("Implement update method")
 
     def sample(self):
         """ 
         Return a random sample from the histogram. 
         """
-        raise NotImplementedError
+        # TODO: Implement sample method
+        # Generate a random number z between 0 and 1, and return the value at the zth-percentile
+        # To avoid sampling from an empty histogram, you can initialize all bucket counts to 1
+        raise NotImplementedError("Implement sample method")
 
     
     def __repr__(self):

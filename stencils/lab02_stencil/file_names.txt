@@ -1,0 +1,6 @@
+bos_competition_agent.py
+bos_finite_state_agent1.py
+bos_finite_state_agent2.py
+bos_punitive.py
+bos_reluctant.py
+bosii_competition_agent.py

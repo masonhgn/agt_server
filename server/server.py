@@ -811,7 +811,7 @@ async def main():
         if signum == signal.SIGTSTP:
             # SIGTSTP (Ctrl+Z) = Start tournaments
             if not tournaments_started:
-                print("\n🎯 Starting tournaments for all active games...")
+                print("\nStarting tournaments for all active games...")
                 tournaments_started = True
                 # Schedule tournament start in the event loop
                 asyncio.create_task(start_tournaments())

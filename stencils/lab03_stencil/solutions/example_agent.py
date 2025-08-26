@@ -9,34 +9,32 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.agents.common.base_agent import BaseAgent
 
 
-class ChickenCompetitionAgent(BaseAgent):
-    """Competition agent for Lab 03 - Chicken Game with Q-Learning."""
+class ChickenExampleAgent(BaseAgent):
+    """Example Chicken agent for Lab 03 that connects to the server."""
     
-    def __init__(self, name: str = "ChickenCompetition"):
+    def __init__(self, name: str = "ChickenExample"):
         super().__init__(name)
         self.SWERVE, self.CONTINUE = 0, 1
         self.actions = [self.SWERVE, self.CONTINUE]
     
     def get_action(self, opponent_last_move=None):
         """
-        TODO: Implement your competition strategy here!
+        Simple Chicken strategy using Q-Learning concepts.
         
-        This is where you'll put your best Chicken game agent implementation.
-        You can use any combination of:
-        - Q-Learning with state representation
-        - Fictitious Play
-        - Pattern recognition
-        - Counter-strategies
-        - Collusion detection
-        - Or any other approach you think will work well
+        This is a basic implementation that students can replace with their own strategy.
         
         Args:
             opponent_last_move: The opponent's last move (0=swerve, 1=continue, None=first round)
-            
-        Return one of: self.SWERVE (0) or self.CONTINUE (1)
         """
-        # TODO: Fill out your competition strategy
-        raise NotImplementedError
+        import random
+        
+        # Simple strategy: swerve if opponent continued last time, otherwise random
+        if opponent_last_move == self.CONTINUE:
+            # Opponent was aggressive last time, be more cautious
+            return self.SWERVE
+        else:
+            # Opponent was cooperative or first round, be more aggressive
+            return random.choice([self.SWERVE, self.CONTINUE])
     
     def update(self, reward: float, info=None):
         """Update internal state with the reward received."""
@@ -67,23 +65,24 @@ class ChickenCompetitionAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Chicken Competition Agent for Lab 03')
-    parser.add_argument('--name', type=str, help='Agent name (default: ChickenCompetition_<random>)')
+    parser = argparse.ArgumentParser(description='Chicken Example Agent for Lab 03')
+    parser.add_argument('--name', type=str, help='Agent name (default: ChickenExample_<random>)')
     parser.add_argument('--host', type=str, default='localhost', help='Server host')
     parser.add_argument('--port', type=int, default=8080, help='Server port')
     parser.add_argument('--game', type=str, default='chicken', help='Game type (default: chicken)')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose debug output')
     
     args = parser.parse_args()
     
     # Generate unique name if not provided
     if not args.name:
         import random
-        agent_name = f"ChickenCompetition_{random.randint(1000, 9999)}"
+        agent_name = f"ChickenExample_{random.randint(1000, 9999)}"
     else:
         agent_name = args.name
         
     # Create agent
-    agent = ChickenCompetitionAgent(agent_name)
+    agent = ChickenExampleAgent(agent_name)
     
     # Add server directory to path for imports
     server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
@@ -100,7 +99,7 @@ if __name__ == "__main__":
         print(f"Connecting to server at {args.host}:{args.port}")
         
         # Create client and connect
-        client = AGTClient(server_agent, args.host, args.port)
+        client = AGTClient(server_agent, args.host, args.port, verbose=args.verbose)
         await client.connect()
         
         if client.connected:
@@ -120,4 +119,4 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 # Export for server testing
-agent_submission = ChickenCompetitionAgent("ChickenCompetitionAgent")
+agent_submission = ChickenExampleAgent("ChickenExampleAgent")

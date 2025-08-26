@@ -1,0 +1,134 @@
+
+
+
+CS1440/2440, Spring 2024 Lab 9: TAC AdX Game (Two-Day Variant)
+1 Introduction
+This lab is a continuation of our exploration of the TAC Ad Exchange (AdX) game. Once again, you will be
+building an agent for the AdX Game. However, you will be playing a diﬀerent, slightly more complicated,
+variant of the game than in the previous lab.
+In this version of this game, your agent will compete in AdX auctions over two consecutive days, and will
+receive a diﬀerent campaign each day such that the budget campaign your agent receives on the second day
+depends on its success fulfilling its campaign on the first day. This success will be measured by a metric
+called quality score. Your agent will still aim to maximize its profit.
+The complexity we introduce here will help you gain a better understanding of the AdX game, and the kinds
+of agent strategies that can be successful. You will be given the opportunity to apply the knowledge you gain
+in this lab in the AdX final project, which will consist of a still more complicated AdX game.
+2 Game Description
+This game is very similar to last week’s One-Day AdX game (Lab 8). The main diﬀerence introduced in the
+two-day variant is the following: In the Two-Day AdX game, agents will be given an initial campaign that
+lasts for just one day (just like in the one-day variant), and then, contingent upon the agent’s performance in
+fulfilling its initial campaign, which will be measured by its quality score, it will be given a second campaign,
+whose budget will be discounted by this quality score. The quality score is a number between 0 and 1.38442,
+where 0 denotes very low quality (in case the agent acquired 0 impressions for the first campaign), 1 denotes
+very good quality (in case the agent acquired the campaign’s reach in its entirely), and 1.38442 denotes
+perfect quality (in case the agent acquired many many impressions, above and beyond the campaign’s reach).
+Your agent is thus faced with the usual task of fulfilling its first campaign profitably, but at the same time
+in such a way as to earn a valuable second campaign!
+This two-day game has a built-in trade oﬀ: bid too high on the first day and your agent won’t be profitable
+on the first day, but it will earn a high quality score, giving it a chance to be very profitable the second
+day; bid too low on the first day and your agent can be more profitable on the first day, but if it does not
+fulfill its campaign’s reach, it will earn a lower quality score on the first day, and hence a lower budget for
+its campaign on the second day.
+3 Quality Score
+Let R be the reach associated with a campaign C. The quality score QC (x) earned by an agent seeking to
+satisfy C who procures x impressions suitable for C is computed as follows:
+QC (x) = 2
+a
+arctan a
+x
+R− b− arctan(−b),
+where a= 4.08577, b= 3.08577, x is the amount of impressions achieved, and R is your campaign’s reach.
+Figure 1 plots the eﬀective reach function ρ(C) of two campaigns, one with with reach R= 500 (blue), and
+the other with reach R= 1000 (red). Note that ρ(0) = 0, ρ(R) = 1.0, and limx→∞ ρ(C) = 1.38442. The plot
+shows that the value of obtaining the first few impressions on the road to fulfilling a campaign is relatively
+low, compared to the value of obtaining the middle and final impressions.
+1
+CS1440/2440, Spring 2024 Lab 9: TAC AdX Game (Two-Day Variant)
+Eﬀective Reach
+1.2
+1
+0.8
+0.6
+0.4
+0.2
+0
+0 300 600 900 1,200 1,500 1,800
+Number of Impressions
+a= 4.08577, R= 1000.0, b= 3.08577)
+a= 4.08577, R= 500, b= 3.08577)
+Figure 1: Eﬀective Reach when Reach, R, equals 500 (blue) and 1000 (red).
+If your agent procures zero impressions on its first campaign, then its quality score drops to zero, which
+means the budget of its second campaign will be identically zero (it will gain zero revenue for fulfilling that
+campaign!). On the other hand, if it attains a quality score greater than 0.0, then its second campaign will
+have a positive budget, which will hopefully lead to a positive profit.
+The campaign distribution in the Two-Day, Two-Campaign game is the same as in the One-Day game. That
+is, the reach, target market segment, and budget of each campaign are randomly drawn as in the One-Day
+variant (see Lab 8, Appendix A). On the second day, however, the second campaign’s budget is multiplied
+by QC1 (x), where x is the number of impressions acquired by the first campaign, C1.
+4 API for AdX Two-Days Games
+4.1 TwoDaysBidBundle Object
+Once again, to avoid the communication overhead required to conduct each ad auction in real time (each day
+there are 10,000 simulated users!), the agents use a TwoDaysBidBundle object to communicate all their bids
+to the server at once.
+The constructor for this TwoDaysBidBundle object takes 4 parameters:
+1. Day: the day for which the bid is placed, either 1 or 2.
+2. Campaign ID: the ID for the campaign you are bidding on.
+3. Day Limit: a limit on how much you want to spend in total on that day.
+4. Bid Entries: a collection of SimpleBidEntry objects, which specify how much to bid in each market
+segment.
+A SimpleBidEntry object has 3 parameters:
+1. Market Segment: there are a total of 26 possible market segments.
+2. Bid: a double value.
+3. Spending Limit: a double value that represents the maximum value the agent is willing to spend in
+this market segment.
+2
+CS1440/2440, Spring 2024 Lab 9: TAC AdX Game (Two-Day Variant)
+For examples of how to create a SimpleBidEntry, please refer to last lab’s documentation.
+Assume you have already created a Set<SimpleBidEntry>, called bidEntries. You could then create a
+TwoDaysBidBundle for your campaign on the first day that includes bidEntries, and limits total spending
+to your campaign’s budget, as follows:
+TwoDaysBidBundle bidBundle = new TwoDaysBidBundle(
+1,
+this.getFirstCampaign().getId(),
+this.getFirstCampaign().getBudget(),
+bidEntries);
+On the second day, you could do something similar, but setting day = 2, and the campaign to
+this.getSecondCampaign().
+4.2 MyTwoDaysTwoCampaignsAgent Class
+You should implement your agent strategy in MyTwoDaysTwoCampaignsAgent.java.
+This class should extend the abstract class TwoDaysTwoCampaignsAgent by implementing getBidBundle(int This method takes as input a day, and should return a TwoDaysBidBundle containing all the agent’s bids for
+the given day. The class has two methods for accessing its campaigns:
+1. getFirstCampaign(), which gets the campaign assigned to the agent for the first day of the game.
+This campaign lasts for a day.
+2. getSecondCampaign(), which gets the campaign assigned to the agent for the second day of the game.
+This campaign also lasts for a day. This object is only available on the second day; it is null otherwise.
+day).
+4.2.1 Agent Naming
+As in previous labs, your agent needs a name. You can give it a name near the top of
+MyTwoDaysTwoCampaignsAgent.java.
+4.2.2 Helper Functions
+The adxgame dependency contains support code to iterate over market segments. Concretely, MarketSegment
+is implemented as an Enum, so to iterate over all of them, you can do something like:
+for (MarketSegment m : MarketSegment.values()) { ... }
+The static function marketSegmentSubset(MarketSegment m1, MarketSegment m2) returns a boolean in-
+dicating whether m2 is a subset of m1 (N.B. market segments are subsets of themselves).
+5 Competition
+Once the due date for the lab has passed, the TAs will begin running competitions between your submitted
+agent and those of your classmates. A competition will be run every hour on the hour, and will consist of
+3
+CS1440/2440, Spring 2024 Lab 9: TAC AdX Game (Two-Day Variant)
+100 simulations of the two-day, two-campaign AdX game. In each simulation, your agent will play against 9
+other agents, chosen at random (so your strategy can assume 9 competitors).
+As usual, the results of these competitions will be posted on a leaderboard on the course website. We will
+be updating this leaderboard regularly, even after the lab is due. You are free to improve your agent and
+resubmit at any time.
+6 Testing
+To make sure that your agent works as intended, we have provided a script that launches the AdX server,
+along with your agent and 9 competing bots. You should run this script to make sure your agent connects
+to the server properly, doesn’t crash, and properly submits its bids.
+The command is /course/cs1440/pub/2021/AdXLab2/test. Run it from your project’s root directory. It
+will run 5 iterations of the game, which takes about one minute, or less (but it may take a bit longer the first
+time if Maven needs to download any packages).
+If this test succeeds, you’ll be able to see the how your agent fares against the 9 test bots. As such, feel free
+to use this script to debug your agent’s strategy.
+4

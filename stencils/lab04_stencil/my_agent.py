@@ -41,9 +41,7 @@ class MyLemonadeAgent(BaseAgent):
         # - Q-Learning
         # - Or any other approach you think will work well
         
-        # For now, return a random action
-        import random
-        return random.choice(self.positions)
+        raise NotImplementedError("Implement your competition strategy here!")
     
     def update(self, reward: float, info=None):
         """

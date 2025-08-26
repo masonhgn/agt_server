@@ -61,43 +61,63 @@ class AGTAgent(ABC):
 class AGTClient:
     """client for connecting to the agt server."""
     
-    def __init__(self, agent: AGTAgent, host: str = "localhost", port: int = 8080):
+    def __init__(self, agent: AGTAgent, host: str = "localhost", port: int = 8080, verbose: bool = False):
         self.agent = agent
         self.host = host
         self.port = port
+        self.verbose = verbose
         self.reader = None
         self.writer = None
         self.connected = False
         self.should_exit = False  # Add exit flag
+    
+    def log(self, message: str, level: str = "info"):
+        """Log message with appropriate level and formatting."""
+        if level == "debug" and not self.verbose:
+            return
+        
+        prefix = ""
+        if level == "debug":
+            prefix = "[DEBUG] "
+        elif level == "info":
+            prefix = "[INFO] "
+        elif level == "success":
+            prefix = "[SUCCESS] "
+        elif level == "warning":
+            prefix = "[WARNING] "
+        elif level == "error":
+            prefix = "[ERROR] "
+        
+        print(f"{prefix}{message}")
     
     async def connect(self):
         """connect to the agt server."""
         try:
             self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
             self.connected = True
-            print(f"connected to agt server at {self.host}:{self.port}")
+            self.log(f"Connected to AGT server at {self.host}:{self.port}", "success")
             
             # handle initial handshake
             await self.handle_connection()
             
         except Exception as e:
-            print(f"failed to connect to server: {e}")
+            self.log(f"Failed to connect to server: {e}", "error")
             self.connected = False
     
     async def handle_connection(self):
         """handle the initial connection handshake."""
-        print("debug: starting connection handshake...")
+        self.log("Starting connection handshake...", "debug")
 
         # wait for request_device_id
         msg = await self.receive_message()
-        print(f"debug: received (expect request_device_id): {msg}")
+        self.log(f"Received: {msg}", "debug")
         if not msg or msg.get("message") != "request_device_id":
-            print("failed: expected request_device_id")
+            self.log("Failed: expected request_device_id", "error")
             self.connected = False
             return
 
         # send device id
-        print("debug: sending device id...")
+        self.log("Sending device id...", "debug")
         await self.send_message({
             "message": "provide_device_id",
             "device_id": self.agent.device_id
@@ -105,14 +125,14 @@ class AGTClient:
 
         # wait for request_name
         msg = await self.receive_message()
-        print(f"debug: received (expect request_name): {msg}")
+        self.log(f"Received: {msg}", "debug")
         if not msg or msg.get("message") != "request_name":
-            print("failed: expected request_name")
+            self.log("Failed: expected request_name", "error")
             self.connected = False
             return
 
         # send name
-        print("debug: sending name...")
+        self.log("Sending name...", "debug")
         await self.send_message({
             "message": "provide_name",
             "name": self.agent.name
@@ -120,28 +140,31 @@ class AGTClient:
 
         # wait for connection_established
         message = await self.receive_message()
-        print(f"debug: received (expect connection_established): {message}")
+        self.log(f"Received: {message}", "debug")
         if message and message.get("message") == "connection_established":
-            print(f"connection established as {message.get('name')}")
             assigned_name = message.get("name")
             if assigned_name:
                 self.agent.name = assigned_name
-            print(f"available games: {message.get('available_games', [])}")
+            self.log(f"Connection established as '{self.agent.name}'", "success")
+            available_games = message.get('available_games', [])
+            if available_games:
+                self.log(f"Available games: {', '.join(available_games)}", "info")
+            
             # send ready message to let server know we're ready
-            print("debug: sending ready message...")
+            self.log("Sending ready message...", "debug")
             await self.send_message({
                 "message": "ready"
             })
-            print("debug: connection handshake complete")
+            self.log("Connection handshake complete", "debug")
         else:
-            print("failed to establish connection")
-            print(f"debug: expected 'connection_established' but got: {message}")
+            self.log("Failed to establish connection", "error")
+            self.log(f"Expected 'connection_established' but got: {message}", "debug")
             self.connected = False
     
     async def join_game(self, game_type: str):
         """join a specific game."""
         if not self.connected:
-            print("not connected to server")
+            self.log("Not connected to server", "error")
             return False
         
         await self.send_message({
@@ -151,17 +174,17 @@ class AGTClient:
         
         message = await self.receive_message()
         if message and message.get("message") == "joined_game":
-            print(f"joined {game_type} game")
+            self.log(f"Joined {game_type} game", "success")
             self.agent.game_type = game_type
             return True
         else:
-            print(f"failed to join {game_type} game")
+            self.log(f"Failed to join {game_type} game", "error")
             return False
     
     async def run(self):
         """main client loop."""
         if not self.connected:
-            print("not connected to server")
+            self.log("Not connected to server", "error")
             return
         try:
             while not self.should_exit:
@@ -171,33 +194,32 @@ class AGTClient:
                 # If game_end, break after handling
                 should_exit = await self.handle_message(message)
                 if should_exit:
-                    print(f"CLIENT {self.agent.name} exiting run loop after game_end")
+                    self.log("Game ended, exiting...", "info")
                     self.should_exit = True
                     break
         except Exception as e:
-            print(f"error in client loop: {e}")
+            self.log(f"Error in client loop: {e}", "error")
         finally:
             await self.disconnect()
-        print(f"CLIENT {self.agent.name} run() coroutine has returned")
     
     async def handle_message(self, message: Dict[str, Any]):
         """handle messages from the server."""
         msg_type = message.get("message", "")
-        print(f"CLIENT {self.agent.name}: Received message type: {msg_type}")
+        self.log(f"Received: {msg_type}", "debug")
         
         if msg_type == "game_end":
-            print(f"CLIENT {self.agent.name}: Received game_end, will exit")
+            self.log("Game ended", "info")
             return True  # Signal to exit
-        # elif msg_type == "tournament_end":
-        #     print(f"CLIENT {self.agent.name}: Received tournament_end, will exit")
-        #     return True  # Signal to exit
         elif msg_type == "tournament_end":
             # Print final leaderboard to client terminal
             results = message.get("results", {})
             game_type = results.get("game_type", "unknown")
             final_rankings = results.get("final_rankings", [])
-            print("")
-            print(f"FINAL LEADERBOARD for {game_type}:")
+            
+            print("\n" + "="*50)
+            print(f"FINAL LEADERBOARD - {game_type.upper()}")
+            print("="*50)
+            
             try:
                 # final_rankings is list of [name, stats] pairs
                 for rank, entry in enumerate(final_rankings, 1):
@@ -209,35 +231,49 @@ class AGTClient:
                     total = float(stats.get("total_reward", 0))
                     games = int(stats.get("games_played", 0))
                     avg = total / max(games, 1)
-                    print(f"  #{rank}: {name} - Total: {total:.2f}, Games: {games}, Avg: {avg:.2f}")
+                    
+                    # Add rank indicator for top 3
+                    rank_indicator = f"#{rank}" if rank <= 3 else f"#{rank}"
+                    print(f"{rank_indicator} {name:<20} | Total: {total:>8.2f} | Games: {games:>3} | Avg: {avg:>6.2f}")
             except Exception as e:
-                print(f"(Could not render leaderboard: {e})")
+                self.log(f"Could not render leaderboard: {e}", "warning")
 
             # Also print this client's own summary
-            print(f"Your final rank: {message.get('final_rank')}, "
-                    f"Total: {message.get('final_reward'):.2f}, "
-                    f"Games: {message.get('games_played')}, "
-                    f"Avg: {message.get('average_reward'):.2f}")
-            print("")
-            print(f"CLIENT {self.agent.name}: Received tournament_end, will exit")
+            final_rank = message.get('final_rank', 'N/A')
+            final_reward = message.get('final_reward', 0)
+            games_played = message.get('games_played', 0)
+            avg_reward = message.get('average_reward', 0)
+            
+            print("-" * 50)
+            print(f"YOUR RESULTS:")
+            print(f"   Rank: {final_rank}")
+            print(f"   Total Reward: {final_reward:.2f}")
+            print(f"   Games Played: {games_played}")
+            print(f"   Average Reward: {avg_reward:.2f}")
+            print("="*50 + "\n")
+            
             return True  # Signal to exit
         elif msg_type == "server_shutdown":
-            print(f"CLIENT {self.agent.name}: Server is shutting down: {message.get('reason', 'Unknown reason')}")
+            self.log(f"Server is shutting down: {message.get('reason', 'Unknown reason')}", "warning")
             return True  # Signal to exit
         elif msg_type == "tournament_start":
-            print(f"CLIENT {self.agent.name}: Tournament starting!")
-            print(f"  Players: {message.get('players', [])}")
-            print(f"  Rounds: {message.get('num_rounds', 0)}")
+            players = message.get('players', [])
+            num_rounds = message.get('num_rounds', 0)
+            self.log("Tournament starting!", "success")
+            self.log(f"Players: {', '.join(players)}", "info")
+            self.log(f"Rounds: {num_rounds}", "info")
         elif msg_type == "tournament_status":
-            print(f"CLIENT {self.agent.name}: Tournament status update")
-            print(f"  Players connected: {message.get('players_connected', 0)}")
-            print(f"  Tournament started: {message.get('tournament_started', False)}")
+            players_connected = message.get('players_connected', 0)
+            tournament_started = message.get('tournament_started', False)
+            self.log(f"Status: {players_connected} players connected, tournament {'started' if tournament_started else 'waiting'}", "info")
         elif msg_type == "heartbeat":
-            print(f"CLIENT {self.agent.name}: Heartbeat received")
-            print(f"  Players connected: {message.get('players_connected', 0)}")
-            print(f"  Tournament started: {message.get('tournament_started', False)}")
+            # Only log heartbeats in verbose mode
+            if self.verbose:
+                players_connected = message.get('players_connected', 0)
+                tournament_started = message.get('tournament_started', False)
+                self.log(f"Heartbeat: {players_connected} players, tournament {'started' if tournament_started else 'waiting'}", "debug")
         elif msg_type == "request_action":
-            # Handle action request
+            # Handle action request silently unless verbose
             observation = message.get("observation", {})
             action = self.agent.get_action(observation)
             await self.send_message({
@@ -249,14 +285,16 @@ class AGTClient:
             reward = message.get("reward", 0)
             info = message.get("info", {})
             self.agent.update(reward, info)
-            print(f"CLIENT {self.agent.name}: Round {message.get('round', 0)} - Reward: {reward}")
+            round_num = message.get('round', 0)
+            self.log(f"Round {round_num}: +{reward:.2f} points", "info")
         elif msg_type == "round_summary":
             # Handle round summary
             rank = message.get("rank", 0)
             total_reward = message.get("total_reward", 0)
-            print(f"CLIENT {self.agent.name}: Round {message.get('round', 0)} summary - Rank: {rank}, Total Reward: {total_reward}")
+            round_num = message.get('round', 0)
+            self.log(f"Round {round_num} complete - Rank: {rank}, Total: {total_reward:.2f}", "info")
         else:
-            print(f"CLIENT {self.agent.name}: Unknown message type: {msg_type}")
+            self.log(f"Unknown message type: {msg_type}", "warning")
         
         return False  # Continue running
     
@@ -280,77 +318,78 @@ class AGTClient:
                     return obj
             
             message = convert_numpy(message)
-            print(f"CLIENT SENDING: {message}")
+            self.log(f"Sending: {message}", "debug")
             data = json.dumps(message).encode() + b'\n'
             self.writer.write(data)
             await self.writer.drain()
     
     async def receive_message(self):
-        print(f"CLIENT {self.agent.name}: receive_message() called")
+        self.log("Waiting for message...", "debug")
         try:
             if self.should_exit:
-                print(f"CLIENT {self.agent.name}: receive_message() early exit due to should_exit")
+                self.log("Early exit due to should_exit", "debug")
                 return None
             if not self.reader:
-                print(f"CLIENT {self.agent.name}: receive_message() no reader available")
+                self.log("No reader available", "debug")
                 return None
             
             # Add timeout to prevent hanging
             try:
                 data = await asyncio.wait_for(self.reader.readline(), timeout=30.0)
             except asyncio.TimeoutError:
-                print(f"CLIENT {self.agent.name}: receive_message() timeout")
+                self.log("Receive timeout", "debug")
                 return None
                 
             if not data:
-                print(f"CLIENT {self.agent.name}: receive_message() got no data (connection closed)")
+                self.log("No data received (connection closed)", "debug")
                 return None
             
             # Decode and strip whitespace
             decoded_data = data.decode().strip()
             if not decoded_data:
-                print(f"CLIENT {self.agent.name}: receive_message() got empty data")
+                self.log("Empty data received", "debug")
                 return None
                 
             try:
                 message = json.loads(decoded_data)
-                print(f"CLIENT {self.agent.name}: receive_message() got message: {message}")
+                self.log(f"Received: {message}", "debug")
                 return message
             except json.JSONDecodeError as e:
-                print(f"CLIENT {self.agent.name}: receive_message() JSON decode error: {e}")
-                print(f"CLIENT {self.agent.name}: Raw data: {repr(decoded_data)}")
+                self.log(f"JSON decode error: {e}", "error")
+                self.log(f"Raw data: {repr(decoded_data)}", "debug")
                 return None
         except Exception as e:
-            print(f"CLIENT {self.agent.name}: receive_message() exception: {e}")
+            self.log(f"Receive exception: {e}", "error")
             return None
     
     async def disconnect(self):
         """disconnect from the server."""
-        print(f"CLIENT {self.agent.name}: disconnect() called")
+        self.log("Disconnecting...", "debug")
         if self.writer:
             try:
-                print(f"CLIENT {self.agent.name}: closing writer...")
+                self.log("Closing writer...", "debug")
                 self.writer.close()
-                print(f"CLIENT {self.agent.name}: writer.close() called, awaiting wait_closed()...")
+                self.log("Waiting for writer to close...", "debug")
                 await self.writer.wait_closed()
-                print(f"CLIENT {self.agent.name}: writer.wait_closed() finished")
+                self.log("Writer closed", "debug")
             except Exception as e:
-                print(f"CLIENT {self.agent.name}: error during disconnect: {e}")
+                self.log(f"Error during disconnect: {e}", "error")
         self.connected = False
-        print("disconnected from server")
+        self.log("Disconnected from server", "info")
 
 
 # example usage and command line interface
 async def main():
     """example usage of the agt client."""
-    parser = argparse.ArgumentParser(description='agt client')
-    parser.add_argument('--name', type=str, required=True, help='agent name')
+    parser = argparse.ArgumentParser(description='AGT Client - Connect your agent to the AGT server')
+    parser.add_argument('--name', type=str, required=True, help='Agent name')
     parser.add_argument('--game', type=str, required=True, 
                        choices=['rps', 'bos', 'bosii', 'chicken', 'lemonade', 'auction'],
-                       help='game type to join')
-    parser.add_argument('--host', type=str, default='localhost', help='server host')
-    parser.add_argument('--port', type=int, default=8080, help='server port')
-    parser.add_argument('--agent-file', type=str, help='path to agent implementation file')
+                       help='Game type to join')
+    parser.add_argument('--host', type=str, default='localhost', help='Server host')
+    parser.add_argument('--port', type=int, default=8080, help='Server port')
+    parser.add_argument('--agent-file', type=str, help='Path to agent implementation file')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose debug output')
     
     args = parser.parse_args()
     
@@ -379,12 +418,13 @@ async def main():
                     # look for agent_submission
                     if hasattr(agent_module, 'agent_submission'):
                         agent = agent_module.agent_submission
+                        print(f"[SUCCESS] Loaded agent from {args.agent_file}")
         except Exception as e:
-            print(f"warning: could not load agent from {args.agent_file}: {e}")
-            print("using default random agent instead.")
+            print(f"[WARNING] Could not load agent from {args.agent_file}: {e}")
+            print("Using default random agent instead.")
     
     # create client and connect
-    client = AGTClient(agent, args.host, args.port)
+    client = AGTClient(agent, args.host, args.port, verbose=args.verbose)
     await client.connect()
     
     if client.connected:
@@ -392,9 +432,9 @@ async def main():
         if await client.join_game(args.game):
             await client.run()
         else:
-            print(f"failed to join {args.game} game")
+            print(f"[ERROR] Failed to join {args.game} game")
     else:
-        print("failed to connect to server")
+        print("[ERROR] Failed to connect to server")
 
 
 if __name__ == "__main__":

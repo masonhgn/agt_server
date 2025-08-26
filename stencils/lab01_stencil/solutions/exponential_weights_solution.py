@@ -18,8 +18,8 @@ class ExponentialAgent(RPSAgent):
     
     def setup(self):
         """Initialize the agent for a new game."""
-        # TODO: Initialize variables to track action rewards and counts
-        pass
+        self.action_rewards = np.zeros(len(self.actions))  # Cumulative rewards for each action
+        self.action_counts = [0, 0, 0]  # Number of times each action was played
     
     def get_action(self, obs=None):
         """
@@ -36,9 +36,11 @@ class ExponentialAgent(RPSAgent):
         if reward is not None:
             self.reward_history.append(reward)
         
-        # TODO: Update the reward for the last action taken
-        # HINT: Use self.action_history to get the last action
-        pass
+        # Update the reward for the last action taken
+        if len(self.action_history) > 0:
+            last_action = self.action_history[-1]
+            self.action_rewards[last_action] += reward
+            self.action_counts[last_action] += 1
     
     @staticmethod
     def softmax(x):
@@ -57,8 +59,17 @@ class ExponentialAgent(RPSAgent):
         # HINT: Use self.action_rewards and self.action_counts to compute averages
         # HINT: Use self.softmax() to convert averages to probabilities
         
-        # For now, return uniform distribution
-        return [1/3, 1/3, 1/3]
+        # Calculate average rewards for each action
+        avg_rewards = np.zeros(len(self.actions))
+        for i in range(len(self.actions)):
+            if self.action_counts[i] > 0:
+                avg_rewards[i] = self.action_rewards[i] / self.action_counts[i]
+            else:
+                # If action hasn't been played yet, give it a small positive value to encourage exploration
+                avg_rewards[i] = 0.1
+        
+        # Apply softmax to get probability distribution
+        return self.softmax(avg_rewards)
 
 
 if __name__ == "__main__":
@@ -87,7 +98,12 @@ if __name__ == "__main__":
     print(f"Rock: {action_counts[0]}, Paper: {action_counts[1]}, Scissors: {action_counts[2]}")
     print(f"Total reward: {sum(agent.reward_history)}")
     print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
-
-
-# Export for server testing
-agent_submission = ExponentialAgent("ExponentialAgent")
+    
+    # Print action-specific statistics
+    print(f"\nAction-specific statistics:")
+    for i, action_name in enumerate(["Rock", "Paper", "Scissors"]):
+        if agent.action_counts[i] > 0:
+            avg_reward = agent.action_rewards[i] / agent.action_counts[i]
+            print(f"{action_name}: {agent.action_counts[i]} plays, avg reward: {avg_reward:.3f}")
+        else:
+            print(f"{action_name}: 0 plays") 

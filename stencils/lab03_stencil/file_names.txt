@@ -1,0 +1,9 @@
+basic_chicken_agent.py
+lastmove_chicken_ql.py
+lookback_chicken_ql.py
+my_agent.py
+q_learning.py
+i_fixed_policy.py
+uniform_policy.py
+chicken_env.py
+game.py

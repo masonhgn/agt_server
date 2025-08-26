@@ -77,9 +77,12 @@ class SCPPAgent(BaseAuctionAgent):
         return self.get_bids()
     
     def get_bids(self):
-        # bids = ???
-        # return bids
-        raise NotImplementedError
+        """
+        Compute and return a bid vector by running the LocalBid routine with expected marginal values.
+        """
+        # TODO: Implement get_bids method
+        # Use expected_local_bid with the learned distribution
+        raise NotImplementedError("Implement get_bids method")
 
     def update(self, observation, action, reward, done, info):
         """Update the agent with the results of the last action."""
@@ -102,16 +105,15 @@ class SCPPAgent(BaseAuctionAgent):
                     predicted_prices[good] = 0
             
             if predicted_prices:
-                # TODO: insert prices into self.curr_distibution
+                # TODO: insert prices into self.curr_distribution
                 # TODO: update simulation_count
-                pass
+                raise NotImplementedError("Implement price insertion and simulation count update")
                 
                 if self.simulation_count % self.NUM_SIMULATIONS_PER_ITERATION == 0:
                     # TODO: Update the learned distribution with the newly gathered data
                     # TODO: Reset the current distribution
-                    # TODO: Save the learned distribution to disk (for use in live auction mode).
-                    # save learned_distribution to disk.
-                    pass
+                    # TODO: Save the learned distribution to disk (for use in live auction mode)
+                    raise NotImplementedError("Implement distribution update and save")
 
 
 ################### SUBMISSION #####################

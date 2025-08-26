@@ -29,6 +29,7 @@ async def main():
     parser.add_argument('--name', type=str, help='Agent name (optional, defaults to stencil name)')
     parser.add_argument('--host', type=str, default='localhost', help='Server host')
     parser.add_argument('--port', type=int, default=8080, help='Server port')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose debug output')
     
     args = parser.parse_args()
     
@@ -51,7 +52,7 @@ async def main():
         
         # Create client and connect
         print(f"Connecting to server at {args.host}:{args.port}...")
-        client = AGTClient(agent, args.host, args.port)
+        client = AGTClient(agent, args.host, args.port, verbose=args.verbose)
         await client.connect()
         
         if client.connected:

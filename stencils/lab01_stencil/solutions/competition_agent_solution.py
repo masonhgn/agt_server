@@ -1,35 +1,22 @@
-#!/usr/bin/env python3
-"""
-Competition Agent for Lab 1 - Chicken Game
-This is the agent you will submit for the class competition.
-"""
-
 import sys
 import os
 import asyncio
 import argparse
-import random
 
-# Add the core directory to the path
+# Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from core.agents.common.chicken_agent import ChickenAgent
 
 
 class CompetitionAgent(ChickenAgent):
-    """Your competition agent for the Chicken game."""
-    
-    def __init__(self, name: str = "CompetitionAgent"):
-        super().__init__(name)
-        # TODO: Initialize any variables you need for your strategy
-        pass
-    
     def setup(self):
         """
         Initializes the agent for each new game they play.
-        Called at the beginning of each new game.
+        Called before each new game starts.
         """
-        # TODO: Initialize your agent for a new game
+        # TODO: Initialize any variables you need for a new game
+        # This method is called at the beginning of each new game
         pass
     
     def get_action(self, obs=None):
@@ -50,8 +37,13 @@ class CompetitionAgent(ChickenAgent):
         # TODO: Implement your Chicken strategy here
         # You can use any strategy you want, but it should not be uniform random
         
-        # For now, return random action (students should replace this)
-        return random.choice([self.SWERVE, self.CONTINUE])
+        # For now, using a simple strategy that swerves 70% of the time
+        # Students should replace this with their actual implementation
+        import random
+        if random.random() < 0.7:
+            return self.SWERVE
+        else:
+            return self.CONTINUE
     
     def update(self, reward=None, info=None):
         """
@@ -125,4 +117,4 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 # Export for server testing
-agent_submission = CompetitionAgent("CompetitionAgent")
+agent_submission = CompetitionAgent("CompetitionAgent") 

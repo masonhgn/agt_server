@@ -1,0 +1,3 @@
+competition_agent.py
+exponential_stencil.py
+fictitious_play_stencil.py

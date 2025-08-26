@@ -74,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument('--host', type=str, default='localhost', help='Server host')
     parser.add_argument('--port', type=int, default=8080, help='Server port')
     parser.add_argument('--game', type=str, default='bos', help='Game type (default: bos)')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose debug output')
     
     args = parser.parse_args()
     
@@ -102,7 +103,7 @@ if __name__ == "__main__":
         print(f"Connecting to server at {args.host}:{args.port}")
         
         # Create client and connect
-        client = AGTClient(server_agent, args.host, args.port)
+        client = AGTClient(server_agent, args.host, args.port, verbose=args.verbose)
         await client.connect()
         
         if client.connected:

@@ -18,8 +18,7 @@ class FictitiousPlayAgent(RPSAgent):
     
     def setup(self):
         """Initialize the agent for a new game."""
-        # TODO: Initialize any variables you need to track opponent's actions
-        pass
+        self.opponent_action_counts = [0, 0, 0]  # Count of each action by opponent
     
     def get_action(self, obs=None):
         """
@@ -37,8 +36,11 @@ class FictitiousPlayAgent(RPSAgent):
         if reward is not None:
             self.reward_history.append(reward)
         
-        # TODO: Update any variables you need to track opponent's actions
-        # HINT: Use self.get_opp_action_history() to get opponent's action history
+        # Update opponent action counts using the tracked history
+        opp_actions = self.get_opp_action_history()
+        if len(opp_actions) > 0:
+            last_opp_action = opp_actions[-1]
+            self.opponent_action_counts[last_opp_action] += 1
     
     def predict(self):
         """
@@ -48,8 +50,20 @@ class FictitiousPlayAgent(RPSAgent):
         # TODO: Return a probability distribution over the opponent's next move
         # HINT: Use self.get_opp_action_history() to build the distribution
         
-        # For now, return uniform distribution
-        return [1/3, 1/3, 1/3]
+        opp_actions = self.get_opp_action_history()
+        
+        if len(opp_actions) == 0:
+            # No history yet, assume uniform distribution
+            return [1/3, 1/3, 1/3]
+        
+        # Calculate empirical distribution from opponent's action history
+        total_actions = len(opp_actions)
+        counts = [0, 0, 0]
+        for action in opp_actions:
+            counts[action] += 1
+        
+        # Return probability distribution
+        return [count / total_actions for count in counts]
     
     def optimize(self, dist):
         """
@@ -60,9 +74,16 @@ class FictitiousPlayAgent(RPSAgent):
         # TODO: Calculate the expected payoff of each action and return the action with the highest payoff
         # HINT: Use the RPS payoff matrix and the opponent's predicted distribution
         
-        # For now, return random action
-        import random
-        return random.choice([self.ROCK, self.PAPER, self.SCISSORS])
+        # Calculate expected payoff for each action
+        expected_payoffs = []
+        for my_action in [self.ROCK, self.PAPER, self.SCISSORS]:
+            expected_payoff = 0
+            for opp_action in [self.ROCK, self.PAPER, self.SCISSORS]:
+                expected_payoff += dist[opp_action] * self.calculate_utils(my_action, opp_action)[0]
+            expected_payoffs.append(expected_payoff)
+        
+        # Return action with highest expected payoff
+        return [self.ROCK, self.PAPER, self.SCISSORS][np.argmax(expected_payoffs)]
 
 
 if __name__ == "__main__":
@@ -90,8 +111,4 @@ if __name__ == "__main__":
         action_counts[action] += 1
     print(f"Rock: {action_counts[0]}, Paper: {action_counts[1]}, Scissors: {action_counts[2]}")
     print(f"Total reward: {sum(agent.reward_history)}")
-    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
-
-
-# Export for server testing
-agent_submission = FictitiousPlayAgent("FictitiousPlayAgent")
+    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}") 
