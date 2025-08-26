@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Q-Learning implementation for Lab 3.
-Students implement update_rule() and choose_next_move() methods.
+Complete Q-Learning Solution for Lab 3 Part I.
+This shows the implementation of update_rule() and choose_next_move() methods.
 """
 
 import sys
@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.agents.common.base_agent import BaseAgent
 
 
-class QLearning(BaseAgent):
-    """Q-Learning agent base class."""
+class QLearningSolution(BaseAgent):
+    """Complete Q-Learning implementation with all methods implemented."""
     
     def __init__(self, name: str, num_possible_states: int, num_possible_actions: int, 
                  initial_state: int, learning_rate: float, discount_factor: float, 
@@ -63,28 +63,31 @@ class QLearning(BaseAgent):
     
     def update_rule(self, reward: float):
         """
-        TODO: Implement the Q-learning update rule.
+        COMPLETE IMPLEMENTATION: Q-learning update rule.
         
         Q(s,a) = Q(s,a) + α[r + γ max_{a'} Q(s',a') - Q(s,a)]
         
         Args:
             reward: Reward received from the last action
         """
-        # TODO: Implement Q-learning update rule according to the pseudocode:
+        # Step 1: Determine the next state
+        s_prime = self.determine_state()
+        
+        # Step 2: Find the maximum Q-value for the next state
+        max_q_next = np.max(self.q[s_prime])
+        
+        # Step 3: Apply the Q-learning update rule
         # Q(s,a) = Q(s,a) + α[r + γ max_{a'} Q(s',a') - Q(s,a)]
-        # 
-        # Where:
-        # - self.s is the current state
-        # - self.a is the current action
-        # - s_prime is the next state (determined by determine_state())
-        # - self.q is the Q-table
-        # - self.learning_rate is α
-        # - self.discount_factor is γ
-        raise NotImplementedError("Implement the Q-learning update rule")
+        self.q[self.s, self.a] = self.q[self.s, self.a] + self.learning_rate * (
+            reward + self.discount_factor * max_q_next - self.q[self.s, self.a]
+        )
+        
+        # Step 4: Update current state for next iteration
+        self.s = s_prime
     
     def choose_next_move(self, s_prime: int):
         """
-        TODO: Implement exploration-exploitation strategy.
+        COMPLETE IMPLEMENTATION: Exploration-exploitation strategy.
         
         Args:
             s_prime: Next state
@@ -92,14 +95,17 @@ class QLearning(BaseAgent):
         Returns:
             Next action to take
         """
-        # TODO: Implement exploration-exploitation strategy
-        # 
-        # If in training mode:
-        #   - With probability self.exploration_rate: choose random action (exploration)
-        #   - With probability 1 - self.exploration_rate: choose best action (exploitation)
-        # If not in training mode:
-        #   - Always choose best action (pure exploitation)
-        raise NotImplementedError("Implement exploration-exploitation strategy")
+        if self.training_mode:
+            # Exploration-exploitation trade-off
+            if np.random.random() < self.exploration_rate:
+                # Exploration: choose random action
+                return np.random.randint(0, self.num_possible_actions)
+            else:
+                # Exploitation: choose best action
+                return np.argmax(self.q[s_prime])
+        else:
+            # Pure exploitation: always choose best action
+            return np.argmax(self.q[s_prime])
     
     def update(self, reward: float, info=None):
         """Update the agent with the reward from the last action."""
@@ -139,17 +145,8 @@ class IFixedPolicy:
         raise NotImplementedError("Subclasses must implement get_move()")
 
 
-# TODO: Give your agent a NAME 
-name = "QLearningAgent"  # TODO: PLEASE NAME ME D:
-
-
-################### SUBMISSION #####################
-agent_submission = QLearning(name, num_possible_states=2, num_possible_actions=2,
-                            initial_state=0, learning_rate=0.1, discount_factor=0.9,
-                            exploration_rate=0.1, training_mode=True, save_path=None)
-####################################################
-
-
+# Example usage
 if __name__ == "__main__":
-    print("Q-Learning base class created successfully!")
-    print("This is a base class - you should implement specific Q-learning agents that inherit from this.")
+    print("Q-Learning Solution - Complete Implementation")
+    print("This shows how to implement update_rule() and choose_next_move()")
+    print("Students should use this as a reference for their implementations.")

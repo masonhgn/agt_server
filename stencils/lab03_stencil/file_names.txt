@@ -7,3 +7,4 @@ i_fixed_policy.py
 uniform_policy.py
 chicken_env.py
 game.py
+collusion.py
