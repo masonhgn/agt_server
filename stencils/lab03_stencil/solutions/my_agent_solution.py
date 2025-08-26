@@ -102,7 +102,7 @@ if __name__ == "__main__":
     
     # Test the agent
     agent = MyChickenAgentSolution("MyAgentSolution")
-    print(f"✅ Agent created successfully")
+    print(f"Agent created successfully")
     print(f"   - States: {agent.num_possible_states}")
     print(f"   - Actions: {agent.num_possible_actions}")
     print(f"   - Save path: {agent.save_path}")

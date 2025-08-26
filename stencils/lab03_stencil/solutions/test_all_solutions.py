@@ -35,7 +35,7 @@ def test_q_learning_solution():
                              save_path="test-q-table.npy")
     
     # Test that the agent can be created
-    print("✅ Q-Learning agent created successfully")
+    print("Q-Learning agent created successfully")
     print(f"   - Q-table shape: {agent.q.shape}")
     print(f"   - Learning rate: {agent.learning_rate}")
     print(f"   - Discount factor: {agent.discount_factor}")
@@ -120,14 +120,14 @@ def test_training_creates_files():
     for i, save_path in enumerate(save_paths):
         if os.path.exists(save_path):
             file_size = os.path.getsize(save_path)
-            print(f"✅ {save_path} - Created ({file_size} bytes)")
+            print(f"{save_path} - Created ({file_size} bytes)")
             
             # Load and verify the Q-table
             q_table = np.load(save_path)
             print(f"   - Q-table shape: {q_table.shape}")
             print(f"   - Q-table range: [{q_table.min():.3f}, {q_table.max():.3f}]")
         else:
-            print(f"❌ {save_path} - Not created")
+            print(f"{save_path} - Not created")
     
     return agents
 
@@ -148,7 +148,7 @@ def test_collusion_solution():
                                              exploration_rate=0.1, training_mode=True,
                                              save_path="seller2-test.npy")
     
-    print("✅ Collusion agents created successfully")
+    print("Collusion agents created successfully")
     print(f"   - Agent 1 save path: {agent1.save_path}")
     print(f"   - Agent 2 save path: {agent2.save_path}")
     
@@ -162,14 +162,14 @@ def test_collusion_solution():
     for save_path in [agent1.save_path, agent2.save_path]:
         if os.path.exists(save_path):
             file_size = os.path.getsize(save_path)
-            print(f"✅ {save_path} - Created ({file_size} bytes)")
+            print(f"{save_path} - Created ({file_size} bytes)")
             
             # Load and verify the Q-table
             q_table = np.load(save_path)
             print(f"   - Q-table shape: {q_table.shape}")
             print(f"   - Q-table range: [{q_table.min():.3f}, {q_table.max():.3f}]")
         else:
-            print(f"❌ {save_path} - Not created")
+            print(f"{save_path} - Not created")
     
     return agent1, agent2
 
@@ -209,7 +209,7 @@ def demonstrate_learning_progress():
         np.save(intermediate_path, agent.q)
         print(f"   - Saved to: {intermediate_path}")
     
-    print(f"\n✅ Final Q-table saved to: {agent.save_path}")
+    print(f"\nFinal Q-table saved to: {agent.save_path}")
     
     return agent
 
@@ -237,14 +237,14 @@ def main():
         learning_agent = demonstrate_learning_progress()
         
         print("\n" + "=" * 80)
-        print("🎉 ALL TESTS COMPLETED SUCCESSFULLY!")
+        print("ALL TESTS COMPLETED SUCCESSFULLY!")
         print("=" * 80)
         print("\nSummary:")
-        print("✅ Part I: Q-Learning implementation works")
-        print("✅ Part II: State space representations work")
-        print("✅ Part III: Collusion environment works")
-        print("✅ Training creates policy files (.npy)")
-        print("✅ Learning progress can be tracked")
+        print("Part I: Q-Learning implementation works")
+        print("Part II: State space representations work")
+        print("Part III: Collusion environment works")
+        print("Training creates policy files (.npy)")
+        print("Learning progress can be tracked")
         
         print("\nCreated files:")
         # List all .npy files in current directory
@@ -256,7 +256,7 @@ def main():
         print(f"\nTotal policy files created: {len(npy_files)}")
         
     except Exception as e:
-        print(f"\n❌ Error during testing: {e}")
+        print(f"\nError during testing: {e}")
         import traceback
         traceback.print_exc()
 
