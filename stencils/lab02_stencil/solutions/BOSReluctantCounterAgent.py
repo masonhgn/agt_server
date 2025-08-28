@@ -9,10 +9,10 @@ from core.game.BOSGame import BOSGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
 
 
-class BOSFiniteStateAgent2(BaseAgent):
-    """Finite State Machine agent to counter the 'punitive' strategy."""
+class BOSFiniteStateAgent1(BaseAgent):
+    """Finite State Machine agent to counter the 'reluctant to compromise' strategy."""
     
-    def __init__(self, name: str = "BOSFSM2"):
+    def __init__(self, name: str = "BOSFSM1"):
         super().__init__(name)
         self.COMPROMISE, self.STUBBORN = 0, 1
         self.actions = [self.COMPROMISE, self.STUBBORN]
@@ -24,8 +24,11 @@ class BOSFiniteStateAgent2(BaseAgent):
         """
         # TODO: Implement your finite state machine logic here
         # Use self.curr_state to determine which action to take
-        # This agent should be designed to counter the "punitive" strategy
-        raise NotImplementedError
+        # This agent should be designed to counter the "reluctant to compromise" strategy
+        
+        # Simple implementation for testing
+        import random
+        return random.choice([self.STUBBORN, self.COMPROMISE])
     
     def update(self, reward: float, info=None):
         """
@@ -37,7 +40,9 @@ class BOSFiniteStateAgent2(BaseAgent):
         # TODO: Implement your state transition logic here
         # Use self.get_last_action() and self.get_opponent_last_action() 
         # to determine how to update self.curr_state
-        raise NotImplementedError
+        
+        # Simple implementation for testing
+        pass
     
     def get_opponent_last_action(self):
         """Helper method to get opponent's last action (inferred from reward)."""
@@ -63,30 +68,30 @@ class BOSFiniteStateAgent2(BaseAgent):
 
 
 # TODO: Give your agent a NAME 
-name = "BOSFiniteStateAgent2"  # TODO: PLEASE NAME ME D:
+name = "BOSFiniteStateAgent1"  # TODO: PLEASE NAME ME D:
 
 
 ################### SUBMISSION #####################
-agent_submission = BOSFiniteStateAgent2(name)
+agent_submission = BOSFiniteStateAgent1(name)
 ####################################################
 
 
 if __name__ == "__main__":
-    # Test your agent against the punitive strategy
-    print("Testing BOS Finite State Agent 2...")
+    # Test your agent against the reluctant strategy
+    print("Testing BOS Finite State Agent 1...")
     print("=" * 50)
     
-    # Import the punitive agent (assuming it exists)
+    # Import the reluctant agent (assuming it exists)
     try:
-        from core.agents.lab02.bos_punitive import BOSPunitiveAgent
-        opponent = BOSPunitiveAgent("Punitive")
+        from ..bos_reluctant import BOSReluctantAgent
+        opponent = BOSReluctantAgent("Reluctant")
     except ImportError:
-        # Fallback to random agent if punitive agent doesn't exist
+        # Fallback to random agent if reluctant agent doesn't exist
         opponent = RandomBOSAgent("Random")
-        print("Note: Using Random agent as fallback (BOSPunitiveAgent not found)")
+        print("Note: Using Random agent as fallback (BOSReluctantAgent not found)")
     
     # Create agents
-    agent = BOSFiniteStateAgent2("Agent1")
+    agent = BOSFiniteStateAgent1("Agent1")
     
     # Create game and run
     game = BOSGame(rounds=100)

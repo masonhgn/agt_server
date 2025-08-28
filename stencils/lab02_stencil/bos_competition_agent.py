@@ -1,5 +1,6 @@
 import sys
 import os
+import asyncio
 # Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
@@ -80,33 +81,58 @@ agent_submission = BOSCompetitionAgent(name)
 
 
 if __name__ == "__main__":
-    # Test your agent before submitting
-    print("Testing BOS Competition Agent locally...")
-    print("=" * 50)
+    # Configuration variables - modify these as needed
+    server = False  # Set to True to connect to server, False for local testing
+    name = "BOSCompetitionAgent"  # Agent name
+    host = "localhost"  # Server host
+    port = 8080  # Server port
+    verbose = False  # Enable verbose debug output
     
-    # Create a 1000-round local competition in which your agent competes against itself
-    agent1 = BOSCompetitionAgent("Agent1")
-    agent2 = BOSCompetitionAgent("Agent2")
-    
-    # Create game and run
-    game = BOSGame(rounds=1000)
-    agents = [agent1, agent2]
-    
-    engine = Engine(game, agents, rounds=1000)
-    final_rewards = engine.run()
-    
-    print(f"Final rewards: {final_rewards}")
-    print(f"Cumulative rewards: {engine.cumulative_reward}")
-    
-    # Print statistics
-    print(f"\n{agent1.name} statistics:")
-    action_counts = [0, 0]  # Compromise, Stubborn
-    for action in agent1.action_history:
-        action_counts[action] += 1
-    
-    print(f"Compromise: {action_counts[0]}, Stubborn: {action_counts[1]}")
-    print(f"Total reward: {sum(agent1.reward_history)}")
-    print(f"Average reward: {sum(agent1.reward_history) / len(agent1.reward_history) if agent1.reward_history else 0:.3f}")
-    print(f"Final state: {agent1.curr_state}")
-    
-    print("\nLocal test completed!")
+    if server:
+        # Add server directory to path for imports
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        sys.path.insert(0, server_dir)
+        
+        from connect_stencil import connect_agent_to_server
+        from adapters import create_adapter
+        
+        async def main():
+            # Create agent and adapter
+            agent = BOSCompetitionAgent(name)
+            server_agent = create_adapter(agent, "bos")
+            
+            # Connect to server
+            await connect_agent_to_server(server_agent, "bos", name, host, port, verbose)
+        
+        # Run the async main function
+        asyncio.run(main())
+        
+    else:
+        # Test your agent locally
+        print("Testing BOS Competition Agent locally...")
+        print("=" * 50)
+        
+        # Import opponent agents for testing
+        try:
+            from bos_punitive import BOSPunitiveAgent
+            from bos_reluctant import BOSReluctantAgent
+        except ImportError:
+            print("Note: Opponent agents not found, using random agents instead")
+            from core.agents.lab02.random_bos_agent import RandomBOSAgent
+            BOSPunitiveAgent = RandomBOSAgent
+            BOSReluctantAgent = RandomBOSAgent
+        
+        # Create agents for testing
+        agent = BOSCompetitionAgent("CompetitionAgent")
+        opponent1 = BOSPunitiveAgent("PunitiveAgent")
+        opponent2 = BOSReluctantAgent("ReluctantAgent")
+        
+        # Create arena and run tournament
+        from core.local_arena import LocalArena
+        from core.game.BOSGame import BOSGame
+        
+        agents = [agent, opponent1, opponent2]
+        arena = LocalArena(BOSGame, agents, num_rounds=1000, verbose=True)
+        arena.run_tournament()
+        
+        print("\nLocal test completed!")

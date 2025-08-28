@@ -267,7 +267,7 @@ class AGTClient:
             tournament_started = message.get('tournament_started', False)
             self.log(f"Status: {players_connected} players connected, tournament {'started' if tournament_started else 'waiting'}", "info")
         elif msg_type == "heartbeat":
-            # Only log heartbeats in verbose mode
+            # nly log heartbeats  in verbose mode
             if self.verbose:
                 players_connected = message.get('players_connected', 0)
                 tournament_started = message.get('tournament_started', False)
@@ -296,7 +296,7 @@ class AGTClient:
         else:
             self.log(f"Unknown message type: {msg_type}", "warning")
         
-        return False  # Continue running
+        return False 
     
     async def send_message(self, message: Dict[str, Any]):
         """send a message to the server."""

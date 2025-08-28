@@ -17,7 +17,11 @@ TODO:
 
 
 8/26/25
-- flesh out lab 3,4 for ml implementations
--> make sure supportive ml files are also in solutions/ directory
+- change command line args for running labs to match old implementation
+- make sure competition agents are defined for each lab and connection logic is correct
+- make sure ip connections work
+- create pomdp lab/writeup/stencil
+
+
 
 

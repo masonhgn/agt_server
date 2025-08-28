@@ -159,13 +159,14 @@ if __name__ == "__main__":
     print("Testing BOSII Competition Agent locally...")
     print("=" * 50)
     
-    # Create a 100-round local competition in which your agent competes against itself
-    agent1 = BOSIICompetitionAgent("Agent1")
-    agent2 = BOSIICompetitionAgent("Agent2")
+    # Create multiple instances for BOSII testing (appropriate since it's a different game type)
+    agent = BOSIICompetitionAgent("CompetitionAgent")
+    opponent1 = BOSIICompetitionAgent("Agent1")
+    opponent2 = BOSIICompetitionAgent("Agent2")
     
     # Create game and run
     game = BOSIIGame(rounds=100)
-    agents = [agent1, agent2]
+    agents = [agent, opponent1, opponent2]
     
     engine = Engine(game, agents, rounds=100)
     final_rewards = engine.run()
@@ -174,17 +175,17 @@ if __name__ == "__main__":
     print(f"Cumulative rewards: {engine.cumulative_reward}")
     
     # Print statistics
-    print(f"\n{agent1.name} statistics:")
+    print(f"\n{agent.name} statistics:")
     action_counts = [0, 0]  # Compromise, Stubborn
-    for action in agent1.action_history:
+    for action in agent.action_history:
         action_counts[action] += 1
     
     print(f"Compromise: {action_counts[0]}, Stubborn: {action_counts[1]}")
-    print(f"Total reward: {sum(agent1.reward_history)}")
-    print(f"Average reward: {sum(agent1.reward_history) / len(agent1.reward_history) if agent1.reward_history else 0:.3f}")
-    print(f"Final state: {agent1.curr_state}")
-    print(f"Is row player: {agent1.is_row_player()}")
-    if agent1.mood_history:
-        print(f"Mood history: {agent1.mood_history}")
+    print(f"Total reward: {sum(agent.reward_history)}")
+    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
+    print(f"Final state: {agent.curr_state}")
+    print(f"Is row player: {agent.is_row_player()}")
+    if agent.mood_history:
+        print(f"Mood history: {agent.mood_history}")
     
     print("\nLocal test completed!")

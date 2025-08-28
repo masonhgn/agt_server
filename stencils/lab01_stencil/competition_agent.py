@@ -71,58 +71,63 @@ class CompetitionAgent(ChickenAgent):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Competition Agent for Lab 01')
-    parser.add_argument('--name', type=str, help='Agent name (default: CompetitionAgent_<random>)')
-    parser.add_argument('--host', type=str, default='localhost', help='Server host')
-    parser.add_argument('--port', type=int, default=8080, help='Server port')
-    parser.add_argument('--game', type=str, default='chicken', help='Game type (default: chicken)')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose debug output')
+    # Configuration variables - modify these as needed
+    server = False  # Set to True to connect to server, False for local testing
+    name = None  # Agent name (None for auto-generated)
+    host = "localhost"  # Server host
+    port = 8080  # Server port
+    verbose = False  # Enable verbose debug output
+    game = "chicken"  # Game type (hardcoded for this agent)
     
-    args = parser.parse_args()
-    
-    # Add server directory to path for imports
-    server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
-    sys.path.insert(0, server_dir)
-    
-    from client import AGTClient
-    from adapters import create_adapter
-    
-    async def main():
-        # Generate unique name if not provided
-        if not args.name:
-            import random
-            agent_name = f"CompetitionAgent_{random.randint(1000, 9999)}"
-        else:
-            agent_name = args.name
-            
-        # Create agent
-        agent = CompetitionAgent(agent_name)
+    if server:
+        # Add server directory to path for imports
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        sys.path.insert(0, server_dir)
         
-        # Create adapter for server communication
-        server_agent = create_adapter(agent, args.game)
+        from connect_stencil import connect_agent_to_server
+        from adapters import create_adapter
         
-        print(f"Starting {agent.name} for {args.game} game...")
-        print(f"Connecting to server at {args.host}:{args.port}")
-        
-        # Create client and connect
-        client = AGTClient(server_agent, args.host, args.port, verbose=args.verbose)
-        await client.connect()
-        
-        if client.connected:
-            print("Connected to server!")
-            print(f"Joining {args.game} game...")
-            
-            if await client.join_game(args.game):
-                print("Joined game successfully!")
-                print("Waiting for tournament to start...")
-                await client.run()
+        async def main():
+            # Generate unique name if not provided
+            if not name:
+                import random
+                agent_name = f"CompetitionAgent_{random.randint(1000, 9999)}"
             else:
-                print("Failed to join game")
-        else:
-            print("Failed to connect to server")
-    
-    # Run the async main function
-    asyncio.run(main())
+                agent_name = name
+                
+            # Create agent and adapter
+            agent = CompetitionAgent(agent_name)
+            server_agent = create_adapter(agent, game)
+            
+            # Connect to server
+            await connect_agent_to_server(server_agent, game, agent_name, host, port, verbose)
+        
+        # Run the async main function
+        asyncio.run(main())
+    else:
+        # Test your agent locally
+        print("Testing Chicken Competition Agent locally...")
+        print("=" * 50)
+        
+        # Import opponent agents and arena for testing
+        from core.agents.lab03.swerve_agent import SwerveAgent
+        from core.agents.lab03.continue_agent import ContinueAgent
+        from core.agents.lab03.random_chicken_agent import RandomChickenAgent
+        from core.local_arena import LocalArena
+        from core.game.ChickenGame import ChickenGame
+        
+        # Create agents for testing
+        agent = CompetitionAgent("CompetitionAgent")
+        opponent1 = SwerveAgent("SwerveAgent")
+        opponent2 = ContinueAgent("ContinueAgent")
+        opponent3 = RandomChickenAgent("RandomAgent")
+        
+        # Create arena and run tournament
+        agents = [agent, opponent1, opponent2, opponent3]
+        arena = LocalArena(ChickenGame, agents, num_rounds=1000, verbose=True)
+        arena.run_tournament()
+        
+        print("\nLocal test completed!")
 
 # Export for server testing
 agent_submission = CompetitionAgent("CompetitionAgent")

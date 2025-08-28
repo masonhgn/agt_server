@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "chicken",
+    "tournament": true,
+    "players": [
+      "CompetitionAgent_1089",
+      "CompetitionAgent_8788"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "CompetitionAgent_8788",
+        {
+          "total_reward": -38.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "CompetitionAgent_1089",
+        {
+          "total_reward": -52.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]

@@ -18,6 +18,57 @@ from client import AGTClient
 from adapters import load_agent_from_stencil
 
 
+async def connect_agent_to_server(agent, game_type: str, name: str = None, 
+                                 host: str = 'localhost', port: int = 8080, 
+                                 verbose: bool = False):
+    """
+    Connect an agent to the AGT server.
+    
+    Args:
+        agent: The agent to connect
+        game_type: Type of game to join
+        name: Agent name (optional)
+        host: Server host
+        port: Server port
+        verbose: Enable verbose output
+    
+    Returns:
+        bool: True if connection and game join successful, False otherwise
+    """
+    try:
+        # Set name if provided
+        if name:
+            agent.name = name
+        
+        print(f"Connecting agent: {agent.name}")
+        print(f"Game type: {game_type}")
+        
+        # Create client and connect
+        print(f"Connecting to server at {host}:{port}...")
+        client = AGTClient(agent, host, port, verbose=verbose)
+        await client.connect()
+        
+        if client.connected:
+            print("Connected to server!")
+            print(f"Joining {game_type} game...")
+            
+            if await client.join_game(game_type):
+                print("Joined game successfully!")
+                print("Waiting for game to start...")
+                await client.run()
+                return True
+            else:
+                print("Failed to join game")
+                return False
+        else:
+            print("Failed to connect to server")
+            return False
+            
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
 async def main():
     """Main function for connecting a stencil to the server."""
     parser = argparse.ArgumentParser(description='Connect Stencil to AGT Server')
@@ -43,30 +94,14 @@ async def main():
         print(f"Loading agent from {args.stencil}...")
         agent = load_agent_from_stencil(args.stencil, args.game)
         
-        # Set name if provided
-        if args.name:
-            agent.name = args.name
-        
         print(f"Successfully loaded agent: {agent.name}")
-        print(f"Game type: {args.game}")
         
-        # Create client and connect
-        print(f"Connecting to server at {args.host}:{args.port}...")
-        client = AGTClient(agent, args.host, args.port, verbose=args.verbose)
-        await client.connect()
+        # Connect agent to server
+        success = await connect_agent_to_server(
+            agent, args.game, args.name, args.host, args.port, args.verbose
+        )
         
-        if client.connected:
-            print("Connected to server!")
-            print(f"Joining {args.game} game...")
-            
-            if await client.join_game(args.game):
-                print("Joined game successfully!")
-                print("Waiting for game to start...")
-                await client.run()
-            else:
-                print("Failed to join game")
-        else:
-            print("Failed to connect to server")
+        if not success:
             sys.exit(1)
             
     except Exception as e:

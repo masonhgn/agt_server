@@ -78,7 +78,7 @@ if __name__ == "__main__":
     
     # Import the punitive agent (assuming it exists)
     try:
-        from core.agents.lab02.bos_punitive import BOSPunitiveAgent
+        from bos_punitive import BOSPunitiveAgent
         opponent = BOSPunitiveAgent("Punitive")
     except ImportError:
         # Fallback to random agent if punitive agent doesn't exist

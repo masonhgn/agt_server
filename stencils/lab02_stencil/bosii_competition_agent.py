@@ -1,5 +1,6 @@
 import sys
 import os
+import asyncio
 # Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
@@ -155,36 +156,55 @@ agent_submission = BOSIICompetitionAgent(name)
 
 
 if __name__ == "__main__":
-    # Test your agent before submitting
-    print("Testing BOSII Competition Agent locally...")
-    print("=" * 50)
+    # Configuration variables - modify these as needed
+    server = False  # Set to True to connect to server, False for local testing
+    name = "BOSIICompetitionAgent"  # Agent name
+    host = "localhost"  # Server host
+    port = 8080  # Server port
+    verbose = False  # Enable verbose debug output
     
-    # Create a 100-round local competition in which your agent competes against itself
-    agent1 = BOSIICompetitionAgent("Agent1")
-    agent2 = BOSIICompetitionAgent("Agent2")
-    
-    # Create game and run
-    game = BOSIIGame(rounds=100)
-    agents = [agent1, agent2]
-    
-    engine = Engine(game, agents, rounds=100)
-    final_rewards = engine.run()
-    
-    print(f"Final rewards: {final_rewards}")
-    print(f"Cumulative rewards: {engine.cumulative_reward}")
-    
-    # Print statistics
-    print(f"\n{agent1.name} statistics:")
-    action_counts = [0, 0]  # Compromise, Stubborn
-    for action in agent1.action_history:
-        action_counts[action] += 1
-    
-    print(f"Compromise: {action_counts[0]}, Stubborn: {action_counts[1]}")
-    print(f"Total reward: {sum(agent1.reward_history)}")
-    print(f"Average reward: {sum(agent1.reward_history) / len(agent1.reward_history) if agent1.reward_history else 0:.3f}")
-    print(f"Final state: {agent1.curr_state}")
-    print(f"Is row player: {agent1.is_row_player()}")
-    if agent1.mood_history:
-        print(f"Mood history: {agent1.mood_history}")
-    
-    print("\nLocal test completed!")
+    if server:
+        # Add server directory to path for imports
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        sys.path.insert(0, server_dir)
+        
+        from connect_stencil import connect_agent_to_server
+        from adapters import create_adapter
+        
+        async def main():
+            # Create agent and adapter
+            agent = BOSIICompetitionAgent(name)
+            server_agent = create_adapter(agent, "bosii")
+            
+            # Connect to server
+            await connect_agent_to_server(server_agent, "bosii", name, host, port, verbose)
+        
+        # Run the async main function
+        asyncio.run(main())
+        
+    else:
+        # Test your agent locally
+        print("Testing BOSII Competition Agent locally...")
+        print("=" * 50)
+        
+        # Import opponent agent for testing
+        try:
+            from solutions.BOSIIMoodAwareAgent import BOSIICompetitionAgent as BOSIIMoodAwareAgent
+            opponent = BOSIIMoodAwareAgent("MoodAwareAgent")
+        except ImportError:
+            print("Note: Mood-aware agent not found, using random agent instead")
+            from core.agents.lab02.random_bos_agent import RandomBOSAgent
+            opponent = RandomBOSAgent("RandomAgent")
+        
+        # Create agents for testing
+        agent = BOSIICompetitionAgent("CompetitionAgent")
+        
+        # Create arena and run tournament
+        from core.local_arena import LocalArena
+        from core.game.BOSIIGame import BOSIIGame
+        
+        agents = [agent, opponent]
+        arena = LocalArena(BOSIIGame, agents, num_rounds=100, verbose=True)
+        arena.run_tournament()
+        
+        print("\nLocal test completed!")

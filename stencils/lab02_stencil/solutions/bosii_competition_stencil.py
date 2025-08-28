@@ -7,6 +7,8 @@ from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
 from core.game.BOSIIGame import BOSIIGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
+# Import opponent agent for testing
+from BOSIIMoodAwareAgent import BOSIICompetitionAgent as BOSIIMoodAwareAgent
 
 
 class BOSIICompetitionAgent(BaseAgent):
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     
     # Create agents
     agent = BOSIICompetitionAgent(agent_name)
-    opponent = RandomBOSAgent("Random")
+    opponent = BOSIIMoodAwareAgent("MoodAwareAgent")  # Test against mood-aware strategy
     
     # Create game and run
     game = BOSIIGame(rounds=100)

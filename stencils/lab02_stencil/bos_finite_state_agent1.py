@@ -84,7 +84,7 @@ if __name__ == "__main__":
     
     # Import the reluctant agent (assuming it exists)
     try:
-        from core.agents.lab02.bos_reluctant import BOSReluctantAgent
+        from bos_reluctant import BOSReluctantAgent
         opponent = BOSReluctantAgent("Reluctant")
     except ImportError:
         # Fallback to random agent if reluctant agent doesn't exist

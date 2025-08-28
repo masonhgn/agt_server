@@ -1,7 +1,7 @@
 import sys
 import os
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
@@ -9,33 +9,26 @@ from core.game.BOSGame import BOSGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
 
 
-class BOSFiniteStateAgent1(BaseAgent):
-    """Finite State Machine agent to counter the 'reluctant to compromise' strategy."""
+class BOSCompetitionAgent(BaseAgent):
+    """Competition agent for Battle of the Sexes."""
     
-    def __init__(self, name: str = "BOSFSM1"):
+    def __init__(self, name: str = "BOSComp"):
         super().__init__(name)
         self.COMPROMISE, self.STUBBORN = 0, 1
         self.actions = [self.COMPROMISE, self.STUBBORN]
         self.curr_state = 0  # Initial state
-        self.consecutive_lectures = 0  # Track opponent's consecutive lectures
     
     def get_action(self, obs):
         """
         Return either self.STUBBORN or self.COMPROMISE based on the current state.
         """
-        # Strategy to counter "reluctant to compromise":
-        # - Start with STUBBORN (concert) to establish dominance
-        # - If opponent goes to lecture 3 times in a row, switch to COMPROMISE
-        # - After compromising once, go back to STUBBORN
+        # TODO: Implement your competition strategy here
+        # Use self.curr_state to determine which action to take
+        # This is for the competition where you don't know the opponent's strategy
         
-        if self.curr_state == 0:
-            # Initial state: be stubborn (concert)
-            return self.STUBBORN
-        elif self.curr_state == 1:
-            # Compromise state: go to lecture
-            return self.COMPROMISE
-        else:
-            return self.STUBBORN  # Default fallback
+        # Simple implementation for testing
+        import random
+        return random.choice([self.STUBBORN, self.COMPROMISE])
     
     def update(self, reward: float, info=None):
         """
@@ -44,19 +37,12 @@ class BOSFiniteStateAgent1(BaseAgent):
         """
         self.reward_history.append(reward)
         
-        # Get opponent's last action
-        opponent_action = self.get_opponent_last_action()
+        # TODO: Implement your state transition logic here
+        # Use self.get_last_action() and self.get_opponent_last_action() 
+        # to determine how to update self.curr_state
         
-        if opponent_action is not None:
-            if opponent_action == self.STUBBORN:  # Opponent went to lecture
-                self.consecutive_lectures += 1
-                if self.consecutive_lectures >= 3:
-                    # After 3 consecutive lectures, compromise once
-                    self.curr_state = 1
-            else:  # Opponent went to concert
-                self.consecutive_lectures = 0
-                # Go back to being stubborn
-                self.curr_state = 0
+        # Simple implementation for testing
+        pass
     
     def get_opponent_last_action(self):
         """Helper method to get opponent's last action (inferred from reward)."""
@@ -82,36 +68,39 @@ class BOSFiniteStateAgent1(BaseAgent):
 
 
 # TODO: Give your agent a NAME 
-name = "BOSFiniteStateAgent1"  # TODO: PLEASE NAME ME D:
+name = "BOSCompetitionAgent"  # TODO: PLEASE NAME ME D:
 
 
 ################### SUBMISSION #####################
-agent_submission = BOSFiniteStateAgent1(name)
+agent_submission = BOSCompetitionAgent(name)
 ####################################################
 
 
 if __name__ == "__main__":
-    # Test your agent against the reluctant strategy
-    print("Testing BOS Finite State Agent 1...")
+    # Test your agent before submitting
+    print("Testing BOS Competition Agent locally...")
     print("=" * 50)
     
-    # Import the reluctant agent (assuming it exists)
+    # Import opponent agents for testing
     try:
-        from core.agents.lab02.bos_reluctant import BOSReluctantAgent
-        opponent = BOSReluctantAgent("Reluctant")
+        from ..bos_punitive import BOSPunitiveAgent
+        from ..bos_reluctant import BOSReluctantAgent
     except ImportError:
-        # Fallback to random agent if reluctant agent doesn't exist
-        opponent = RandomBOSAgent("Random")
-        print("Note: Using Random agent as fallback (BOSReluctantAgent not found)")
+        print("Note: Opponent agents not found, using random agents instead")
+        from core.agents.lab02.random_bos_agent import RandomBOSAgent
+        BOSPunitiveAgent = RandomBOSAgent
+        BOSReluctantAgent = RandomBOSAgent
     
-    # Create agents
-    agent = BOSFiniteStateAgent1("Agent1")
+    # Create agents for testing
+    agent = BOSCompetitionAgent("CompetitionAgent")
+    opponent1 = BOSPunitiveAgent("PunitiveAgent")
+    opponent2 = BOSReluctantAgent("ReluctantAgent")
     
     # Create game and run
-    game = BOSGame(rounds=100)
-    agents = [agent, opponent]
+    game = BOSGame(rounds=1000)
+    agents = [agent, opponent1, opponent2]
     
-    engine = Engine(game, agents, rounds=100)
+    engine = Engine(game, agents, rounds=1000)
     final_rewards = engine.run()
     
     print(f"Final rewards: {final_rewards}")
@@ -128,4 +117,4 @@ if __name__ == "__main__":
     print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
     print(f"Final state: {agent.curr_state}")
     
-    print("\nTest completed!")
+    print("\nLocal test completed!")

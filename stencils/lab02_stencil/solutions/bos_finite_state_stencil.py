@@ -7,6 +7,8 @@ from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
 from core.game.BOSGame import BOSGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
+# Import opponent agent for testing
+from bos_reluctant import BOSReluctantAgent
 
 
 class BOSFiniteStateAgent(BaseAgent):
@@ -67,7 +69,7 @@ if __name__ == "__main__":
     
     # Create agents
     agent = BOSFiniteStateAgent(agent_name)
-    opponent = RandomBOSAgent("Random")
+    opponent = BOSReluctantAgent("ReluctantAgent")  # Test against reluctant strategy
     
     # Create game and run
     game = BOSGame(rounds=100)

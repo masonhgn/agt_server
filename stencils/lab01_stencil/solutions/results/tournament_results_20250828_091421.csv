@@ -1,0 +1,5 @@
+agent,CompetitionAgent,SwerveAgent,ContinueAgent,RandomAgent,total score,average score,wins,losses,ties,win rate
+CompetitionAgent,0.0,522.0,-4439.0,-1846.0,-5763.0,-1921.0,1,2,0,0.3333333333333333
+SwerveAgent,-522.0,0.0,-1999.0,-1037.0,-3558.0,-1186.0,0,3,0,0.0
+ContinueAgent,-1661.0,1999.0,0.0,-4127.0,-3789.0,-1263.0,1,2,0,0.3333333333333333
+RandomAgent,-934.0,1037.0,-6083.0,0.0,-5980.0,-1993.3333333333333,1,2,0,0.3333333333333333
