@@ -71,7 +71,7 @@ class AdxTwoDayGame(BaseGame):
     def players_to_move(self):
         return list(range(self._num_players))
 
-    def _convert_two_day_bundle_to_bid_bundle(self, two_day_bundle: Union['TwoDayBidBundle', Dict]) -> BidBundle:
+    def _convert_two_day_bundle_to_bid_bundle(self, two_day_bundle: Union['TwoDaysBidBundle', Dict], campaign: Campaign = None) -> BidBundle:
         """Convert TwoDayBidBundle to BidBundle format for AdxOfflineStage."""
         bids = {}
         limits = {}
@@ -97,14 +97,15 @@ class AdxTwoDayGame(BaseGame):
                 bids[seg_id] = bid
                 limits[seg_id] = int(spending_limit / bid) if bid > 0 else 0
             
+            reach_goal = campaign.reach if campaign else 1000
             return BidBundle(
                 bids=bids,
                 limits=limits,
                 budget=day_limit,
-                reach_goal=1000  # Default reach goal
+                reach_goal=reach_goal
             )
         else:
-            # Handle TwoDayBidBundle object
+            # Handle TwoDaysBidBundle object
             # Convert bid_entries to bids and limits dictionaries
             for entry in two_day_bundle.bid_entries:
                 # Convert MarketSegment to segment ID (0-25)
@@ -112,13 +113,13 @@ class AdxTwoDayGame(BaseGame):
                 bids[seg_id] = entry.bid
                 limits[seg_id] = int(entry.spending_limit / entry.bid) if entry.bid > 0 else 0
             
-            # Create BidBundle with dummy values for budget and reach_goal
-            # These will be overridden by the stage logic
+            # Create BidBundle with campaign reach goal
+            reach_goal = campaign.reach if campaign else 1000
             return BidBundle(
                 bids=bids,
                 limits=limits,
                 budget=two_day_bundle.day_limit,
-                reach_goal=1000  # Default reach goal
+                reach_goal=reach_goal
             )
 
     def step(
@@ -127,9 +128,15 @@ class AdxTwoDayGame(BaseGame):
         # Convert TwoDayBidBundle to BidBundle format
         converted_actions = {}
         for player_id, action in actions.items():
+            # Get the appropriate campaign for this day
+            if self.day == 1:
+                campaign = self.campaigns_day1[player_id]
+            else:  # day == 2
+                campaign = self.campaigns_day2[player_id]
+            
             # Handle both TwoDayBidBundle objects and dictionaries
             if isinstance(action, dict) or hasattr(action, 'bid_entries'):
-                converted_actions[player_id] = self._convert_two_day_bundle_to_bid_bundle(action)
+                converted_actions[player_id] = self._convert_two_day_bundle_to_bid_bundle(action, campaign)
             else:
                 converted_actions[player_id] = action
         
@@ -159,9 +166,9 @@ class AdxTwoDayGame(BaseGame):
 
         return obs, rew, done, info
 
-# --- TwoDayBidBundle ---
+# --- TwoDaysBidBundle ---
 @dataclass
-class TwoDayBidBundle:
+class TwoDaysBidBundle:
     day: int
     campaign_id: int
     day_limit: float

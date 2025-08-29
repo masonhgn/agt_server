@@ -1,6 +1,6 @@
 import sys, os
 import math
-# Add the core directory to the path (same approach as server.py)
+# Add the core directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.game.AdxTwoDayGame import TwoDaysBidBundle
@@ -9,21 +9,17 @@ from core.game.market_segment import MarketSegment
 from core.game.campaign import Campaign
 from core.agents.common.base_agent import BaseAgent
 
-class ExampleTwoDaysTwoCampaignsAgent(BaseAgent):
+class ConservativeAdXAgent(BaseAgent):
     """
-    Example solution for Lab 9: TAC AdX Game (Two-Day Variant)
-    
-    This example implements a simple bidding strategy that:
-    - Bids $1 on all matching segments for day 1
-    - Uses 80% of budget as spending limit
-    - Adjusts strategy for day 2 based on quality score
+    Conservative agent for Lab 9: Prioritizes day 1 profit over quality score.
+    This strategy aims for immediate profit but may have limited day 2 opportunities.
     """
     
     def __init__(self):
-        super().__init__("example_solution")
-        self.campaign_day1 = None  # Will be set by the game environment
-        self.campaign_day2 = None  # Will be set by the game environment
-        self.quality_score = 1.0  # Quality score from day 1
+        super().__init__("ConservativeAdXAgent")
+        self.campaign_day1 = None
+        self.campaign_day2 = None
+        self.quality_score = 1.0
 
     def get_action(self, observation: dict = None) -> TwoDaysBidBundle:
         """Get the agent's action based on the current observation."""
@@ -54,25 +50,27 @@ class ExampleTwoDaysTwoCampaignsAgent(BaseAgent):
         return self.get_bid_bundle(day)
 
     def get_bid_bundle(self, day: int) -> TwoDaysBidBundle:
-        """
-        Return a TwoDayBidBundle for your assigned campaign on the given day (1 or 2).
-        """
+        """Conservative bidding strategy prioritizing day 1 profit."""
         if day == 1:
             campaign = self.campaign_day1
-            # Day 1 strategy: bid moderately to balance profit and quality score
-            bid_amount = 1.0
-            budget_usage = 0.8
+            # Conservative day 1 strategy: low bids to maximize profit
+            bid_amount = 0.5  # Low bid to minimize costs
+            budget_usage = 0.6  # Use limited budget
         elif day == 2:
             campaign = self.campaign_day2
-            # Day 2 strategy: adjust based on quality score from day 1
+            # Day 2 strategy: adapt to quality score from day 1
             if self.quality_score > 0.8:
-                # High quality score - can be more aggressive
+                # Surprisingly good quality score - can be more aggressive
                 bid_amount = 1.5
-                budget_usage = 0.9
+                budget_usage = 0.8
+            elif self.quality_score > 0.5:
+                # Moderate quality score - moderate strategy
+                bid_amount = 1.0
+                budget_usage = 0.7
             else:
-                # Lower quality score - be more conservative
-                bid_amount = 0.8
-                budget_usage = 0.6
+                # Low quality score - very conservative
+                bid_amount = 0.3
+                budget_usage = 0.4
         else:
             raise ValueError("Day must be 1 or 2")
             
@@ -95,67 +93,40 @@ class ExampleTwoDaysTwoCampaignsAgent(BaseAgent):
             bid_entries=bid_entries
         )
     
-    def calculate_quality_score(self, impressions_achieved: int, campaign_reach: int) -> float:
-        """
-        Calculate quality score using the formula from the writeup.
-        
-        QC(x) = (2/a) * (arctan(a * (x/R - b)) - arctan(-b)) + 1
-        where a = 4.08577, b = 3.08577
-        
-        This produces:
-        - QC(0) ≈ 0.89 (low quality)
-        - QC(R) ≈ 0.90 (good quality) 
-        - QC(∞) ≈ 1.38 (perfect quality)
-        """
-        a = 4.08577
-        b = 3.08577
-        x = impressions_achieved
-        R = campaign_reach
-        
-        if R == 0:
-            return 0.0
-            
-        x_over_R = x / R
-        quality_score = (2 / a) * (math.atan(a * (x_over_R - b)) - math.atan(-b)) + 1
-        
-        return max(0.0, quality_score)
-    
     def get_first_campaign(self) -> Campaign:
-        """Get the campaign assigned for the first day."""
         return self.campaign_day1
     
     def get_second_campaign(self) -> Campaign:
-        """Get the campaign assigned for the second day."""
         return self.campaign_day2
 
 
 def main():
     """
-    Local testing arena for Example Two-Days Two-Campaigns Agent.
-    Run this file directly to test the example solution against other agents.
+    Local testing arena for Conservative AdX Agent.
+    Run this file directly to test the conservative agent against other agents.
     """
     try:
         from core.engine import Engine
         from core.game.AdxTwoDayGame import AdxTwoDayGame
+        from example_solution import ExampleTwoDaysTwoCampaignsAgent
         from random_agent import RandomAdXAgent
         from aggressive_agent import AggressiveAdXAgent
-        from conservative_agent import ConservativeAdXAgent
         
-        print("=== Example Solution Testing Arena ===\n")
+        print("=== Conservative Agent Testing Arena ===\n")
         
-        # Create the example agent
-        example_agent = ExampleTwoDaysTwoCampaignsAgent()
-        print(f"Example agent: {example_agent.name}")
+        # Create the conservative agent
+        conservative_agent = ConservativeAdXAgent()
+        print(f"Conservative agent: {conservative_agent.name}")
         
         # Create opponents
+        example_agent = ExampleTwoDaysTwoCampaignsAgent()
         random_agent = RandomAdXAgent()
         aggressive_agent = AggressiveAdXAgent()
-        conservative_agent = ConservativeAdXAgent()
         
-        print(f"Opponents: {random_agent.name}, {aggressive_agent.name}, {conservative_agent.name}\n")
+        print(f"Opponents: {example_agent.name}, {random_agent.name}, {aggressive_agent.name}\n")
         
         # Test against each opponent
-        opponents = [random_agent, aggressive_agent, conservative_agent]
+        opponents = [example_agent, random_agent, aggressive_agent]
         
         for opponent in opponents:
             print(f"Testing against {opponent.name}...")
@@ -164,12 +135,12 @@ def main():
             game = AdxTwoDayGame(num_players=2)
             
             # Create engine and run game
-            engine = Engine(game, [example_agent, opponent], rounds=1)
+            engine = Engine(game, [conservative_agent, opponent], rounds=1)
             results = engine.run()
             
-            print(f"  Example score: {results[0]:.2f}")
+            print(f"  Conservative score: {results[0]:.2f}")
             print(f"  {opponent.name} score: {results[1]:.2f}")
-            print(f"  Winner: {'Example' if results[0] > results[1] else opponent.name}")
+            print(f"  Winner: {'Conservative' if results[0] > results[1] else opponent.name}")
             print()
         
         print("=== Testing Complete ===")
@@ -184,4 +155,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
