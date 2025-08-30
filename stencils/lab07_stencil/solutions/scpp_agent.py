@@ -10,15 +10,15 @@ import argparse
 import random
 
 # Add parent directories to path to import from core
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
-from core.agents.base_auction_agent import BaseAuctionAgent
+from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
 from local_bid import local_bid
 
 class SCPPAgent(BaseAuctionAgent):
-    def setup(self, goods, valuation_function, kth_price=1):
-        super().setup(goods, valuation_function, kth_price)
+    def setup(self, goods, kth_price=1):
+        super().setup(goods, kth_price)
         
         self.mode = 'TRAIN'
         
@@ -85,9 +85,10 @@ class SCPPAgent(BaseAuctionAgent):
         Compute and return a bid vector by running the LocalBid routine with expected marginal values.
         """
         # Use local_bid with the learned distribution
+        # The valuation function is now accessed through self.calculate_valuation
         return local_bid(
             self.goods,
-            self.valuation_function,
+            self.calculate_valuation,  # Use the agent's internal valuation method
             self.learned_distribution,
             self.NUM_ITERATIONS_LOCALBID,
             self.NUM_SAMPLES
@@ -144,145 +145,101 @@ if __name__ == "__main__":
 
     if args.mode == "TRAIN":
         # Training mode - self-play (SCPP agents against each other)
+        # Use the proper game infrastructure instead of manual testing
         from core.game.AuctionGame import AuctionGame
+        from core.engine import Engine
+        from core.agents.lab07.random_agent import RandomAgent
+        from core.agents.lab07.marginal_value_agent import MarginalValueAgent
         
-        # Create realistic valuation functions
-        def create_valuation_function(agent_name, valuation_type="complement"):
-            def valuation_function(bundle):
-                if not bundle:
-                    return 0
-                
-                base_values = {"A": 20, "B": 25, "C": 30}
-                random.seed(hash(agent_name) % 1000)
-                adjusted_values = {good: base_values[good] + random.randint(-5, 5) for good in base_values}
-                
-                base_sum = sum(adjusted_values.get(good, 0) for good in bundle)
-                n = len(bundle)
-                
-                if valuation_type == 'additive':
-                    return base_sum
-                elif valuation_type == 'complement':
-                    return base_sum * (1 + 0.05 * (n - 1)) if n > 0 else 0
-                elif valuation_type == 'substitute':
-                    return base_sum * (1 - 0.05 * (n - 1)) if n > 0 else 0
-                else:
-                    return base_sum
-            
-            return valuation_function
-        
+        # Create a simple test environment
         goods = {"A", "B", "C"}
-        valuation_functions = {
-            "SCPP": create_valuation_function("SCPP", "complement"),
-            "Agent_1": create_valuation_function("Agent_1", "complement"),
-            "Agent_2": create_valuation_function("Agent_2", "complement"),
-            "Agent_3": create_valuation_function("Agent_3", "complement"),
-        }
+        player_names = ["SCPP_1", "SCPP_2", "SCPP_3", "Random"]
         
-        game = AuctionGame(goods, valuation_functions, num_rounds=args.num_rounds, kth_price=2)
+        # Create agents for training
+        agents = [
+            SCPPAgent("SCPP_1"),
+            SCPPAgent("SCPP_2"),
+            SCPPAgent("SCPP_3"),
+            RandomAgent("Random", min_bid=1.0, max_bid=20.0),
+        ]
         
-        # Set up agents - use self-play in training
-        agent_submission.setup(goods, valuation_functions["SCPP"], 2)
-        agents = {
-            "Agent_1": SCPPAgent("Agent_1"),
-            "Agent_2": SCPPAgent("Agent_2"),
-            "Agent_3": SCPPAgent("Agent_3"),
-        }
+        # Set all agents to training mode
+        for agent in agents:
+            if hasattr(agent, 'mode'):
+                agent.mode = 'TRAIN'
         
-        for name, agent in agents.items():
-            agent.setup(goods, valuation_functions[name], 2)
-            agent.mode = 'TRAIN'  # All agents in training mode
+        # Create game with internal valuation handling
+        game = AuctionGame(
+            goods=goods,
+            player_names=player_names,
+            num_rounds=args.num_rounds,
+            kth_price=1,
+            valuation_type="additive",
+            value_range=(10, 50)
+        )
         
         start = time.time()
         
-        # Run training rounds
-        for round_num in range(args.num_rounds):
-            observation = {"goods": goods, "round": round_num}
-            
-            actions = {}
-            actions["SCPP"] = agent_submission.get_action(observation)
-            for name, agent in agents.items():
-                actions[name] = agent.get_action(observation)
-            
-            results = game.run_round(actions)
-            
-            agent_submission.update(observation, actions["SCPP"], results["utilities"]["SCPP"], False, results)
-            for name, agent in agents.items():
-                agent.update(observation, actions[name], results["utilities"][name], False, results)
+        # Use the engine to run the game properly
+        engine = Engine(game, agents, rounds=args.num_rounds)
+        final_rewards = engine.run()
         
         end = time.time()
         print(f"Training completed in {end - start} seconds")
         print("Learned distribution saved to disk")
         
+        # Print results
+        for i, agent in enumerate(agents):
+            print(f"{agent.name}: {final_rewards[i]:.2f}")
+        
     else:  # RUN mode
         # Test mode - compete against variety of agents
         from core.game.AuctionGame import AuctionGame
-        from core.agents.lab07.marginal_value_agent import MarginalValueAgent
+        from core.engine import Engine
         from core.agents.lab07.random_agent import RandomAgent
+        from core.agents.lab07.marginal_value_agent import MarginalValueAgent
         from core.agents.lab07.aggressive_agent import AggressiveAgent
         from core.agents.lab07.conservative_agent import ConservativeAgent
         
-        def create_valuation_function(agent_name, valuation_type="complement"):
-            def valuation_function(bundle):
-                if not bundle:
-                    return 0
-                
-                base_values = {"A": 20, "B": 25, "C": 30}
-                random.seed(hash(agent_name) % 1000)
-                adjusted_values = {good: base_values[good] + random.randint(-5, 5) for good in base_values}
-                
-                base_sum = sum(adjusted_values.get(good, 0) for good in bundle)
-                n = len(bundle)
-                
-                if valuation_type == 'additive':
-                    return base_sum
-                elif valuation_type == 'complement':
-                    return base_sum * (1 + 0.05 * (n - 1)) if n > 0 else 0
-                elif valuation_type == 'substitute':
-                    return base_sum * (1 - 0.05 * (n - 1)) if n > 0 else 0
-                else:
-                    return base_sum
-            
-            return valuation_function
-        
+        # Create a simple test environment
         goods = {"A", "B", "C"}
-        valuation_functions = {
-            "SCPP": create_valuation_function("SCPP", "complement"),
-            "MarginalValue": create_valuation_function("MarginalValue", "complement"),
-            "Random": create_valuation_function("Random", "complement"),
-            "Aggressive": create_valuation_function("Aggressive", "complement"),
-            "Conservative": create_valuation_function("Conservative", "complement"),
-        }
+        player_names = ["SCPP", "MarginalValue", "Random", "Aggressive", "Conservative"]
         
-        game = AuctionGame(goods, valuation_functions, num_rounds=500, kth_price=2)
+        # Create agents for testing
+        agents = [
+            SCPPAgent("SCPP"),
+            MarginalValueAgent("MarginalValue", bid_fraction=0.8),
+            RandomAgent("Random", min_bid=1.0, max_bid=20.0),
+            AggressiveAgent("Aggressive", bid_multiplier=1.5),
+            ConservativeAgent("Conservative", bid_fraction=0.5),
+        ]
         
-        # Set up agents - use variety of agents in running
-        agent_submission.setup(goods, valuation_functions["SCPP"], 2)
-        agents = {
-            "MarginalValue": MarginalValueAgent("MarginalValue", bid_fraction=0.8),
-            "Random": RandomAgent("Random", min_bid=1.0, max_bid=20.0),
-            "Aggressive": AggressiveAgent("Aggressive", bid_multiplier=1.5),
-            "Conservative": ConservativeAgent("Conservative", bid_fraction=0.5),
-        }
+        # Set all agents to run mode
+        for agent in agents:
+            if hasattr(agent, 'mode'):
+                agent.mode = 'RUN'
         
-        for name, agent in agents.items():
-            agent.setup(goods, valuation_functions[name], 2)
+        # Create game with internal valuation handling
+        game = AuctionGame(
+            goods=goods,
+            player_names=player_names,
+            num_rounds=500,
+            kth_price=1,
+            valuation_type="additive",
+            value_range=(10, 50)
+        )
         
         start = time.time()
         
-        # Run test rounds
-        for round_num in range(500):
-            observation = {"goods": goods, "round": round_num}
-            
-            actions = {}
-            actions["SCPP"] = agent_submission.get_action(observation)
-            for name, agent in agents.items():
-                actions[name] = agent.get_action(observation)
-            
-            results = game.run_round(actions)
-            
-            agent_submission.update(observation, actions["SCPP"], results["utilities"]["SCPP"], False, results)
-            for name, agent in agents.items():
-                agent.update(observation, actions[name], results["utilities"][name], False, results)
+        # Use the engine to run the game properly
+        engine = Engine(game, agents, rounds=500)
+        final_rewards = engine.run()
         
         end = time.time()
         print(f"Testing completed in {end - start} seconds")
+        
+        # Print results
+        for i, agent in enumerate(agents):
+            print(f"{agent.name}: {final_rewards[i]:.2f}")
+        
+        print("Note: This uses the proper game infrastructure with internal valuation handling.")

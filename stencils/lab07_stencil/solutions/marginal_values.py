@@ -2,16 +2,18 @@
 Solution for marginal values implementation.
 """
 
+import random
+
 def calculate_marginal_value(goods, selected_good, valuation_function, bids, prices):
     """
     Compute the marginal value of selected_good: 
     the difference between the valuation of the bundle that includes the good and the bundle without it.
     A bidder wins a good if bid >= price.
     """
-    # Determine which goods you would win with current bids
+    # Determine which goods the bidder would win with current bids
     won_goods = set()
     for good in goods:
-        if good != selected_good and bids.get(good, 0) >= prices.get(good, 0):
+        if bids.get(good, 0) >= prices.get(good, 0):
             won_goods.add(good)
     
     # Value with the selected good
@@ -19,7 +21,7 @@ def calculate_marginal_value(goods, selected_good, valuation_function, bids, pri
     value_with_good = valuation_function(bundle_with_good)
     
     # Value without the selected good
-    bundle_without_good = won_goods
+    bundle_without_good = won_goods - {selected_good}
     value_without_good = valuation_function(bundle_without_good)
     
     # Marginal value is the difference
@@ -41,7 +43,7 @@ def calculate_expected_marginal_value(goods, selected_good, valuation_function, 
     for NUM_SAMPLES do
         p ← P.sample()
         bundle ← {}
-        for gk ∈ G\{gj} do
+        for gk ∈ G\\{gj} do
             price ← pk
             bid ← bk
             if bid > price then
@@ -56,24 +58,23 @@ def calculate_expected_marginal_value(goods, selected_good, valuation_function, 
     total_mv = 0
     
     for _ in range(num_samples):
-        # Sample a price vector
-        prices = price_distribution.sample()
+        # Sample a price vector from the distribution
+        p = price_distribution.sample()
         
-        # Determine which goods you would win with current bids
+        # Determine which goods the bidder would win (excluding the selected good)
         bundle = set()
-        for good in goods:
-            if good != selected_good:
-                price = prices.get(good, 0)
-                bid = bids.get(good, 0)
-                if bid > price:
-                    bundle.add(good)
+        for gk in goods - {selected_good}:
+            price = p.get(gk, 0)
+            bid = bids.get(gk, 0)
+            if bid > price:
+                bundle.add(gk)
         
         # Calculate marginal value for this sample
-        bundle_with_good = bundle | {selected_good}
-        bundle_without_good = bundle
-        mv = valuation_function(bundle_with_good) - valuation_function(bundle_without_good)
-        total_mv += mv
+        value_with_good = valuation_function(bundle | {selected_good})
+        value_without_good = valuation_function(bundle)
+        marginal_value = value_with_good - value_without_good
+        
+        total_mv += marginal_value
     
-    # Return average marginal value
-    avg_mv = total_mv / num_samples
-    return avg_mv
+    # Return the average
+    return total_mv / num_samples

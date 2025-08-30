@@ -1,5 +1,5 @@
 """
-Solution for SingleGoodHistogram implementation.
+Solution for single good histogram implementation.
 """
 
 import random
@@ -10,13 +10,13 @@ class SingleGoodHistogram:
         self.bid_upper_bound = bid_upper_bound
         self.buckets = {}
         for b in range(0, bid_upper_bound, bucket_size):
-            self.buckets[b] = 1.0  # Initialize with 1 to avoid empty histogram
-        self.total = len(self.buckets)  # Initialize total
+            self.buckets[b] = 1.0  # Initialize with 1 to avoid empty histogram issues
+        self.total = sum(self.buckets.values())
 
     def get_bucket(self, price):
         bucket = int(price // self.bucket_size) * self.bucket_size
-        if bucket >= self.bid_upper_bound:
-            bucket = self.bid_upper_bound - self.bucket_size
+        if bucket > self.bid_upper_bound:
+            bucket = self.bid_upper_bound
         return bucket
 
     def add_record(self, price):
@@ -41,37 +41,31 @@ class SingleGoodHistogram:
         1. Smooth the current histogram.
         2. Add the new histogram to the current histogram.
         """
-        # 1. Smooth the current histogram
         self.smooth(alpha)
-        
-        # 2. For each bucket, increase its frequency by alpha times the corresponding frequency in new_hist
         for bucket in self.buckets:
-            if bucket in new_hist.buckets:
-                self.buckets[bucket] += alpha * new_hist.buckets[bucket]
-                self.total += alpha * new_hist.buckets[bucket]
+            self.buckets[bucket] += alpha * new_hist.buckets[bucket]
 
     def sample(self):
         """ 
         Return a random sample from the histogram. 
         """
-        if self.total <= 0:
+        if self.total == 0:
             return random.uniform(0, self.bid_upper_bound)
         
-        # Generate a random number z between 0 and 1
+        # Generate a random number between 0 and 1
         z = random.random()
+        cumulative = 0
         
         # Find the bucket at the zth percentile
-        cumulative = 0
         for bucket in sorted(self.buckets.keys()):
             cumulative += self.buckets[bucket] / self.total
             if cumulative >= z:
-                # Return a random value within this bucket
-                bucket_start = bucket
-                bucket_end = min(bucket + self.bucket_size, self.bid_upper_bound)
-                return random.uniform(bucket_start, bucket_end)
+                # Return a random value within the bucket
+                return bucket + random.uniform(0, self.bucket_size)
         
-        # Fallback
-        return random.uniform(0, self.bid_upper_bound)
+        # Fallback: return a value from the last bucket
+        return self.bid_upper_bound
+
     
     def __repr__(self):
         return str(self.buckets)

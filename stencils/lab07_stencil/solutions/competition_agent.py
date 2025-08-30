@@ -8,15 +8,15 @@ import time
 import random
 
 # Add parent directories to path to import from core
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
-from core.agents.base_auction_agent import BaseAuctionAgent
+from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
 from local_bid import local_bid
 
 class CompetitionAgent(BaseAuctionAgent):
-    def setup(self, goods, valuation_function, kth_price=1):
-        super().setup(goods, valuation_function, kth_price)
+    def setup(self, goods, kth_price=1):
+        super().setup(goods, kth_price)
         
         # Competition agent parameters
         self.learning_rate = 0.1
@@ -40,9 +40,8 @@ class CompetitionAgent(BaseAuctionAgent):
         3. Exploration vs exploitation
         """
         goods = observation.get("goods", set())
-        valuation_function = observation.get("valuation_function", None)
         
-        if not goods or not valuation_function:
+        if not goods:
             # Fallback strategy
             return {good: 10.0 for good in goods}
         
@@ -51,14 +50,14 @@ class CompetitionAgent(BaseAuctionAgent):
             # Use learned price distribution for bidding
             bids = local_bid(
                 goods,
-                valuation_function,
+                self.calculate_valuation,  # Use the agent's internal valuation method
                 self.price_histogram,
                 num_iterations=50,
                 num_samples=30
             )
         else:
             # Strategy 2: Adaptive bidding based on history
-            bids = self._adaptive_bidding(goods, valuation_function)
+            bids = self._adaptive_bidding(goods)
         
         # Strategy 3: Add some randomness for exploration
         if random.random() < self.exploration_rate:
@@ -67,16 +66,16 @@ class CompetitionAgent(BaseAuctionAgent):
         
         return bids
     
-    def _adaptive_bidding(self, goods, valuation_function):
+    def _adaptive_bidding(self, goods):
         """
         Adaptive bidding strategy based on historical performance.
         """
         bids = {}
         
         for good in goods:
-            # Calculate marginal value
-            value_with_good = valuation_function({good})
-            value_without_good = valuation_function(set())
+            # Calculate marginal value using the agent's internal valuation method
+            value_with_good = self.calculate_valuation({good})
+            value_without_good = self.calculate_valuation(set())
             marginal_value = value_with_good - value_without_good
             
             # Adjust bid based on historical performance
@@ -97,15 +96,15 @@ class CompetitionAgent(BaseAuctionAgent):
             bids[good] = marginal_value * bid_multiplier
         
         return bids
-        
+
     def update(self, observation, action, reward, done, info):
+        """Update the agent with the results of the last action."""
         super().update(observation, action, reward, done, info)
         
-        # Store history
-        self.bid_history.append(action)
+        # Track utility history
         self.utility_history.append(reward)
         
-        # Update price prediction from opponent bids
+        # Extract opponent bids from info to update price predictions
         if 'bids' in info:
             other_bids_raw = info['bids']
             other_bids = {player: bids for player, bids in other_bids_raw.items() if player != self.name}
@@ -165,77 +164,48 @@ if __name__ == "__main__":
         import asyncio
         asyncio.run(main())
     else:
-        # Create a simple test environment
+        # Use the proper game infrastructure for local testing
         from core.game.AuctionGame import AuctionGame
+        from core.engine import Engine
         from core.agents.lab07.random_agent import RandomAgent
+        from core.agents.lab07.marginal_value_agent import MarginalValueAgent
+        from core.agents.lab07.aggressive_agent import AggressiveAgent
+        from core.agents.lab07.conservative_agent import ConservativeAgent
         
-        # Create realistic valuation functions
-        def create_valuation_function(agent_name, valuation_type="complement"):
-            def valuation_function(bundle):
-                if not bundle:
-                    return 0
-                
-                base_values = {"A": 20, "B": 25, "C": 30}
-                random.seed(hash(agent_name) % 1000)
-                adjusted_values = {good: base_values[good] + random.randint(-5, 5) for good in base_values}
-                
-                base_sum = sum(adjusted_values.get(good, 0) for good in bundle)
-                n = len(bundle)
-                
-                if valuation_type == 'additive':
-                    return base_sum
-                elif valuation_type == 'complement':
-                    return base_sum * (1 + 0.05 * (n - 1)) if n > 0 else 0
-                elif valuation_type == 'substitute':
-                    return base_sum * (1 - 0.05 * (n - 1)) if n > 0 else 0
-                else:
-                    return base_sum
-            
-            return valuation_function
-        
+        # Create a simple test environment
         goods = {"A", "B", "C"}
-        valuation_functions = {
-            "Competition": create_valuation_function("Competition", "complement"),
-            "Agent_1": create_valuation_function("Agent_1", "complement"),
-            "Agent_2": create_valuation_function("Agent_2", "complement"),
-            "Agent_3": create_valuation_function("Agent_3", "complement"),
-            "Agent_4": create_valuation_function("Agent_4", "complement"),
-            "Agent_5": create_valuation_function("Agent_5", "complement"),
-            "Agent_6": create_valuation_function("Agent_6", "complement"),
-        }
+        player_names = ["Competition", "Random", "MarginalValue", "Aggressive", "Conservative"]
         
-        game = AuctionGame(goods, valuation_functions, num_rounds=100, kth_price=1)
+        # Create agents - these work with the new system
+        agents = [
+            CompetitionAgent("Competition"),
+            RandomAgent("Random", min_bid=1.0, max_bid=20.0),
+            MarginalValueAgent("MarginalValue", bid_fraction=0.8),
+            AggressiveAgent("Aggressive", bid_multiplier=1.5),
+            ConservativeAgent("Conservative", bid_fraction=0.5),
+        ]
         
-        # Set up agents
-        agent_submission.setup(goods, valuation_functions["Competition"], 1)
-        agents = {
-            "Agent_1": CompetitionAgent("Agent_1"),
-            "Agent_2": CompetitionAgent("Agent_2"),
-            "Agent_3": CompetitionAgent("Agent_3"),
-            "Agent_4": CompetitionAgent("Agent_4"),
-            "Agent_5": CompetitionAgent("Agent_5"),
-            "Agent_6": CompetitionAgent("Agent_6"),
-        }
-        
-        for name, agent in agents.items():
-            agent.setup(goods, valuation_functions[name], 1)
+        # Create game with internal valuation handling
+        game = AuctionGame(
+            goods=goods,
+            player_names=player_names,
+            num_rounds=100,
+            kth_price=1,
+            valuation_type="additive",
+            value_range=(10, 50)
+        )
         
         start = time.time()
         
-        # Run test rounds
-        for round_num in range(100):
-            observation = {"goods": goods, "round": round_num}
-            
-            actions = {}
-            actions["Competition"] = agent_submission.get_action(observation)
-            for name, agent in agents.items():
-                actions[name] = agent.get_action(observation)
-            
-            results = game.run_round(actions)
-            
-            agent_submission.update(observation, actions["Competition"], results["utilities"]["Competition"], False, results)
-            for name, agent in agents.items():
-                agent.update(observation, actions[name], results["utilities"][name], False, results)
+        # Use the engine to run the game properly
+        engine = Engine(game, agents, rounds=100)
+        final_rewards = engine.run()
         
         end = time.time()
         print(f"{end - start} Seconds Elapsed")
+        
+        # Print results
+        for i, agent in enumerate(agents):
+            print(f"{agent.name}: {final_rewards[i]:.2f}")
+        
+        print("Success! The new system handles valuations internally without exposing them in main.")

@@ -17,8 +17,8 @@ class RandomAgent(BaseAuctionAgent):
         self.min_bid = min_bid
         self.max_bid = max_bid
     
-    def setup(self, goods, valuation_function, kth_price=1):
-        super().setup(goods, valuation_function, kth_price)
+    def setup(self, goods, kth_price=1):
+        super().setup(goods, kth_price)
     
     def get_action(self, observation):
         """

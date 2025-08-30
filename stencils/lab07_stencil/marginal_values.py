@@ -1,3 +1,5 @@
+import random
+
 def calculate_marginal_value(goods, selected_good, valuation_function, bids, prices):
     """
     Compute the marginal value of selected_good: 
@@ -17,21 +19,7 @@ def calculate_expected_marginal_value(goods, selected_good, valuation_function, 
     HYPERPARAMETERS: NUM_SAMPLES
     OUTPUT: An estimate of the expected marginal value of good gj
     
-    totalMV ← 0
-    for NUM_SAMPLES do
-        p ← P.sample()
-        bundle ← {}
-        for gk ∈ G\{gj} do
-            price ← pk
-            bid ← bk
-            if bid > price then
-                bundle.Add(gk)
-            end if
-        end for
-        totalMV += [v(bundle ∪ {gj}) - v(bundle)]
-    end for
-    avgMV ← totalMV / NUM_SAMPLES
-    return avgMV
+
     """
     # TODO: Implement expected marginal value calculation according to Algorithm 1
     raise NotImplementedError("Implement expected marginal value calculation") 

@@ -16,8 +16,8 @@ class MarginalValueAgent(BaseAuctionAgent):
         super().__init__(name)
         self.bid_fraction = bid_fraction
     
-    def setup(self, goods, valuation_function, kth_price=1):
-        super().setup(goods, valuation_function, kth_price)
+    def setup(self, goods, kth_price=1):
+        super().setup(goods, kth_price)
     
     def get_action(self, observation):
         """

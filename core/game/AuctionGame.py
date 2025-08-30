@@ -13,24 +13,32 @@ class AuctionGame(BaseGame):
     complement, substitute, etc.).
     """
     
-    def __init__(self, goods: Set[str], valuation_functions: Dict[str, Callable], 
-                 num_rounds: int = 100, kth_price: int = 1):
+    def __init__(self, goods: Set[str], player_names: List[str], 
+                 num_rounds: int = 100, kth_price: int = 1, 
+                 valuation_type: str = "additive", value_range: Tuple[int, int] = (0, 100)):
         """
         Initialize the auction game.
         
         Args:
             goods: Set of goods available for auction
-            valuation_functions: Dict mapping player names to their valuation functions
+            player_names: List of player names
             num_rounds: Number of rounds to play
             kth_price: Which price to use (1st price = 1, 2nd price = 2, etc.)
+            valuation_type: Type of valuation function ("additive", "complement", "substitute", "randomized")
+            value_range: Range for individual good valuations (min, max)
         """
         super().__init__()
         self.goods = goods
-        self.valuation_functions = valuation_functions
-        self.kth_price = kth_price
-        self.players = list(valuation_functions.keys())
+        self.players = player_names
         self._num_players = len(self.players)
         self.num_rounds = num_rounds
+        self.kth_price = kth_price
+        self.valuation_type = valuation_type
+        self.value_range = value_range
+        
+        # Create goods to index mapping
+        self._goods_to_index = {good: idx for idx, good in enumerate(goods)}
+        self._index_to_goods = {idx: good for good, idx in self._goods_to_index.items()}
         
         # Game state
         self.current_round = 0
@@ -40,6 +48,62 @@ class AuctionGame(BaseGame):
         self.price_history = []
         self.utility_history = []
         
+        # Valuation history for each player
+        self.valuation_history = {player: [] for player in self.players}
+        
+        # Current valuations for each player (set each round)
+        self.current_valuations = {player: [0] * len(goods) for player in self.players}
+        
+    def generate_valuations_for_round(self):
+        """
+        Generate valuations for all players for the current round.
+        This mimics the old server's behavior of generating valuations each round.
+        """
+        from itertools import combinations
+        
+        for player in self.players:
+            # Generate individual good valuations
+            valuations = {}
+            for good in self.goods:
+                valuations[good] = random.randint(self.value_range[0], self.value_range[1])
+            
+            # Store valuations in the format expected by agents
+            for good, value in valuations.items():
+                self.current_valuations[player][self._goods_to_index[good]] = value
+            
+            # Store in history
+            self.valuation_history[player].append(valuations)
+    
+    def calculate_valuation_for_player(self, player: str, bundle: Set[str]) -> float:
+        """
+        Calculate the valuation for a player's bundle using their current valuations.
+        This mimics the old server's calculate_valuation method.
+        """
+        if not bundle:
+            return 0
+        
+        # Get the player's current valuations
+        valuations = self.current_valuations[player]
+        
+        # Convert bundle to indices and sum base values
+        bundle_indices = [self._goods_to_index[good] for good in bundle]
+        base_sum = sum(valuations[idx] for idx in bundle_indices)
+        
+        n = len(bundle)
+        
+        if self.valuation_type == 'additive':
+            return base_sum
+        elif self.valuation_type == 'complement':
+            return base_sum * (1 + 0.05 * (n - 1)) if n > 0 else 0
+        elif self.valuation_type == 'substitute':
+            return base_sum * (1 - 0.05 * (n - 1)) if n > 0 else 0
+        elif self.valuation_type == 'randomized':
+            # For randomized, we need pairwise adjustments
+            # This is simplified - in full implementation would need to store pairwise adjustments
+            return base_sum
+        else:
+            return base_sum
+    
     def calculate_marginal_value(self, goods: Set[str], selected_good: str, 
                                valuation_function: Callable, bids: Dict[str, float], 
                                prices: Dict[str, float]) -> float:
@@ -116,15 +180,13 @@ class AuctionGame(BaseGame):
         
         return allocation, payments, prices
     
-    def calculate_utilities(self, allocation: Dict[str, str], payments: Dict[str, float], 
-                          valuation_functions: Dict[str, Callable]) -> Dict[str, float]:
+    def calculate_utilities(self, allocation: Dict[str, str], payments: Dict[str, float]) -> Dict[str, float]:
         """
-        Calculate utilities for all players.
+        Calculate utilities for all players using their current valuations.
         
         Args:
             allocation: Dict mapping goods to winning player names
             payments: Dict mapping player names to their total payments
-            valuation_functions: Dict mapping player names to their valuation functions
             
         Returns:
             Dict mapping player names to their utilities
@@ -135,8 +197,8 @@ class AuctionGame(BaseGame):
             # Determine which goods this player won
             won_goods = {good for good, winner in allocation.items() if winner == player}
             
-            # Calculate value of won goods
-            value = valuation_functions[player](won_goods)
+            # Calculate value of won goods using the game's valuation method
+            value = self.calculate_valuation_for_player(player, won_goods)
             
             # Calculate utility (value - payment)
             utility = value - payments[player]
@@ -154,11 +216,14 @@ class AuctionGame(BaseGame):
         Returns:
             Dict containing round results
         """
+        # Generate valuations for all players
+        self.generate_valuations_for_round()
+
         # Compute auction outcome
         allocation, payments, prices = self.compute_auction_result(agent_actions)
         
         # Calculate utilities
-        utilities = self.calculate_utilities(allocation, payments, self.valuation_functions)
+        utilities = self.calculate_utilities(allocation, payments)
         
         # Store history
         self.bid_history.append(agent_actions)
@@ -209,10 +274,10 @@ class AuctionGame(BaseGame):
             "kth_price": self.kth_price
         }
         
-        # Return initial observations
+        # Return initial observations (using numeric indices)
         obs = {}
-        for player in self.players:
-            obs[player] = {
+        for i, player in enumerate(self.players):
+            obs[i] = {
                 "goods": self.goods,
                 "kth_price": self.kth_price,
                 "round": 0
@@ -230,17 +295,20 @@ class AuctionGame(BaseGame):
         if self.current_round >= self.num_rounds:
             raise ValueError("Game is already finished")
         
-        # Convert actions to the expected format
-        agent_actions = {str(player): actions[player] for player in self.players}
+        # Convert numeric indices to player names for internal processing
+        agent_actions = {}
+        for i, player in enumerate(self.players):
+            if i in actions:
+                agent_actions[player] = actions[i]
         
         # Run the round
         results = self.run_round(agent_actions)
         self.current_round += 1
         
-        # Prepare observations for next round
+        # Prepare observations for next round (using numeric indices)
         obs = {}
-        for player in self.players:
-            obs[player] = {
+        for i, player in enumerate(self.players):
+            obs[i] = {
                 "goods": self.goods,
                 "kth_price": self.kth_price,
                 "round": self.current_round,
@@ -249,16 +317,18 @@ class AuctionGame(BaseGame):
                 "last_payments": results['payments']
             }
         
-        # Rewards are the utilities from this round
-        rewards = results['utilities']
+        # Rewards are the utilities from this round (using numeric indices)
+        rewards = {}
+        for i, player in enumerate(self.players):
+            rewards[i] = results['utilities'].get(player, 0)
         
         # Check if game is done
         done = self.current_round >= self.num_rounds
         
-        # Info contains additional data
+        # Info contains additional data (using numeric indices)
         info = {}
-        for player in self.players:
-            info[player] = {
+        for i, player in enumerate(self.players):
+            info[i] = {
                 "allocation": results['allocation'],
                 "prices": results['prices'],
                 "payments": results['payments'],

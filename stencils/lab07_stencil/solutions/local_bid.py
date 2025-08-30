@@ -33,47 +33,48 @@ def local_bid(goods, valuation_function, price_distribution, num_iterations=100,
     return b_old
     """
     # Initialize bid vector with zeros
-    bids = {good: 0.0 for good in goods}
+    b_old = {good: 0.0 for good in goods}
     
     for iteration in range(num_iterations):
-        # Create a copy of current bids
-        new_bids = bids.copy()
+        b_new = b_old.copy()
         
-        # Update each good's bid to its expected marginal value
         for good in goods:
+            # Calculate expected marginal value for this good
             expected_mv = calculate_expected_marginal_value(
-                goods, good, valuation_function, bids, price_distribution, num_samples
+                goods, good, valuation_function, b_old, price_distribution, num_samples
             )
-            new_bids[good] = expected_mv
+            b_new[good] = expected_mv
         
-        # Update bids for next iteration
-        bids = new_bids
-        
-        # Optional: Check for convergence
-        if iteration > 0:
-            max_change = max(abs(bids[good] - new_bids[good]) for good in goods)
-            if max_change < 0.01:  # Small threshold for convergence
-                break
+        # Check for convergence (simple approach: if no significant change)
+        max_change = max(abs(b_new[good] - b_old[good]) for good in goods)
+        if max_change < 0.01:  # Convergence threshold
+            break
+            
+        b_old = b_new
     
-    return bids
+    return b_new
 
 if __name__ == "__main__":
-    def valuation(bundle): 
-        if len(bundle) == 1: 
-            return 10 
-        elif len(bundle) == 2:
-            return 80 
-        elif len(bundle) == 3: 
-            return 50 
-        else: 
-            return 0
+    # Test with a simple additive valuation function
+    # This mimics how the old server generated valuations
+    def test_valuation(bundle):
+        """Simple additive valuation for testing."""
+        base_values = {"a": 20, "b": 25, "c": 30}
+        return sum(base_values.get(item, 0) for item in bundle)
     
-    print(local_bid(
+    # Create a simple price distribution for testing
+    test_histogram = IndependentHistogram(["a", "b", "c"], [5, 5, 5], [100, 100, 100])
+    
+    # Add some sample data to the histogram
+    for _ in range(10):
+        test_histogram.add_record({"a": 15, "b": 20, "c": 25})
+    
+    print("Testing local_bid with sample data...")
+    result = local_bid(
         goods=["a", "b", "c"],
-        valuation_function=valuation,
-        price_distribution=IndependentHistogram(["a", "b", "c"], 
-                                                [5, 5, 5], 
-                                                [100, 100, 100]),
+        valuation_function=test_valuation,
+        price_distribution=test_histogram,
         num_iterations=10,
-        num_samples=1000
-    ))
+        num_samples=50
+    )
+    print("Result:", result)

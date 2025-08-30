@@ -6,8 +6,8 @@ class SingleGoodHistogram:
         self.bid_upper_bound = bid_upper_bound
         self.buckets = {}
         for b in range(0, bid_upper_bound, bucket_size):
-            self.buckets[b] = 0.0
-        self.total = 0.0
+            self.buckets[b] = 1.0  # Initialize with 1 to avoid empty histogram issues
+        self.total = sum(self.buckets.values())
 
     def get_bucket(self, price):
         bucket = int(price // self.bucket_size) * self.bucket_size
@@ -51,7 +51,7 @@ class SingleGoodHistogram:
         """
         # TODO: Implement sample method
         # Generate a random number z between 0 and 1, and return the value at the zth-percentile
-        # To avoid sampling from an empty histogram, you can initialize all bucket counts to 1
+        # Note: Since we initialize with 1.0 in each bucket, we avoid empty histogram issues
         raise NotImplementedError("Implement sample method")
 
     

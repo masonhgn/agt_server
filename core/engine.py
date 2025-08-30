@@ -83,10 +83,22 @@ class Engine:
         # reset all agents and call setup
         for agent in self.agents:
             agent.reset()
-            agent.setup()
+            # For auction agents, set up with goods (no valuation function needed)
+            if hasattr(agent, 'setup') and hasattr(agent, 'goods'):
+                agent.setup(self.game.goods, self.game.kth_price)
+            else:
+                agent.setup()
         
         # run the game
         for round_num in range(num_rounds):
+            # For auction games, set valuations on agents before getting actions
+            if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
+                for i, agent in enumerate(self.agents):
+                    if hasattr(agent, 'set_valuations') and i < len(self.game.players):
+                        player_name = self.game.players[i]
+                        valuations = self.game.current_valuations[player_name]
+                        agent.set_valuations(valuations)
+            
             # get actions from all agents
             actions = {}
             for i, agent in enumerate(self.agents):
@@ -94,7 +106,8 @@ class Engine:
                 agent_obs = obs.get(i, {})
                 action = self._get_agent_action(agent, agent_obs)
                 actions[i] = action
-                agent.action_history.append(action)
+                if hasattr(agent, 'action_history'):
+                    agent.action_history.append(action)
             
             # step the game
             obs, rewards, done, info = self.game.step(actions)
@@ -103,7 +116,7 @@ class Engine:
             for i, agent in enumerate(self.agents):
                 reward = rewards.get(i, 0)
                 agent_info = info.get(i, {})
-                agent.update(reward, agent_info)
+                agent.update(obs.get(i, {}), actions.get(i, {}), reward, done, agent_info)
                 self.cumulative_reward[i] += reward
                 
                 # Track opponent actions for 2-player games
@@ -111,7 +124,7 @@ class Engine:
                     opponent_idx = 1 - i  # Other player
                     opponent_action = actions.get(opponent_idx)
                     opponent_reward = rewards.get(opponent_idx, 0)
-                    if opponent_action is not None:
+                    if opponent_action is not None and hasattr(agent, 'add_opponent_action'):
                         agent.add_opponent_action(opponent_action)
                         agent.add_opponent_reward(opponent_reward)
             
@@ -131,13 +144,22 @@ class Engine:
         # get current observation
         obs = self.game.get_observation()
         
+        # For auction games, set valuations on agents before getting actions
+        if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
+            for i, agent in enumerate(self.agents):
+                if hasattr(agent, 'set_valuations') and i < len(self.game.players):
+                    player_name = self.game.players[i]
+                    valuations = self.game.current_valuations[player_name]
+                    agent.set_valuations(valuations)
+        
         # get actions from all agents
         actions = {}
         for i, agent in enumerate(self.agents):
             agent_obs = obs.get(i, {})
             action = self._get_agent_action(agent, agent_obs)
             actions[i] = action
-            agent.action_history.append(action)
+            if hasattr(agent, 'action_history'):
+                agent.action_history.append(action)
         
         # step the game
         obs, rewards, done, info = self.game.step(actions)
@@ -146,7 +168,7 @@ class Engine:
         for i, agent in enumerate(self.agents):
             reward = rewards.get(i, 0)
             agent_info = info.get(i, {})
-            agent.update(reward, agent_info)
+            agent.update(obs.get(i, {}), actions.get(i, {}), reward, done, agent_info)
             self.cumulative_reward[i] += reward
             
             # Track opponent actions for 2-player games
@@ -154,7 +176,7 @@ class Engine:
                 opponent_idx = 1 - i  # Other player
                 opponent_action = actions.get(opponent_idx)
                 opponent_reward = rewards.get(opponent_idx, 0)
-                if opponent_action is not None:
+                if opponent_action is not None and hasattr(agent, 'add_opponent_action'):
                     agent.add_opponent_action(opponent_action)
                     agent.add_opponent_reward(opponent_reward)
         
