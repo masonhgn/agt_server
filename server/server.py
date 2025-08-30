@@ -194,6 +194,10 @@ class AGTServer:
                 player_name = f"{original_name}_{counter}"
                 counter += 1
             
+            # Log if name was modified due to conflict
+            if player_name != original_name:
+                print(f"Name conflict resolved: '{original_name}' -> '{player_name}'", flush=True)
+            
             # Create player connection
             player = PlayerConnection(
                 name=player_name,
@@ -215,7 +219,10 @@ class AGTServer:
             })
             
             # Player connected successfully
-            print(f"Player {player_name} connected from {address[0]}:{address[1]}", flush=True)
+            if player_name == original_name:
+                print(f"Player '{player_name}' connected from {address[0]}:{address[1]} (no name conflicts)", flush=True)
+            else:
+                print(f"Player '{player_name}' connected from {address[0]}:{address[1]} (resolved from '{original_name}')", flush=True)
             
             # Main client loop
             await self.client_loop(player)

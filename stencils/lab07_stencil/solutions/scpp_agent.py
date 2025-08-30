@@ -28,11 +28,11 @@ class SCPPAgent(BaseAuctionAgent):
         
         self.simulation_count = 0
         # Local bid algorithm parameters
-        self.NUM_ITERATIONS_LOCALBID = 10  # Number of iterations for local bid optimization
+        self.NUM_ITERATIONS_LOCALBID = 100  # Number of iterations for local bid optimization
         self.NUM_SAMPLES = 50              # Number of samples for marginal value estimation
         
         # Distribution learning parameters
-        self.NUM_SIMULATIONS_PER_ITERATION = 10  # Update distribution every N simulations
+        self.NUM_SIMULATIONS_PER_ITERATION = 100  # Update distribution every N simulations
         self.ALPHA = 0.1                          # Learning rate for distribution updates
         self.BUCKET_SIZE = 5                      # Histogram bucket size
 
@@ -102,6 +102,7 @@ class SCPPAgent(BaseAuctionAgent):
         )
 
     def update(self, observation, action, reward, done, info):
+        #print('update called')
         """Update the agent with the results of the last action."""
         super().update(observation, action, reward, done, info)
         
@@ -110,7 +111,7 @@ class SCPPAgent(BaseAuctionAgent):
             other_bids_raw = info['bids']
             # Remove our own bids to get opponent bids
             other_bids = {player: bids for player, bids in other_bids_raw.items() if player != self.name}
-            
+            print(other_bids_raw)
             predicted_prices = {}
             
             for good in self.goods:
@@ -121,7 +122,7 @@ class SCPPAgent(BaseAuctionAgent):
                 else:
                     predicted_prices[good] = 0
             
-            if predicted_prices:
+
                 # Insert prices into self.curr_distribution
                 self.curr_distribution.add_record(predicted_prices)
                 self.simulation_count += 1
@@ -162,10 +163,10 @@ if __name__ == "__main__":
         
         # Create agents for training
         agents = [
+            agent_submission,
             SCPPAgent("SCPP_1"),
             SCPPAgent("SCPP_2"),
             SCPPAgent("SCPP_3"),
-            RandomAgent("Random", min_bid=1.0, max_bid=20.0),
         ]
         
         # Set all agents to training mode

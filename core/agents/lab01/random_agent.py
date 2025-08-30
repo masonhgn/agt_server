@@ -10,7 +10,7 @@ class RandomAgent(RPSAgent):
         action = random.choice(self.actions)
         return action
     
-    def update(self, reward=None, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Store the reward received."""
         if reward is not None:
             self.reward_history.append(reward)

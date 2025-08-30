@@ -3,7 +3,7 @@ import sys
 import os
 
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.common.rps_agent import RPSAgent
 from core.engine import Engine
@@ -31,7 +31,7 @@ class FictitiousPlayAgent(RPSAgent):
         action = self.actions[best_move]
         return action
     
-    def update(self, reward=None, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Store the reward and update opponent action counts."""
         if reward is not None:
             self.reward_history.append(reward)
@@ -88,7 +88,7 @@ class FictitiousPlayAgent(RPSAgent):
 
 if __name__ == "__main__":
     # TODO: Give your agent a name
-    agent_name = "YourName_FictitiousPlay"
+    agent_name = "MASON_FictitiousPlay"
     
     # Create agents
     agent = FictitiousPlayAgent(agent_name)

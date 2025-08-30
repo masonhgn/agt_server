@@ -73,7 +73,7 @@ def parse_console_line(line):
         # log_console(f"MATCHING PATTERN: Found player join line")  # Commented out debug output
         # Example: "Player CompetitionAgent joined rps game! (1 players total)"
         import re
-        match = re.search(r'Player (\w+) joined (\w+) game! \((\d+) players total\)', line)
+        match = re.search(r'Player ([^ ]+) joined (\w+) game! \((\d+) players total\)', line)
         if match:
             player_name = match.group(1)
             game_type = match.group(2)
@@ -129,7 +129,7 @@ def parse_console_line(line):
     elif "Player" in line and "disconnected from" in line and "players remaining" in line:
         # Example: "Player CompetitionAgent disconnected from rps game! (0 players remaining)"
         import re
-        match = re.search(r'Player (\w+) disconnected from (\w+) game! \((\d+) players remaining\)', line)
+        match = re.search(r'Player ([^ ]+) disconnected from (\w+) game! \((\d+) players remaining\)', line)
         if match:
             player_name = match.group(1)
             game_type = match.group(2)

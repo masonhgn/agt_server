@@ -45,13 +45,16 @@ class CompetitionAgent(ChickenAgent):
         else:
             return self.CONTINUE
     
-    def update(self, reward=None, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """
         Updates your agent with the current history, namely your opponent's choice 
         and your agent's utility in the last game.
         
         Args:
+            obs: Current observation from the game
+            actions: Actions taken by all players
             reward: Your agent's utility in the last game
+            done: Whether the game is finished
             info: Additional information (may contain opponent's action)
         """
         # TODO: Add any additional state updates your strategy needs
@@ -64,8 +67,8 @@ class CompetitionAgent(ChickenAgent):
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = True  # Set to True to connect to server, False for local testing
-    name = None  # Agent name (None for auto-generated)
+    server = False  # Set to True to connect to server, False for local testing
+    name = "FRIENDLY_DUCK"  # Agent name (None for auto-generated)
     host = "localhost"  # Server host
     port = 8080  # Server port
     verbose = False  # Enable verbose debug output

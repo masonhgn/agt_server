@@ -15,6 +15,7 @@ class RandomChickenAgent(BaseAgent):
         self.action_history.append(action)
         return action
     
-    def update(self, reward: float, agent_info: dict | None = None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Store the reward received."""
-        self.reward_history.append(reward) 
+        if reward is not None:
+            self.reward_history.append(reward) 

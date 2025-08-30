@@ -51,8 +51,5 @@ class MatrixGame(BaseGame):
             # Create new stage for next round
             self.stage = MatrixStage(self.payoff_tensor)
         
-        # Return cumulative rewards for the final round, individual rewards for others
-        if done:
-            return obs, self.cumulative_rewards, done, info
-        else:
-            return obs, rew, done, info
+        # Always return individual round rewards - let the engine handle accumulation
+        return obs, rew, done, info
