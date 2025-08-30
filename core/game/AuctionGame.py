@@ -1,4 +1,4 @@
-from typing import Dict, Set, Callable, List, Tuple, Any
+from typing import Dict, Set, Callable, List, Tuple, Any, Optional
 import random
 import itertools
 from .base_game import BaseGame, PlayerId, ObsDict, ActionDict, RewardDict, InfoDict
@@ -190,7 +190,7 @@ class AuctionGame(BaseGame):
             'utility_history': self.utility_history
         }
     
-    def reset(self, seed: int | None = None) -> ObsDict:
+    def reset(self, seed: Optional[int] = None) -> ObsDict:
         """Reset the game state."""
         if seed is not None:
             random.seed(seed)

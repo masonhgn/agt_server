@@ -70,7 +70,7 @@ def run_local_bid_tests():
     print("\nRunning local bid tests...")
     
     try:
-        from stencils.lab07_stencil.localbid import expected_local_bid
+        from stencils.lab07_stencil.local_bid import expected_local_bid
         from stencils.lab07_stencil.independent_histogram import IndependentHistogram
         
         def valuation(bundle):
@@ -122,8 +122,8 @@ def run_integration_tests():
         # Test that all components can be imported together
         from stencils.lab07_stencil.single_good_histogram import SingleGoodHistogram
         from stencils.lab07_stencil.independent_histogram import IndependentHistogram
-        from stencils.lab07_stencil.marginal_value import calculate_marginal_value, calculate_expected_marginal_value
-        from stencils.lab07_stencil.localbid import expected_local_bid
+        from stencils.lab07_stencil.marginal_values import calculate_marginal_value, calculate_expected_marginal_value
+        from stencils.lab07_stencil.local_bid import expected_local_bid
         from stencils.lab07_stencil.scpp_agent import SCPPAgent
         from stencils.lab07_stencil.competition_agent import CompetitionAgent
         

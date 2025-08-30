@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Set, Callable, Any
+from typing import Dict, Set, Callable, Any, Optional
 import random
+
 
 
 class BaseAuctionAgent(ABC):
@@ -11,7 +12,7 @@ class BaseAuctionAgent(ABC):
     They receive valuations for goods and must submit bids.
     """
     
-    def __init__(self, name: str | None = None):
+    def __init__(self, name: Optional[str] = None):
         """
         Initialize the auction agent.
         

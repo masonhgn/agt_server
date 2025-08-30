@@ -8,9 +8,9 @@ import random
 # Add parent directory to path to import from core
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from core.agents.base_auction_agent import BaseAuctionAgent
+from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
-from localbid import expected_local_bid
+from local_bid import expected_local_bid
 
 class SCPPAgent(BaseAuctionAgent):
     def setup(self, goods, valuation_function, kth_price=1):
