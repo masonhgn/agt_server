@@ -10,12 +10,12 @@ import numpy as np
 import random
 
 # Add the core directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..','..'))
 
 from core.agents.common.base_agent import BaseAgent
 
 
-class QLearningSolution(BaseAgent):
+class QLearning(BaseAgent):
     """Complete Q-Learning implementation with all methods implemented."""
     
     def __init__(self, name: str, num_possible_states: int, num_possible_actions: int, 

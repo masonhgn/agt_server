@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
-from local_bid import local_bid
+from local_bid import expected_local_bid
 
 class CompetitionAgent(BaseAuctionAgent):
     def setup(self, goods, kth_price=1):
@@ -48,7 +48,7 @@ class CompetitionAgent(BaseAuctionAgent):
         # Strategy 1: Marginal value bidding with price prediction
         if random.random() > self.exploration_rate and len(self.price_history) > 10:
             # Use learned price distribution for bidding
-            bids = local_bid(
+            bids = expected_local_bid(
                 goods,
                 self.calculate_valuation,  # Use the agent's internal valuation method
                 self.price_histogram,
