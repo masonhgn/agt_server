@@ -1,0 +1,5 @@
+,CompetitionAgent,SwerveAgent,ContinueAgent,RandomAgent
+CompetitionAgent,0.0,-286.0,-794.0,-624.0
+SwerveAgent,286.0,0.0,1000.0,514.0
+ContinueAgent,-2196.0,-1000.0,0.0,-2904.0
+RandomAgent,-986.0,-514.0,-1856.0,0.0

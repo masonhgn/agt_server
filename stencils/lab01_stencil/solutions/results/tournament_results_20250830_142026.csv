@@ -1,0 +1,5 @@
+agent,CompetitionAgent,CompetitionAgent1,CompetitionAgent2,CompetitionAgent3,total score,average score,wins,losses,ties,win rate
+CompetitionAgent,0.0,-460.0,-436.0,-524.0,-1420.0,-473.3333333333333,0,3,0,0.0
+CompetitionAgent1,-440.0,0.0,-475.0,-383.0,-1298.0,-432.6666666666667,0,3,0,0.0
+CompetitionAgent2,-434.0,-465.0,0.0,-500.0,-1399.0,-466.3333333333333,0,3,0,0.0
+CompetitionAgent3,-456.0,-317.0,-450.0,0.0,-1223.0,-407.6666666666667,0,3,0,0.0

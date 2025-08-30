@@ -39,8 +39,9 @@ class CompetitionAgent(ChickenAgent):
         
         # For now, using a simple strategy that swerves 70% of the time
         # Students should replace this with their actual implementation
+        return self.CONTINUE
         import random
-        if random.random() < 0.7:
+        if random.random() < 0.5:
             return self.SWERVE
         else:
             return self.CONTINUE
@@ -113,9 +114,14 @@ if __name__ == "__main__":
         
         # Create agents for testing
         agent = CompetitionAgent("CompetitionAgent")
+        '''
         opponent1 = SwerveAgent("SwerveAgent")
         opponent2 = ContinueAgent("ContinueAgent")
         opponent3 = RandomChickenAgent("RandomAgent")
+        '''
+        opponent1 = CompetitionAgent("CompetitionAgent1")
+        opponent2 = CompetitionAgent("CompetitionAgent2")
+        opponent3 = CompetitionAgent("CompetitionAgent3")
         
         # Create arena and run tournament
         agents = [agent, opponent1, opponent2, opponent3]

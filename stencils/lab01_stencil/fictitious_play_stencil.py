@@ -19,7 +19,7 @@ class FictitiousPlayAgent(RPSAgent):
     def setup(self):
         """Initialize the agent for a new game."""
         # TODO: Initialize any variables you need to track opponent's actions
-        pass
+        self.opponent_action_counts = [0, 0, 0]  # Count of each action by opponent
     
     def get_action(self, obs=None):
         """
@@ -32,13 +32,17 @@ class FictitiousPlayAgent(RPSAgent):
         action = self.actions[best_move]
         return action
     
-    def update(self, reward=None, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Store the reward and update opponent action counts."""
         if reward is not None:
             self.reward_history.append(reward)
         
         # TODO: Update any variables you need to track opponent's actions
         # HINT: Use self.get_opp_action_history() to get opponent's action history
+        opp_actions = self.get_opp_action_history()
+        if len(opp_actions) > 0:
+            last_opp_action = opp_actions[-1]
+            self.opponent_action_counts[last_opp_action] += 1
     
     def predict(self):
         """
@@ -47,9 +51,7 @@ class FictitiousPlayAgent(RPSAgent):
         """
         # TODO: Return a probability distribution over the opponent's next move
         # HINT: Use self.get_opp_action_history() to build the distribution
-        
-        # For now, return uniform distribution
-        return [1/3, 1/3, 1/3]
+        raise NotImplementedError
     
     def optimize(self, dist):
         """
@@ -59,15 +61,12 @@ class FictitiousPlayAgent(RPSAgent):
         """
         # TODO: Calculate the expected payoff of each action and return the action with the highest payoff
         # HINT: Use the RPS payoff matrix and the opponent's predicted distribution
-        
-        # For now, return random action
-        import random
-        return random.choice([self.ROCK, self.PAPER, self.SCISSORS])
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
     # TODO: Give your agent a name
-    agent_name = "YourName_FictitiousPlay"
+    agent_name = ...  # TODO: Please give your agent a name
     
     # Create agents
     agent = FictitiousPlayAgent(agent_name)

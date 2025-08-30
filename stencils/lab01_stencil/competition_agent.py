@@ -22,7 +22,7 @@ class CompetitionAgent(ChickenAgent):
     def __init__(self, name: str = "CompetitionAgent"):
         super().__init__(name)
         # TODO: Initialize any variables you need for your strategy
-        pass
+        self.SWERVE, self.CONTINUE = 0, 1
     
     def setup(self):
         """
@@ -49,17 +49,18 @@ class CompetitionAgent(ChickenAgent):
         """
         # TODO: Implement your Chicken strategy here
         # You can use any strategy you want, but it should not be uniform random
-        
-        # For now, return random action (students should replace this)
-        return random.choice([self.SWERVE, self.CONTINUE])
+        raise NotImplementedError
     
-    def update(self, reward=None, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """
         Updates your agent with the current history, namely your opponent's choice 
         and your agent's utility in the last game.
         
         Args:
+            obs: Current observation from the game
+            actions: Actions taken by all players
             reward: Your agent's utility in the last game
+            done: Whether the game is finished
             info: Additional information (may contain opponent's action)
         """
         # TODO: Add any additional state updates your strategy needs
@@ -73,7 +74,7 @@ class CompetitionAgent(ChickenAgent):
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
     server = False  # Set to True to connect to server, False for local testing
-    name = None  # Agent name (None for auto-generated)
+    name = ...  # TODO: Please give your agent a name
     host = "localhost"  # Server host
     port = 8080  # Server port
     verbose = False  # Enable verbose debug output

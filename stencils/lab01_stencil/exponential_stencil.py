@@ -19,7 +19,8 @@ class ExponentialAgent(RPSAgent):
     def setup(self):
         """Initialize the agent for a new game."""
         # TODO: Initialize variables to track action rewards and counts
-        pass
+        self.action_rewards = np.zeros(len(self.actions))  # Cumulative rewards for each action
+        self.action_counts = [0, 0, 0]  # Number of times each action was played
     
     def get_action(self, obs=None):
         """
@@ -31,14 +32,17 @@ class ExponentialAgent(RPSAgent):
         action = np.random.choice(self.actions, p=move_probs)
         return action
     
-    def update(self, reward=None, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Update action rewards and counts."""
         if reward is not None:
             self.reward_history.append(reward)
         
         # TODO: Update the reward for the last action taken
         # HINT: Use self.action_history to get the last action
-        pass
+        if len(self.action_history) > 0:
+            last_action = self.action_history[-1]
+            self.action_rewards[last_action] += reward
+            self.action_counts[last_action] += 1
     
     @staticmethod
     def softmax(x):
@@ -56,14 +60,12 @@ class ExponentialAgent(RPSAgent):
         # TODO: Calculate the average reward for each action over time and return the softmax of it
         # HINT: Use self.action_rewards and self.action_counts to compute averages
         # HINT: Use self.softmax() to convert averages to probabilities
-        
-        # For now, return uniform distribution
-        return [1/3, 1/3, 1/3]
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
     # TODO: Give your agent a name
-    agent_name = "YourName_Exponential"
+    agent_name = ...  # TODO: Please give your agent a name
     
     # Create agents
     agent = ExponentialAgent(agent_name)
