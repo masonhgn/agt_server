@@ -2,7 +2,7 @@ from marginal_values import calculate_expected_marginal_value
 from independent_histogram import IndependentHistogram
 
 
-def expected_local_bid(goods, valuation_function, price_distribution, num_iterations=100, num_samples=50):
+def local_bid(goods, valuation_function, price_distribution, num_iterations=100, num_samples=50):
     """
     Iteratively computes a bid vector by updating bids to be the expected marginal value for each good.
     

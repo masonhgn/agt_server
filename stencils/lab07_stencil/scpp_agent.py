@@ -6,11 +6,11 @@ import argparse
 import random
 
 # Add parent directory to path to import from core
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from core.agents.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
-from localbid import expected_local_bid
+from local_bid import local_bid
 
 class SCPPAgent(BaseAuctionAgent):
     def setup(self, goods, valuation_function, kth_price=1):
@@ -72,7 +72,11 @@ class SCPPAgent(BaseAuctionAgent):
         In RUN mode, load the distribution from disk.
         In TRAIN mode, initialize a new distribution if needed.
         """
-        self.load_distribution()
+        if self.mode == 'RUN':
+            self.load_distribution()
+        else:  # TRAIN mode
+            if self.learned_distribution is None:
+                self.initialize_distribution()
 
         return self.get_bids()
     
@@ -80,9 +84,14 @@ class SCPPAgent(BaseAuctionAgent):
         """
         Compute and return a bid vector by running the LocalBid routine with expected marginal values.
         """
-        # TODO: Implement get_bids method
-        # Use expected_local_bid with the learned distribution
-        raise NotImplementedError("Implement get_bids method")
+        # Use local_bid with the learned distribution
+        return local_bid(
+            self.goods,
+            self.valuation_function,
+            self.learned_distribution,
+            self.NUM_ITERATIONS_LOCALBID,
+            self.NUM_SAMPLES
+        )
 
     def update(self, observation, action, reward, done, info):
         """Update the agent with the results of the last action."""
@@ -105,15 +114,17 @@ class SCPPAgent(BaseAuctionAgent):
                     predicted_prices[good] = 0
             
             if predicted_prices:
-                # TODO: insert prices into self.curr_distribution
-                # TODO: update simulation_count
-                raise NotImplementedError("Implement price insertion and simulation count update")
+                # Insert prices into self.curr_distribution
+                self.curr_distribution.add_record(predicted_prices)
+                self.simulation_count += 1
                 
                 if self.simulation_count % self.NUM_SIMULATIONS_PER_ITERATION == 0:
-                    # TODO: Update the learned distribution with the newly gathered data
-                    # TODO: Reset the current distribution
-                    # TODO: Save the learned distribution to disk (for use in live auction mode)
-                    raise NotImplementedError("Implement distribution update and save")
+                    # Update the learned distribution with the newly gathered data
+                    self.learned_distribution.update(self.curr_distribution, self.ALPHA)
+                    # Reset the current distribution
+                    self.curr_distribution = self.create_independent_histogram()
+                    # Save the learned distribution to disk (for use in live auction mode)
+                    self.save_distribution()
 
 
 ################### SUBMISSION #####################
@@ -122,60 +133,78 @@ agent_submission = SCPPAgent("SCPP Agent")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='SCPP Agent')
-    parser.add_argument('--join_server', action='store_true',
-                        help='Connects the agent to the server')
-    parser.add_argument('--ip', type=str, default='127.0.0.1',
-                        help='IP address (default: 127.0.0.1)')
-    parser.add_argument('--port', type=int, default=8080,
-                        help='Port number (default: 8080)')
-    parser.add_argument('--mode', type=str, default='TRAIN',
+    parser.add_argument('--mode', type=str, default='TRAIN', choices=['TRAIN', 'RUN'],
                         help='Mode: TRAIN or RUN (default: TRAIN)')
     parser.add_argument('--num_rounds', type=int, default=100,
                         help='Number of rounds (default: 100)')
 
     args = parser.parse_args()
     agent_submission.mode = args.mode
-    print(agent_submission.mode)
+    print(f"Running in {agent_submission.mode} mode")
 
-    if args.join_server:
-        print("Server mode not implemented in this version")
-    elif args.mode == "TRAIN":
-        # TODO: Check for bias
-        VALUE_UPPER_BOUND = 100
-        VALUE_LOWER_BOUND = 0
-        
-        # Create a simple training environment
+    if args.mode == "TRAIN":
+        # Training mode - self-play (SCPP agents against each other)
         from core.game.AuctionGame import AuctionGame
-        from core.agents.test_auction_agents import RandomAuctionAgent, TruthfulAuctionAgent
         
-        def valuation_function(bundle):
-            return sum(10 for item in bundle)
+        # Create realistic valuation functions that simulate the original game
+        def create_valuation_function(agent_name, valuation_type="complement"):
+            """Create a valuation function that matches the original game's behavior."""
+            def valuation_function(bundle):
+                if not bundle:
+                    return 0
+                
+                # Simulate individual good valuations (in real game these are random per round)
+                # For training, we'll use deterministic but realistic values
+                # In the real game, these would be randomly generated each round
+                base_values = {"A": 20, "B": 25, "C": 30}
+                
+                # Add some randomness to simulate the original game's random valuations
+                random.seed(hash(agent_name) % 1000)  # Deterministic per agent
+                adjusted_values = {good: base_values[good] + random.randint(-5, 5) for good in base_values}
+                
+                base_sum = sum(adjusted_values.get(good, 0) for good in bundle)
+                n = len(bundle)
+                
+                if valuation_type == 'additive':
+                    return base_sum
+                elif valuation_type == 'complement':
+                    return base_sum * (1 + 0.05 * (n - 1)) if n > 0 else 0
+                elif valuation_type == 'substitute':
+                    return base_sum * (1 - 0.05 * (n - 1)) if n > 0 else 0
+                else:
+                    return base_sum
+            
+            return valuation_function
         
         goods = {"A", "B", "C"}
+        
+        # Create different valuation functions for each agent to simulate the original game
         valuation_functions = {
-            "SCPP": valuation_function,
-            "Agent_1": valuation_function,
-            "Agent_2": valuation_function,
-            "Agent_3": valuation_function,
+            "SCPP": create_valuation_function("SCPP", "complement"),
+            "Agent_1": create_valuation_function("Agent_1", "complement"),
+            "Agent_2": create_valuation_function("Agent_2", "complement"),
+            "Agent_3": create_valuation_function("Agent_3", "complement"),
         }
         
         game = AuctionGame(goods, valuation_functions, num_rounds=args.num_rounds, kth_price=2)
         
-        # Set up agents
-        agent_submission.setup(goods, valuation_function, 2)
+        # Set up agents - in training mode, use self-play (SCPP agents against each other)
+        agent_submission.setup(goods, valuation_functions["SCPP"], 2)
         agents = {
-            "Agent_1": RandomAuctionAgent("Agent_1"),
-            "Agent_2": TruthfulAuctionAgent("Agent_2"),
-            "Agent_3": RandomAuctionAgent("Agent_3"),
+            "Agent_1": SCPPAgent("Agent_1"),
+            "Agent_2": SCPPAgent("Agent_2"),
+            "Agent_3": SCPPAgent("Agent_3"),
         }
         
-        for agent in agents.values():
-            agent.setup(goods, valuation_function, 2)
+        for name, agent in agents.items():
+            agent.setup(goods, valuation_functions[name], 2)
+            agent.mode = 'TRAIN'  # All agents in training mode
         
         start = time.time()
         
         # Run training rounds
         for round_num in range(args.num_rounds):
+            # Create observation with the agent's specific valuation function
             observation = {"goods": goods, "round": round_num}
             
             # Get actions from all agents
@@ -193,38 +222,76 @@ if __name__ == "__main__":
                 agent.update(observation, actions[name], results["utilities"][name], False, results)
         
         end = time.time()
-        print(f"{end - start} Seconds Elapsed")
-    else:
-        # Test mode
-        from core.game.AuctionGame import AuctionGame
-        from core.agents.test_auction_agents import TruthfulAuctionAgent
+        print(f"Training completed in {end - start} seconds")
+        print("Learned distribution saved to disk")
         
-        def valuation_function(bundle):
-            return sum(10 for item in bundle)
+    else:  # RUN mode
+        # Test mode - compete against variety of agents
+        from core.game.AuctionGame import AuctionGame
+        from core.agents.lab07.marginal_value_agent import MarginalValueAgent
+        from core.agents.lab07.random_agent import RandomAgent
+        from core.agents.lab07.aggressive_agent import AggressiveAgent
+        from core.agents.lab07.conservative_agent import ConservativeAgent
+        
+        # Create realistic valuation functions for the test scenario
+        def create_valuation_function(agent_name, valuation_type="complement"):
+            """Create a valuation function that matches the original game's behavior."""
+            def valuation_function(bundle):
+                if not bundle:
+                    return 0
+                
+                # Simulate individual good valuations (in real game these are random per round)
+                # For testing, we'll use deterministic but realistic values
+                base_values = {"A": 20, "B": 25, "C": 30}
+                
+                # Add some randomness to simulate the original game's random valuations
+                random.seed(hash(agent_name) % 1000)  # Deterministic per agent
+                adjusted_values = {good: base_values[good] + random.randint(-5, 5) for good in base_values}
+                
+                base_sum = sum(adjusted_values.get(good, 0) for good in bundle)
+                n = len(bundle)
+                
+                if valuation_type == 'additive':
+                    return base_sum
+                elif valuation_type == 'complement':
+                    return base_sum * (1 + 0.05 * (n - 1)) if n > 0 else 0
+                elif valuation_type == 'substitute':
+                    return base_sum * (1 - 0.05 * (n - 1)) if n > 0 else 0
+                else:
+                    return base_sum
+            
+            return valuation_function
         
         goods = {"A", "B", "C"}
+        
+        # Create different valuation functions for each agent
         valuation_functions = {
-            "SCPP": valuation_function,
-            "Agent_1": valuation_function,
-            "Agent_2": valuation_function,
+            "SCPP": create_valuation_function("SCPP", "complement"),
+            "MarginalValue": create_valuation_function("MarginalValue", "complement"),
+            "Random": create_valuation_function("Random", "complement"),
+            "Aggressive": create_valuation_function("Aggressive", "complement"),
+            "Conservative": create_valuation_function("Conservative", "complement"),
         }
         
         game = AuctionGame(goods, valuation_functions, num_rounds=500, kth_price=2)
         
-        # Set up agents
-        agent_submission.setup(goods, valuation_function, 2)
+        # Set up agents - in RUN mode, use variety of different agents
+        agent_submission.setup(goods, valuation_functions["SCPP"], 2)
         agents = {
-            "Agent_1": TruthfulAuctionAgent("Agent_1"),
-            "Agent_2": TruthfulAuctionAgent("Agent_2"),
+            "MarginalValue": MarginalValueAgent("MarginalValue", bid_fraction=0.8),
+            "Random": RandomAgent("Random", min_bid=1.0, max_bid=20.0),
+            "Aggressive": AggressiveAgent("Aggressive", bid_multiplier=1.5),
+            "Conservative": ConservativeAgent("Conservative", bid_fraction=0.5),
         }
         
-        for agent in agents.values():
-            agent.setup(goods, valuation_function, 2)
+        for name, agent in agents.items():
+            agent.setup(goods, valuation_functions[name], 2)
         
         start = time.time()
         
         # Run test rounds
         for round_num in range(500):
+            # Create observation with the agent's specific valuation function
             observation = {"goods": goods, "round": round_num}
             
             # Get actions from all agents
@@ -242,4 +309,4 @@ if __name__ == "__main__":
                 agent.update(observation, actions[name], results["utilities"][name], False, results)
         
         end = time.time()
-        print(f"{end - start} Seconds Elapsed") 
+        print(f"Testing completed in {end - start} seconds") 
