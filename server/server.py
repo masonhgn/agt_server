@@ -620,6 +620,19 @@ class AGTServer:
             return 0  # position 0
         elif game_type == "auction":
             return {"A": 0, "B": 0, "C": 0, "D": 0}  # zero bids
+        elif game_type in ["adx_oneday", "adx_twoday"]:
+            # For AdX games, we need to create a default OneDayBidBundle
+            # This is a fallback and shouldn't normally be used
+            from core.game.AdxOneDayGame import OneDayBidBundle
+            from core.game.bid_entry import SimpleBidEntry
+            from core.game.market_segment import MarketSegment
+            
+            # Create a minimal bid bundle with no bids
+            return OneDayBidBundle(
+                campaign_id=0,
+                day_limit=0.0,
+                bid_entries=[]
+            )
         else:
             return 0
     

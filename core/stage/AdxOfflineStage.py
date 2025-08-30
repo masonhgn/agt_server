@@ -133,7 +133,27 @@ class AdxOfflineStage(BaseStage):
                 bundle.hit[seg] += 1
 
     def _quality_score(self, reach: int, goal: int) -> float:
-        """Simple QC proxy: arctan style from spec—adjust coefficients later."""
-        x = reach / goal
-        return 0.5 + 0.5 * (2 / math.pi) * (math.atan(4 * (x - 0.7)))
+        """
+        Calculate quality score using the formula from the writeup.
+        
+        QC(x) = (2/a) * (arctan(a * (x/R - b)) - arctan(-b)) + 1
+        where a = 4.08577, b = 3.08577, x = impressions achieved, R = campaign reach
+        
+        This produces:
+        - QC(0) ≈ 0.89 (low quality)
+        - QC(R) ≈ 0.90 (good quality) 
+        - QC(∞) ≈ 1.38 (perfect quality)
+        """
+        a = 4.08577
+        b = 3.08577
+        x = reach
+        R = goal
+        
+        if R == 0:
+            return 0.0
+            
+        x_over_R = x / R
+        quality_score = (2 / a) * (math.atan(a * (x_over_R - b)) - math.atan(-b)) + 1
+        
+        return max(0.0, quality_score)  # Ensure non-negative
 
