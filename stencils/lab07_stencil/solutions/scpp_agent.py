@@ -10,8 +10,8 @@ import argparse
 import random
 
 
-TRAINING_ROUNDS = 100  # umber of rounds for training games
-TESTING_ROUNDS = 500   # number of rounds for testing games
+TRAINING_ROUNDS = 1000  # umber of rounds for training games
+TESTING_ROUNDS = 100   # number of rounds for testing games
 
 # Add parent directories to path to import from core
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
@@ -93,13 +93,33 @@ class SCPPAgent(BaseAuctionAgent):
         """
         # Use local_bid with the learned distribution
         # The valuation function is now accessed through self.calculate_valuation
-        return local_bid(
+
+        
+        base_bids = local_bid(
             self.goods,
             self.calculate_valuation,  # Use the agent's internal valuation method
             self.learned_distribution,
             self.NUM_ITERATIONS_LOCALBID,
             self.NUM_SAMPLES
         )
+
+        # Apply strategic bidding to create profit margins
+        strategic_bids = {}
+        for good in self.goods:
+            valuation = self.calculate_valuation({good})
+            base_bid = base_bids.get(good, 0)
+            
+            # Strategy: Bid at 70-80% of valuation to ensure profit margin
+            # But don't bid below the base_bid if it's already strategic
+            strategic_bid = min(base_bid, valuation * 0.75)
+            
+            # Ensure we don't bid below 50% of valuation (too conservative)
+            strategic_bid = max(strategic_bid, valuation * 0.5)
+            
+            strategic_bids[good] = strategic_bid
+
+        #print(f"{self.name} bids: {strategic_bids}")
+        return strategic_bids
 
     def update(self, observation, action, reward, done, info):
         #print('update called')
@@ -111,7 +131,7 @@ class SCPPAgent(BaseAuctionAgent):
             other_bids_raw = info['bids']
             # Remove our own bids to get opponent bids
             other_bids = {player: bids for player, bids in other_bids_raw.items() if player != self.name}
-            print(other_bids_raw)
+            #print(other_bids_raw)
             predicted_prices = {}
             
             for good in self.goods:
@@ -122,18 +142,17 @@ class SCPPAgent(BaseAuctionAgent):
                 else:
                     predicted_prices[good] = 0
             
-
-                # Insert prices into self.curr_distribution
-                self.curr_distribution.add_record(predicted_prices)
-                self.simulation_count += 1
-                
-                if self.simulation_count % self.NUM_SIMULATIONS_PER_ITERATION == 0:
-                    # Update the learned distribution with the newly gathered data
-                    self.learned_distribution.update(self.curr_distribution, self.ALPHA)
-                    # Reset the current distribution
-                    self.curr_distribution = self.create_independent_histogram()
-                    # Save the learned distribution to disk (for use in live auction mode)
-                    self.save_distribution()
+            # Insert prices into self.curr_distribution (ONCE, outside the loop)
+            self.curr_distribution.add_record(predicted_prices)
+            self.simulation_count += 1
+            
+            if self.simulation_count % self.NUM_SIMULATIONS_PER_ITERATION == 0:
+                # Update the learned distribution with the newly gathered data
+                self.learned_distribution.update(self.curr_distribution, self.ALPHA)
+                # Reset the current distribution
+                self.curr_distribution = self.create_independent_histogram()
+                # Save the learned distribution to disk (for use in live auction mode)
+                self.save_distribution()
 
 
 ################### SUBMISSION #####################
@@ -159,7 +178,7 @@ if __name__ == "__main__":
         
         # Create a simple test environment
         goods = {"A", "B", "C"}
-        player_names = ["SCPP_1", "SCPP_2", "SCPP_3", "Random"]
+        player_names = ["SCPP", "SCPP_1", "SCPP_2", "SCPP_3"]
         
         # Create agents for training
         agents = [

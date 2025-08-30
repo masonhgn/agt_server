@@ -91,6 +91,10 @@ class Engine:
         
         # run the game
         for round_num in range(num_rounds):
+            # For auction games, generate valuations BEFORE getting actions
+            if hasattr(self.game, 'generate_valuations_for_round'):
+                self.game.generate_valuations_for_round()
+            
             # For auction games, set valuations on agents before getting actions
             if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
                 for i, agent in enumerate(self.agents):

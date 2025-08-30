@@ -203,6 +203,8 @@ class AuctionGame(BaseGame):
             # Calculate utility (value - payment)
             utility = value - payments[player]
             utilities[player] = utility
+            
+
         
         return utilities
     
@@ -216,14 +218,19 @@ class AuctionGame(BaseGame):
         Returns:
             Dict containing round results
         """
-        # Generate valuations for all players
-        self.generate_valuations_for_round()
-
         # Compute auction outcome
         allocation, payments, prices = self.compute_auction_result(agent_actions)
         
         # Calculate utilities
         utilities = self.calculate_utilities(allocation, payments)
+        
+        # Print round results
+        print(f"\n=== Round {self.current_round + 1} ===")
+        print(f"Bids: {agent_actions}")
+        print(f"Allocation: {allocation}")
+        print(f"Prices: {prices}")
+        print(f"Payments: {payments}")
+        print(f"Utilities: {utilities}")
         
         # Store history
         self.bid_history.append(agent_actions)
