@@ -9,6 +9,10 @@ import time
 import argparse
 import random
 
+
+TRAINING_ROUNDS = 100  # umber of rounds for training games
+TESTING_ROUNDS = 500   # number of rounds for testing games
+
 # Add parent directories to path to import from core
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
@@ -23,12 +27,15 @@ class SCPPAgent(BaseAuctionAgent):
         self.mode = 'TRAIN'
         
         self.simulation_count = 0
-        self.NUM_ITERATIONS = 100
-        self.NUM_SIMULATIONS_PER_ITERATION = 10
-        self.ALPHA = 0.1
-        self.NUM_ITERATIONS_LOCALBID = 100
-        self.NUM_SAMPLES = 50
-        self.BUCKET_SIZE = 5
+        # Local bid algorithm parameters
+        self.NUM_ITERATIONS_LOCALBID = 10  # Number of iterations for local bid optimization
+        self.NUM_SAMPLES = 50              # Number of samples for marginal value estimation
+        
+        # Distribution learning parameters
+        self.NUM_SIMULATIONS_PER_ITERATION = 10  # Update distribution every N simulations
+        self.ALPHA = 0.1                          # Learning rate for distribution updates
+        self.BUCKET_SIZE = 5                      # Histogram bucket size
+
         self.distribution_file = f"learned_distribution_{self.name}.pkl"
 
         self.learned_distribution = None
@@ -136,8 +143,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='SCPP Agent')
     parser.add_argument('--mode', type=str, default='TRAIN', choices=['TRAIN', 'RUN'],
                         help='Mode: TRAIN or RUN (default: TRAIN)')
-    parser.add_argument('--num_rounds', type=int, default=100,
-                        help='Number of rounds (default: 100)')
 
     args = parser.parse_args()
     agent_submission.mode = args.mode
@@ -172,7 +177,7 @@ if __name__ == "__main__":
         game = AuctionGame(
             goods=goods,
             player_names=player_names,
-            num_rounds=args.num_rounds,
+            num_rounds=TRAINING_ROUNDS,
             kth_price=1,
             valuation_type="additive",
             value_range=(10, 50)
@@ -181,7 +186,7 @@ if __name__ == "__main__":
         start = time.time()
         
         # Use the engine to run the game properly
-        engine = Engine(game, agents, rounds=args.num_rounds)
+        engine = Engine(game, agents, rounds=TRAINING_ROUNDS)
         final_rewards = engine.run()
         
         end = time.time()
@@ -223,7 +228,7 @@ if __name__ == "__main__":
         game = AuctionGame(
             goods=goods,
             player_names=player_names,
-            num_rounds=500,
+            num_rounds=TESTING_ROUNDS,
             kth_price=1,
             valuation_type="additive",
             value_range=(10, 50)
@@ -232,7 +237,7 @@ if __name__ == "__main__":
         start = time.time()
         
         # Use the engine to run the game properly
-        engine = Engine(game, agents, rounds=500)
+        engine = Engine(game, agents, rounds=TESTING_ROUNDS)
         final_rewards = engine.run()
         
         end = time.time()
@@ -242,4 +247,4 @@ if __name__ == "__main__":
         for i, agent in enumerate(agents):
             print(f"{agent.name}: {final_rewards[i]:.2f}")
         
-        print("Note: This uses the proper game infrastructure with internal valuation handling.")
+
