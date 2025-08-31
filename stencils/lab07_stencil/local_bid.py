@@ -2,7 +2,7 @@ from marginal_values import calculate_expected_marginal_value
 from independent_histogram import IndependentHistogram
 
 
-def local_bid(goods, valuation_function, price_distribution, num_iterations=100, num_samples=50):
+def expected_local_bid(goods, valuation_function, price_distribution, num_iterations=100, num_samples=50):
     """
     Iteratively computes a bid vector by updating bids to be the expected marginal value for each good.
 
@@ -25,9 +25,9 @@ if __name__ == "__main__":
     for _ in range(10):
         test_histogram.add_record({"a": 15, "b": 20, "c": 25})
     
-    print("Testing local_bid with sample data...")
+    print("Testing expected_local_bid with sample data...")
     try:
-        result = local_bid(
+        result = expected_local_bid(
             goods=["a", "b", "c"],
             valuation_function=test_valuation,
             price_distribution=test_histogram,
@@ -36,4 +36,4 @@ if __name__ == "__main__":
         )
         print("Result:", result)
     except NotImplementedError:
-        print("local_bid not yet implemented - this is expected for the stencil") 
+        print("expected_local_bid not yet implemented - this is expected for the stencil") 

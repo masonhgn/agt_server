@@ -17,18 +17,30 @@ class BOSFiniteStateAgent1(BaseAgent):
         self.COMPROMISE, self.STUBBORN = 0, 1
         self.actions = [self.COMPROMISE, self.STUBBORN]
         self.curr_state = 0  # Initial state
+        self.consecutive_compromises = 0  # Track consecutive compromises
     
     def get_action(self, obs):
         """
         Return either self.STUBBORN or self.COMPROMISE based on the current state.
+        Strategy to counter "reluctant to compromise":
+        - The reluctant agent goes to concert (STUBBORN) most of the time
+        - Only compromises after 3 consecutive lectures from opponent
+        - So we should go to lecture (COMPROMISE) to force them to compromise
         """
-        # TODO: Implement your finite state machine logic here
-        # Use self.curr_state to determine which action to take
-        # This agent should be designed to counter the "reluctant to compromise" strategy
-        
-        # Simple implementation for testing
-        import random
-        return random.choice([self.STUBBORN, self.COMPROMISE])
+        if self.curr_state == 0:
+            # Initial state: start with compromise to establish cooperation
+            return self.COMPROMISE
+        elif self.curr_state == 1:
+            # Cooperative state: continue compromising
+            return self.COMPROMISE
+        elif self.curr_state == 2:
+            # Exploitation state: be stubborn to exploit their compromise
+            return self.STUBBORN
+        elif self.curr_state == 3:
+            # Reset state: go back to compromise
+            return self.COMPROMISE
+        else:
+            return self.COMPROMISE  # Default fallback
     
     def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
@@ -37,12 +49,40 @@ class BOSFiniteStateAgent1(BaseAgent):
         """
         self.reward_history.append(reward)
         
-        # TODO: Implement your state transition logic here
-        # Use self.get_last_action() and self.get_opponent_last_action() 
-        # to determine how to update self.curr_state
+        # Get opponent's last action
+        opponent_action = self.get_opponent_last_action()
         
-        # Simple implementation for testing
-        pass
+        if opponent_action is not None:
+            if opponent_action == self.COMPROMISE:
+                # Opponent compromised
+                self.consecutive_compromises += 1
+                if self.curr_state == 0:
+                    # Initial state: opponent cooperated, stay cooperative
+                    self.curr_state = 1
+                elif self.curr_state == 1:
+                    # Cooperative state: continue cooperating
+                    pass
+                elif self.curr_state == 2:
+                    # Exploitation state: opponent compromised, exploit
+                    pass
+                elif self.curr_state == 3:
+                    # Reset state: back to cooperative
+                    self.curr_state = 1
+            else:
+                # Opponent was stubborn
+                self.consecutive_compromises = 0
+                if self.curr_state == 0:
+                    # Initial state: opponent was stubborn, try exploitation
+                    self.curr_state = 2
+                elif self.curr_state == 1:
+                    # Cooperative state: opponent was stubborn, try exploitation
+                    self.curr_state = 2
+                elif self.curr_state == 2:
+                    # Exploitation state: opponent was stubborn, try reset
+                    self.curr_state = 3
+                elif self.curr_state == 3:
+                    # Reset state: opponent was stubborn, try exploitation again
+                    self.curr_state = 2
     
     def get_opponent_last_action(self):
         """Helper method to get opponent's last action (inferred from reward)."""
@@ -67,8 +107,8 @@ class BOSFiniteStateAgent1(BaseAgent):
         return None  # Can't determine
 
 
-# TODO: Give your agent a NAME 
-name = "BOSFiniteStateAgent1"  # TODO: PLEASE NAME ME D:
+# Agent name for submission
+name = "BOSFiniteStateAgent1"
 
 
 ################### SUBMISSION #####################
@@ -81,9 +121,9 @@ if __name__ == "__main__":
     print("Testing BOS Finite State Agent 1...")
     print("=" * 50)
     
-    # Import the reluctant agent (assuming it exists)
+    # Import the reluctant agent
     try:
-        from ..bos_reluctant import BOSReluctantAgent
+        from bos_reluctant import BOSReluctantAgent
         opponent = BOSReluctantAgent("Reluctant")
     except ImportError:
         # Fallback to random agent if reluctant agent doesn't exist

@@ -13,6 +13,6 @@ class StubbornAgent(BaseAgent):
         self.action_history.append(action)
         return action
     
-    def update(self, reward: float, agent_info: dict | None = None):
+    def update(self, observation: dict, action: dict, reward: float, done: bool, info: dict):
         """Store the reward received."""
         self.reward_history.append(reward) 

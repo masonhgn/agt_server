@@ -18,10 +18,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
-from local_bid import local_bid
+from local_bid import expected_local_bid
 
 class SCPPAgent(BaseAuctionAgent):
-    def setup(self, goods, kth_price=1):
+    def setup(self, goods, kth_price=2):  # Default to second-price auction
         super().setup(goods, kth_price)
         
         self.mode = 'TRAIN'
@@ -91,11 +91,11 @@ class SCPPAgent(BaseAuctionAgent):
         """
         Compute and return a bid vector by running the LocalBid routine with expected marginal values.
         """
-        # Use local_bid with the learned distribution
+        # Use expected_local_bid with the learned distribution
         # The valuation function is now accessed through self.calculate_valuation
 
         
-        base_bids = local_bid(
+        base_bids = expected_local_bid(
             self.goods,
             self.calculate_valuation,  # Use the agent's internal valuation method
             self.learned_distribution,
@@ -103,22 +103,7 @@ class SCPPAgent(BaseAuctionAgent):
             self.NUM_SAMPLES
         )
 
-        # Apply strategic bidding to create profit margins
-        strategic_bids = {}
-        for good in self.goods:
-            valuation = self.calculate_valuation({good})
-            base_bid = base_bids.get(good, 0)
-            
-            # Strategy: Bid at 70-80% of valuation to ensure profit margin
-            # But don't bid below the base_bid if it's already strategic
-            strategic_bid = min(base_bid, valuation * 0.75)
-            
-            # Ensure we don't bid below 50% of valuation (too conservative)
-            strategic_bid = max(strategic_bid, valuation * 0.5)
-            
-            strategic_bids[good] = strategic_bid
-
-        print(f"{self.name} bids: {strategic_bids}")
+       
         return base_bids
 
     def update(self, observation, action, reward, done, info):
@@ -198,7 +183,7 @@ if __name__ == "__main__":
             goods=goods,
             player_names=player_names,
             num_rounds=TRAINING_ROUNDS,
-            kth_price=1,
+            kth_price=2,  # Second-price auction as specified in the writeup
             valuation_type="additive",
             value_range=(10, 50)
         )
@@ -249,7 +234,7 @@ if __name__ == "__main__":
             goods=goods,
             player_names=player_names,
             num_rounds=TESTING_ROUNDS,
-            kth_price=1,
+            kth_price=2,  # Second-price auction as specified in the writeup
             valuation_type="additive",
             value_range=(10, 50)
         )

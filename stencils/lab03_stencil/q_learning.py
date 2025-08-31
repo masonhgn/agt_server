@@ -42,7 +42,15 @@ class QLearning(BaseAgent):
         
         # Load saved Q-table if it exists
         if save_path and os.path.isfile(save_path):
-            self.q = np.load(save_path)
+            try:
+                self.q = np.load(save_path)
+                # Check if the loaded Q-table has the correct shape
+                if self.q.shape != (num_possible_states, num_possible_actions):
+                    print(f"Warning: Loaded Q-table has shape {self.q.shape}, expected ({num_possible_states}, {num_possible_actions}). Using fresh Q-table.")
+                    self.q = np.zeros((num_possible_states, num_possible_actions))
+            except (EOFError, ValueError, OSError) as e:
+                print(f"Warning: Could not load Q-table from {save_path}: {e}. Using fresh Q-table.")
+                self.q = np.zeros((num_possible_states, num_possible_actions))
     
     def setup(self):
         """Initialize for a new game."""
@@ -101,19 +109,20 @@ class QLearning(BaseAgent):
         #   - Always choose best action (pure exploitation)
         raise NotImplementedError("Implement exploration-exploitation strategy")
     
-    def update(self, reward: float, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Update the agent with the reward from the last action."""
         super().update(reward, info)
         
         # Update Q-table using the Q-learning update rule
-        self.update_rule(reward)
-        
-        # Choose next action based on current state
-        self.a = self.choose_next_move(self.s)
-        
-        # Save Q-table if path is specified
-        if self.save_path:
-            np.save(self.save_path, self.q)
+        if reward is not None:
+            self.update_rule(reward)
+            
+            # Choose next action based on current state
+            self.a = self.choose_next_move(self.s)
+            
+            # Save Q-table if path is specified
+            if self.save_path:
+                np.save(self.save_path, self.q)
     
     def set_training_mode(self, training_mode: bool):
         """Set whether the agent is in training mode."""

@@ -1,0 +1,4 @@
+agent,CompetitionAgent,PunitiveAgent,ReluctantAgent,total score,average score,wins,losses,ties,win rate
+CompetitionAgent,0.0,3000.0,3000.0,6000.0,3000.0,2,0,0,1.0
+PunitiveAgent,7000.0,0.0,0.0,7000.0,3500.0,1,0,1,0.5
+ReluctantAgent,7000.0,0.0,0.0,7000.0,3500.0,1,0,1,0.5

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
-from local_bid import local_bid
+from local_bid import expected_local_bid
 
 class SCPPAgent(BaseAuctionAgent):
     def setup(self, goods, kth_price=1):
@@ -75,7 +75,7 @@ class SCPPAgent(BaseAuctionAgent):
         """
         Compute and return a bid vector by running the LocalBid routine with expected marginal values.
         """
-        # TODO: Use local_bid with the learned distribution
+        # TODO: Use expected_local_bid with the learned distribution
         # The valuation function is now accessed through self.calculate_valuation
         raise NotImplementedError("Implement get_bids method")
 

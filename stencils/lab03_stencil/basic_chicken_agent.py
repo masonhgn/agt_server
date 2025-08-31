@@ -39,9 +39,10 @@ class BasicChickenAgent(BaseAgent):
         self.round_count += 1
         return action
     
-    def update(self, reward: float, info=None):
+    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
         """Update with reward from last action."""
-        super().update(reward, info)
+        if reward is not None:
+            super().update(reward, info)
 
 
 # Agent instance for testing

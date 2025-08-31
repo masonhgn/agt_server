@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "chicken",
+    "tournament": true,
+    "players": [
+      "aggresso",
+      "WHATEVS"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "aggresso",
+        {
+          "total_reward": 0.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "WHATEVS",
+        {
+          "total_reward": 0.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]
