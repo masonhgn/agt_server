@@ -10,7 +10,7 @@ import argparse
 import random
 
 
-TRAINING_ROUNDS = 1000  # umber of rounds for training games
+TRAINING_ROUNDS = 100  # umber of rounds for training games
 TESTING_ROUNDS = 100   # number of rounds for testing games
 
 # Add parent directories to path to import from core
@@ -118,8 +118,8 @@ class SCPPAgent(BaseAuctionAgent):
             
             strategic_bids[good] = strategic_bid
 
-        #print(f"{self.name} bids: {strategic_bids}")
-        return strategic_bids
+        print(f"{self.name} bids: {strategic_bids}")
+        return base_bids
 
     def update(self, observation, action, reward, done, info):
         #print('update called')

@@ -30,7 +30,7 @@ def run_local_bid_tests():
     print("\nRunning local bid tests...")
     
     try:
-        from stencils.lab06_stencil.localbid import local_bid
+        from stencils.lab06_stencil.local_bid import local_bid
         from stencils.lab06_stencil.sample_valuations import SampleValuations
         
         # Test that the function exists and can be called

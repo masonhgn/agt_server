@@ -8,7 +8,7 @@ from marginal_value import calculate_marginal_value
 
 class TestMarginalValue(unittest.TestCase):
     """Unit tests for marginal value calculation."""
-    
+
     def test_example_case_one(self):
         goods = {"A", "B"}
         bids = {"A": 95, "B": 90}
@@ -44,34 +44,34 @@ class TestMarginalValue(unittest.TestCase):
         self.assertEqual(mv_a, 10, "Incorrect marginal value for A")
         self.assertEqual(mv_b, 10, "Incorrect marginal value for B")
 
-    def test_student_case_1(self):
-        """
-        TODO: Implement your first test case here.
+    # def test_student_case_1(self):
+    #     """
+    #     TODO: Implement your first test case here.
         
-        This should test a simple scenario to verify your understanding of marginal values.
-        """
-        # TODO: Implement test case 1
-        raise NotImplementedError("Implement test case 1")
+    #     This should test a simple scenario to verify your understanding of marginal values.
+    #     """
+    #     # TODO: Implement test case 1
+    #     raise NotImplementedError("Implement test case 1")
 
 
-    def test_student_case_2(self):
-        """
-        TODO: Implement your second test case here.
+    # def test_student_case_2(self):
+    #     """
+    #     TODO: Implement your second test case here.
         
-        This should test a more complex scenario with complements or substitutes.
-        """
-        # TODO: Implement test case 2
-        raise NotImplementedError("Implement test case 2")
+    #     This should test a more complex scenario with complements or substitutes.
+    #     """
+    #     # TODO: Implement test case 2
+    #     raise NotImplementedError("Implement test case 2")
 
 
-    def test_student_case_3(self):
-        """
-        TODO: Implement your third test case here.
+    # def test_student_case_3(self):
+    #     """
+    #     TODO: Implement your third test case here.
         
-        This should test edge cases or boundary conditions.
-        """
-        # TODO: Implement test case 3
-        raise NotImplementedError("Implement test case 3")
+    #     This should test edge cases or boundary conditions.
+    #     """
+    #     # TODO: Implement test case 3
+    #     raise NotImplementedError("Implement test case 3")
 
 
 if __name__ == "__main__":
