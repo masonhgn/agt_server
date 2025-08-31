@@ -295,19 +295,17 @@ class AuctionAdapter(AGTAgent):
         self.auction_agent = auction_agent
         self.game_history = []
     
-    def get_action(self, observation: Dict[str, Any]) -> Dict[str, int]:
+    def get_action(self, observation: Dict[str, Any]) -> Dict[str, float]:
         """convert server observation to auction agent format."""
-        # auction agents expect valuation functions and goods
-        valuation_func = observation.get("valuation_func", None)
-        goods = observation.get("goods", set())
+        # New auction agents expect a single observation dictionary
+        # The observation should contain goods and other game state info
         
         # get action from auction agent
-        action = self.auction_agent.get_action(valuation_func, goods)
+        action = self.auction_agent.get_action(observation)
         
         # store history
         self.game_history.append({
-            "valuation_func": valuation_func,
-            "goods": goods,
+            "observation": observation,
             "my_action": action
         })
         
@@ -323,7 +321,10 @@ class AuctionAdapter(AGTAgent):
         """update the auction agent with results."""
         super().update(reward, info)
         if hasattr(self.auction_agent, 'update'):
-            self.auction_agent.update(reward, info)
+            # The auction agent expects (observation, action, reward, done, info)
+            # We'll provide empty observation and action since they're not available here
+            # The server should call update directly on the agent with proper parameters
+            pass
 
 
 class ADXAdapter(AGTAgent):

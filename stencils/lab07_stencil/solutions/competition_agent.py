@@ -15,8 +15,15 @@ from independent_histogram import IndependentHistogram
 from local_bid import expected_local_bid
 
 class CompetitionAgent(BaseAuctionAgent):
+    def set_valuations(self, valuations):
+        """Override to add debug output when valuations are set."""
+        super().set_valuations(valuations)
+        print(f"[DEBUG] {self.name}: valuations set to: {self.valuations}")
+        
     def setup(self, goods, kth_price=1):
         super().setup(goods, kth_price)
+        
+        print(f"[DEBUG] {self.name}: setup called with goods: {goods}, kth_price: {kth_price}")
         
         # Competition agent parameters
         self.learning_rate = 0.1
@@ -31,6 +38,8 @@ class CompetitionAgent(BaseAuctionAgent):
             bucket_sizes=[5 for _ in range(len(goods))],
             max_bids=[100 for _ in range(len(goods))]
         )
+        
+        print(f"[DEBUG] {self.name}: setup completed, goods: {self.goods}, valuations: {self.valuations}")
 
     def get_action(self, observation):
         """
@@ -41,12 +50,18 @@ class CompetitionAgent(BaseAuctionAgent):
         """
         goods = observation.get("goods", set())
         
+        print(f"[DEBUG] {self.name}: get_action called with goods: {goods}")
+        print(f"[DEBUG] {self.name}: current valuations: {self.valuations}")
+        print(f"[DEBUG] {self.name}: goods to index mapping: {self._goods_to_index}")
+        
         if not goods:
             # Fallback strategy
+            print(f"[DEBUG] {self.name}: No goods available, using fallback strategy")
             return {good: 10.0 for good in goods}
         
         # Strategy 1: Marginal value bidding with price prediction
         if random.random() > self.exploration_rate and len(self.price_history) > 10:
+            print(f"[DEBUG] {self.name}: Using learned price distribution for bidding")
             # Use learned price distribution for bidding
             bids = expected_local_bid(
                 goods,
@@ -56,14 +71,17 @@ class CompetitionAgent(BaseAuctionAgent):
                 num_samples=30
             )
         else:
+            print(f"[DEBUG] {self.name}: Using adaptive bidding strategy")
             # Strategy 2: Adaptive bidding based on history
             bids = self._adaptive_bidding(goods)
         
         # Strategy 3: Add some randomness for exploration
         if random.random() < self.exploration_rate:
+            print(f"[DEBUG] {self.name}: Adding exploration randomness")
             for good in bids:
                 bids[good] *= random.uniform(0.8, 1.2)
         
+        print(f"[DEBUG] {self.name}: Final bids: {bids}")
         return bids
     
     def _adaptive_bidding(self, goods):
@@ -101,6 +119,10 @@ class CompetitionAgent(BaseAuctionAgent):
         """Update the agent with the results of the last action."""
         super().update(observation, action, reward, done, info)
         
+        print(f"[DEBUG] {self.name}: update called with reward: {reward}, done: {done}")
+        print(f"[DEBUG] {self.name}: action taken: {action}")
+        print(f"[DEBUG] {self.name}: info received: {info}")
+        
         # Track utility history
         self.utility_history.append(reward)
         
@@ -108,6 +130,7 @@ class CompetitionAgent(BaseAuctionAgent):
         if 'bids' in info:
             other_bids_raw = info['bids']
             other_bids = {player: bids for player, bids in other_bids_raw.items() if player != self.name}
+            print(f"[DEBUG] {self.name}: other bids: {other_bids}")
             
             if other_bids:
                 predicted_prices = {}
@@ -121,6 +144,7 @@ class CompetitionAgent(BaseAuctionAgent):
                 if predicted_prices:
                     self.price_histogram.add_record(predicted_prices)
                     self.price_history.append(predicted_prices)
+                    print(f"[DEBUG] {self.name}: predicted prices: {predicted_prices}")
         
         # Update exploration rate based on performance
         if len(self.utility_history) > 20:
@@ -138,7 +162,7 @@ agent_submission = CompetitionAgent("Competition Agent")
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
+    server = True  # Set to True to connect to server, False for local testing
     name = "CompetitionAgent"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port
@@ -146,7 +170,7 @@ if __name__ == "__main__":
     
     if server:
         # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
         sys.path.insert(0, server_dir)
         
         from connect_stencil import connect_agent_to_server
@@ -158,7 +182,7 @@ if __name__ == "__main__":
             server_agent = create_adapter(agent, "auction")
             
             # Connect to server
-            await connect_agent_to_server(server_agent, host, port, verbose)
+            await connect_agent_to_server(server_agent, "auction", name, host, port, verbose)
         
         # Run the async main function
         import asyncio

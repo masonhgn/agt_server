@@ -1,0 +1,36 @@
+[
+  {
+    "game_type": "bosii",
+    "tournament": true,
+    "players": [
+      "hey",
+      "chillguy",
+      "test_bosii_agent"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "chillguy",
+        {
+          "total_reward": 98.0,
+          "games_played": 70
+        }
+      ],
+      [
+        "hey",
+        {
+          "total_reward": 77.0,
+          "games_played": 65
+        }
+      ],
+      [
+        "test_bosii_agent",
+        {
+          "total_reward": 56.0,
+          "games_played": 65
+        }
+      ]
+    ],
+    "error": false
+  }
+]

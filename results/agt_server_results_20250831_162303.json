@@ -1,0 +1,44 @@
+[
+  {
+    "game_type": "chicken",
+    "tournament": true,
+    "players": [
+      "FRIENDLY_DUCK",
+      "ql_agent",
+      "chillguy",
+      "BLING"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "ql_agent",
+        {
+          "total_reward": -81.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "FRIENDLY_DUCK",
+        {
+          "total_reward": -182.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "BLING",
+        {
+          "total_reward": -188.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "chillguy",
+        {
+          "total_reward": -189.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]

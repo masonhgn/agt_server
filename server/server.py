@@ -452,6 +452,7 @@ class AGTServer:
             
         except Exception as e:
             self.logger.error(f"error running {game_type} tournament: {e}")
+            print(f"error running {game_type} tournament: {e}")
             await self.finish_tournament(game_type, players, player_stats, error=True)
     
     async def run_round_games(self, game_type: str, pairings: List[List[PlayerConnection]], round_num: int, player_stats: Dict):
@@ -467,24 +468,25 @@ class AGTServer:
     
     async def run_single_game(self, game_type: str, players: List[PlayerConnection], round_num: int, player_stats: Dict):
         """Run a single game between a group of players."""
+        print(f"[SERVER DEBUG] ENTERING run_single_game with game_type: {game_type}, players: {[p.name for p in players]}, round: {round_num}", flush=True)
         game_config = self.game_configs[game_type]
         
         # Create new game instance for this pairing
         if game_type == "auction":
-            # Special handling for auction games
-            valuation_functions = {}
-            for i, player in enumerate(players):
-                def make_valuation(player_name):
-                    def valuation(bundle):
-                        return sum(10 for item in bundle)
-                    return valuation
-                valuation_functions[i] = make_valuation(player.name)
+            # Special handling for auction games - use new interface
+            player_names = [player.name for player in players]
             
             game = game_config["game_class"](
                 goods={"A", "B", "C", "D"},
-                valuation_functions=valuation_functions,
-                num_rounds=1  # Single round game
+                player_names=player_names,
+                num_rounds=1,  # Single round game
+                kth_price=1,
+                valuation_type="additive",
+                value_range=(10, 50)
             )
+            
+            # Note: Agents are on the client side, not stored in PlayerConnection
+            print(f"[SERVER DEBUG] Auction game created with {len(players)} players")
         elif game_type in ["adx_twoday", "adx_oneday"]:
             num_players = len(players)
             if game_type == "adx_twoday":
@@ -498,6 +500,21 @@ class AGTServer:
         try:
             # Initialize game
             obs = game.reset()
+            print(f"[SERVER DEBUG] Game type: {game_type}")
+            print(f"[SERVER DEBUG] Initial obs: {obs}")
+            
+            # Special handling for auction games - generate valuations
+            if game_type == "auction":
+                game.generate_valuations_for_round()
+                # Update observations with goods information and valuations
+                for i, player in enumerate(players):
+                    obs[i] = {
+                        "goods": game.goods,
+                        "valuations": game.current_valuations[player.name],
+                        "valuation_type": game.valuation_type,
+                        "kth_price": game.kth_price
+                    }
+                    print(f"[SERVER DEBUG] Sent observation to {player.name}: {obs[i]}")
             
             # Get actions from all players
             actions = {}
@@ -520,13 +537,21 @@ class AGTServer:
                 
                 if player.pending_action is not None:
                     actions[i] = player.pending_action
+                    print(f"[SERVER DEBUG] Received action from {player.name}: {player.pending_action}")
                 else:
                     # Use default action if timeout
                     actions[i] = self.get_default_action(game_type)
                     self.logger.warning(f"Timeout waiting for action from {player.name}, using default")
+                    print(f"[SERVER DEBUG] Using default action for {player.name}: {actions[i]}")
             
             # Step the game
             obs, rewards, done, info = game.step(actions)
+            
+            # Debug output for auction games
+            if game_type == "auction":
+                print(f"[SERVER DEBUG] Actions: {actions}")
+                print(f"[SERVER DEBUG] Rewards: {rewards}")
+                print(f"[SERVER DEBUG] Info: {info}")
             
             # Update player statistics
             for i, player in enumerate(players):
@@ -538,17 +563,27 @@ class AGTServer:
                 player.total_reward += reward
                 player.games_played += 1
             
-            # Send results to players
+            # Send results to players and update agents
             for i, player in enumerate(players):
+                reward = rewards.get(i, 0)
+                player_obs = obs.get(i, {})
+                player_action = actions.get(i, {})
+                player_info = info.get(i, {})
+                
+                # Note: Agents are updated on the client side, not here
+                
                 await self.send_message(player.writer, {
                     "message": "round_result",
                     "round": round_num + 1,
-                    "reward": rewards.get(i, 0),
+                    "reward": reward,
                     "opponent_actions": {j: actions[j] for j in range(len(players)) if j != i},
-                    "info": info.get(i, {})
+                    "info": player_info
                 })
                 
         except Exception as e:
+            print(f"[SERVER DEBUG] Exception in single game for {game_type}: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
             self.logger.error(f"Error in single game for {game_type}: {e}")
     
     async def send_round_summary(self, players: List[PlayerConnection], round_num: int, player_stats: Dict):

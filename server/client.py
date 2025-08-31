@@ -275,7 +275,15 @@ class AGTClient:
         elif msg_type == "request_action":
             # Handle action request silently unless verbose
             observation = message.get("observation", {})
+            print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
+            
+            # Special handling for auction games - set valuations on agent
+            if hasattr(self.agent, 'set_valuations') and 'valuations' in observation:
+                self.agent.set_valuations(observation['valuations'])
+                print(f"[CLIENT DEBUG] {self.agent.name}: Set valuations to {observation['valuations']}")
+            
             action = self.agent.get_action(observation)
+            print(f"[CLIENT DEBUG] {self.agent.name}: Sending action: {action}")
             await self.send_message({
                 "message": "action",
                 "action": action
@@ -284,7 +292,8 @@ class AGTClient:
             # Handle round result
             reward = message.get("reward", 0)
             info = message.get("info", {})
-            self.agent.update(reward, info)
+            print(f"[CLIENT DEBUG] {self.agent.name}: Received round result - reward: {reward}, info: {info}")
+            # Note: The server already called update() on the agent, so we don't need to call it again here
             round_num = message.get('round', 0)
             self.log(f"Round {round_num}: +{reward:.2f} points", "info")
         elif msg_type == "round_summary":

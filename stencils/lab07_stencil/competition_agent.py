@@ -91,7 +91,7 @@ if __name__ == "__main__":
             server_agent = create_adapter(agent, "auction")
             
             # Connect to server
-            await connect_agent_to_server(server_agent, host, port, verbose)
+            await connect_agent_to_server(server_agent, "auction", name, host, port, verbose)
         
         # Run the async main function
         import asyncio

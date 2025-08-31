@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "auction",
+    "tournament": true,
+    "players": [
+      "CompetitionAgent",
+      "CompetitionAgent_1"
+    ],
+    "total_rounds": 10,
+    "final_rankings": [
+      [
+        "CompetitionAgent",
+        {
+          "total_reward": 0,
+          "games_played": 0
+        }
+      ],
+      [
+        "CompetitionAgent_1",
+        {
+          "total_reward": 0,
+          "games_played": 0
+        }
+      ]
+    ],
+    "error": false
+  }
+]
