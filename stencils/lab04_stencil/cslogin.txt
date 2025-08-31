@@ -1,7 +1,0 @@
-# TODO: Please fill out your CS login(s) below
-# Each login should be on a separate line
-# Example:
-# student1
-# student2
-
-# Your CS login(s):

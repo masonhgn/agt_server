@@ -1,56 +1,119 @@
-import sys
-import os
-# Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-
 from core.agents.common.base_agent import BaseAgent
-from core.engine import Engine
-from core.game.BOSIIGame import BOSIIGame
-from core.agents.lab02.random_bos_agent import RandomBOSAgent
+from typing import Dict, Any, Optional, List
 
 
-class BOSIICompetitionAgent(BaseAgent):
-    """Competition agent for Battle of the Sexes with Incomplete Information."""
+class BOSIIAgent(BaseAgent):
+    """Base class for BOSII agents that handles player type and mood information."""
     
-    def __init__(self, name: str = "BOSIIComp"):
+    def __init__(self, name: str):
         super().__init__(name)
         self.COMPROMISE, self.STUBBORN = 0, 1
         self.GOOD_MOOD, self.BAD_MOOD = 0, 1
         self.actions = [self.COMPROMISE, self.STUBBORN]
-        self.curr_state = 0
-        self.is_row = None  # Will be set based on player ID
-        self.current_mood = None  # Column player's mood (if column player)
+        
+        # BOSII-specific state
+        self.is_row = None  # Will be set based on player type
+        self.current_mood = None  # Column player's current mood
         self.mood_history = []  # Column player's mood history
         self.opponent_action_history = []  # Opponent's action history
         self.opponent_util_history = []  # Opponent's utility history
     
-    def get_action(self, obs):
+    def _update_metadata(self, opponent_last_move=None, player_type=None, mood=None):
         """
-        Return either self.STUBBORN or self.COMPROMISE based on the current state.
-        Consider whether you're the row or column player and the mood information.
+        Update player type and mood information. This is called by subclasses.
+        
+        Args:
+            opponent_last_move: opponent's last action
+            player_type: "row" or "column" 
+            mood: current mood (GOOD_MOOD or BAD_MOOD) for column player
         """
-        # TODO: Implement your strategy here
-        # Consider:
-        # - Are you row or column player?
-        # - What's your current mood (if column player)?
-        # - What's the mood history?
-        # - What's your current state?
-        raise NotImplementedError
+        # Update player type and mood information
+        if player_type is not None:
+            self.is_row = (player_type == "row")
+        
+        if mood is not None and not self.is_row:
+            self.current_mood = mood
+            self.mood_history.append(mood)
     
-    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
+    def get_action(self, obs=None, opponent_last_move=None, player_type=None, mood=None):
+        """
+        Get action from the agent. This method should be overridden by subclasses.
+        
+        Args:
+            obs: observation dict (for engine interface)
+            opponent_last_move: opponent's last action (for server interface)
+            player_type: "row" or "column" (for server interface)
+            mood: current mood (GOOD_MOOD or BAD_MOOD) for column player (for server interface)
+        """
+        # Handle server interface parameters
+        if player_type is not None:
+            self._update_metadata(opponent_last_move, player_type, mood)
+        
+        # Handle engine interface - try to extract info from obs
+        elif obs is not None and isinstance(obs, dict):
+            # Try to determine player type from obs if available
+            if 'player_id' in obs:
+                self.is_row = (obs['player_id'] == 0)
+            if 'column_mood' in obs and not self.is_row:
+                self.current_mood = obs['column_mood']
+                self.mood_history.append(obs['column_mood'])
+        
+        # Subclasses should override this method to implement their strategy
+        pass
+    
+    def update(self, observation: dict = None, action: dict = None, reward: float = None, done: bool = None, info: dict = None):
         """
         Update the agent with the reward and info from the last action.
         """
-        self.reward_history.append(reward)
+        # Handle reward format - could be a number or a dict
+        if isinstance(reward, dict):
+            # If reward is a dict, extract the value for this player
+            if self.is_row:
+                reward_value = reward.get(0, 0.0)
+            else:
+                reward_value = reward.get(1, 0.0)
+        else:
+            reward_value = reward
         
-        # Update opponent information if available
-        if agent_info:
-            if 'opponent_action' in agent_info:
-                self.opponent_action_history.append(agent_info['opponent_action'])
-            if 'opponent_util' in agent_info:
-                self.opponent_util_history.append(agent_info['opponent_util'])
-            if 'mood' in agent_info and not self.is_row_player():
-                self.mood_history.append(agent_info['mood'])
+        if reward_value is not None:
+            self.reward_history.append(reward_value)
+        
+        # Update player type and mood information from info
+        if info:
+            # Determine player type from player_id
+            if 'player_id' in info:
+                self.is_row = (info['player_id'] == 0)
+            
+            # Update mood information for column player
+            if 'column_mood' in info and not self.is_row:
+                self.current_mood = info['column_mood']
+                self.mood_history.append(info['column_mood'])
+            
+            # Update opponent information if available
+            if 'opponent_action' in info:
+                self.opponent_action_history.append(info['opponent_action'])
+            if 'opponent_util' in info:
+                self.opponent_util_history.append(info['opponent_util'])
+    
+    def setup(self):
+        """Setup the agent for a new game."""
+        super().setup()
+        # Reset BOSII-specific state
+        self.is_row = None
+        self.current_mood = None
+        self.mood_history = []
+        self.opponent_action_history = []
+        self.opponent_util_history = []
+    
+    def reset(self):
+        """Reset the agent for a new game."""
+        super().reset()
+        # Reset BOSII-specific state
+        self.is_row = None
+        self.current_mood = None
+        self.mood_history = []
+        self.opponent_action_history = []
+        self.opponent_util_history = []
     
     # Helper methods as specified in the writeup
     
@@ -143,49 +206,11 @@ class BOSIICompetitionAgent(BaseAgent):
     def col_player_good_mood_prob(self):
         """Return the probability that the column player is in a good mood."""
         return 2/3  # As specified in the writeup
-
-
-# TODO: Give your agent a NAME 
-name = "BOSIICompetitionAgent"  # TODO: PLEASE NAME ME D:
-
-
-################### SUBMISSION #####################
-agent_submission = BOSIICompetitionAgent(name)
-####################################################
-
-
-if __name__ == "__main__":
-    # Test your agent before submitting
-    print("Testing BOSII Competition Agent locally...")
-    print("=" * 50)
     
-    # Create multiple instances for BOSII testing (appropriate since it's a different game type)
-    agent = BOSIICompetitionAgent("CompetitionAgent")
-    opponent1 = BOSIICompetitionAgent("Agent1")
-    opponent2 = BOSIICompetitionAgent("Agent2")
+    def add_opponent_action(self, action):
+        """Add opponent's action to history (called by engine)."""
+        self.opponent_action_history.append(action)
     
-    # Create game and run
-    game = BOSIIGame(rounds=100)
-    agents = [agent, opponent1, opponent2]
-    
-    engine = Engine(game, agents, rounds=100)
-    final_rewards = engine.run()
-    
-    print(f"Final rewards: {final_rewards}")
-    print(f"Cumulative rewards: {engine.cumulative_reward}")
-    
-    # Print statistics
-    print(f"\n{agent.name} statistics:")
-    action_counts = [0, 0]  # Compromise, Stubborn
-    for action in agent.action_history:
-        action_counts[action] += 1
-    
-    print(f"Compromise: {action_counts[0]}, Stubborn: {action_counts[1]}")
-    print(f"Total reward: {sum(agent.reward_history)}")
-    print(f"Average reward: {sum(agent.reward_history) / len(agent.reward_history) if agent.reward_history else 0:.3f}")
-    print(f"Final state: {agent.curr_state}")
-    print(f"Is row player: {agent.is_row_player()}")
-    if agent.mood_history:
-        print(f"Mood history: {agent.mood_history}")
-    
-    print("\nLocal test completed!")
+    def add_opponent_reward(self, reward):
+        """Add opponent's reward to history (called by engine)."""
+        self.opponent_util_history.append(reward)

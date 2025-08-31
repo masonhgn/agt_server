@@ -81,12 +81,13 @@ class Engine:
         obs = self.game.reset()
         
         # reset all agents and call setup
-        for agent in self.agents:
+        for i, agent in enumerate(self.agents):
             agent.reset()
             # For auction agents, set up with goods (no valuation function needed)
             if hasattr(agent, 'setup') and hasattr(agent, 'goods'):
                 agent.setup(self.game.goods, self.game.kth_price)
             else:
+                # For all other agents, call setup without parameters
                 agent.setup()
         
         # run the game
@@ -120,6 +121,8 @@ class Engine:
             for i, agent in enumerate(self.agents):
                 reward = rewards.get(i, 0)
                 agent_info = info.get(i, {})
+                # Add player_id to agent_info for BOSII agents
+                agent_info['player_id'] = i
                 agent.update(obs.get(i, {}), actions.get(i, {}), reward, done, agent_info)
                 self.cumulative_reward[i] += reward
                 

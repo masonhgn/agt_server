@@ -1,8 +1,0 @@
-my_lemonade_agent.py
-my_rl_lemonade_agent.py
-my_agent.py
-cslogin.txt
-local_root
-i_fixed_policy.py
-uniform_policy.py
-q_learning.py
