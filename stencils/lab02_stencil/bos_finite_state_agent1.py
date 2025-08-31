@@ -31,7 +31,7 @@ class BOSFiniteStateAgent1(BaseAgent):
         # This agent should be designed to counter the "reluctant to compromise" strategy
         raise NotImplementedError
     
-    def update(self, reward: float, info=None):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
         Update the current state based on the game history.
         This should update self.curr_state based on your FSM transition rules.

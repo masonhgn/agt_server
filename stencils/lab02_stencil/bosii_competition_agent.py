@@ -38,7 +38,7 @@ class BOSIICompetitionAgent(BaseAgent):
         # - What's your current state?
         raise NotImplementedError
     
-    def update(self, reward: float, agent_info: dict | None = None):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
         Update the agent with the reward and info from the last action.
         """

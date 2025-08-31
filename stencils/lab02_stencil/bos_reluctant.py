@@ -29,7 +29,7 @@ class BOSReluctantAgent(BaseAgent):
         else:
             return self.STUBBORN  # Default fallback
     
-    def update(self, reward: float, info=None):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
         Update the current state based on the game history.
         """

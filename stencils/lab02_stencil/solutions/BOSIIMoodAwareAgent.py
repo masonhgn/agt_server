@@ -1,7 +1,7 @@
 import sys
 import os
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
@@ -37,7 +37,7 @@ class BOSIICompetitionAgent(BaseAgent):
         # - What's your current state?
         raise NotImplementedError
     
-    def update(self, reward: float, agent_info: dict | None = None):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
         Update the agent with the reward and info from the last action.
         """

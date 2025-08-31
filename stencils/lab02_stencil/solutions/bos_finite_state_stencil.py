@@ -1,7 +1,7 @@
 import sys
 import os
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
@@ -28,7 +28,7 @@ class BOSFiniteStateAgent(BaseAgent):
         # Use self.curr_state to determine which action to take
         raise NotImplementedError
     
-    def update(self, reward: float):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
         Update the current state based on the game history.
         This should update self.curr_state based on your FSM transition rules.

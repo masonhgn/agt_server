@@ -4,7 +4,7 @@ import asyncio
 import argparse
 
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.common.base_agent import BaseAgent
 
@@ -40,7 +40,7 @@ class BOSExampleAgent(BaseAgent):
         
         return action
     
-    def update(self, reward: float, info=None):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """Update internal state with the reward received."""
         self.reward_history.append(reward)
         # TODO: Add any additional state updates your strategy needs

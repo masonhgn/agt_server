@@ -2,7 +2,7 @@ import sys
 import os
 import asyncio
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
@@ -49,7 +49,7 @@ class BOSCompetitionExampleAgent(BaseAgent):
         else:
             return self.COMPROMISE  # Default fallback
     
-    def update(self, reward: float, info=None):
+    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
         """
         Update the current state based on the game history.
         This should update self.curr_state based on your FSM transition rules.
@@ -138,7 +138,7 @@ agent_submission = BOSCompetitionExampleAgent(name)
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
+    server = True  # Set to True to connect to server, False for local testing
     name = "BOSCompetitionExample"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         print(f"Connecting to server at {host}:{port}")
         
         # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
         sys.path.insert(0, server_dir)
         
         from client import AGTClient
@@ -201,11 +201,10 @@ if __name__ == "__main__":
         # Create agents for testing
         agent = BOSCompetitionExampleAgent("CompetitionExample")
         opponent1 = BOSPunitiveAgent("PunitiveAgent")
-        opponent2 = BOSReluctantAgent("ReluctantAgent")
         
         # Create game and run
         game = BOSGame(rounds=1000)
-        agents = [agent, opponent1, opponent2]
+        agents = [agent, opponent1]
         
         engine = Engine(game, agents, rounds=1000)
         final_rewards = engine.run()
