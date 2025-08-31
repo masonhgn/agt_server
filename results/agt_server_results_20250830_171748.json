@@ -1,0 +1,25 @@
+[
+  {
+    "game_type": "bosii",
+    "tournament": true,
+    "players": [],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "BOSII_Agent2",
+        {
+          "total_reward": 3.0,
+          "games_played": 1
+        }
+      ],
+      [
+        "curr_agent",
+        {
+          "total_reward": 0.0,
+          "games_played": 1
+        }
+      ]
+    ],
+    "error": false
+  }
+]
