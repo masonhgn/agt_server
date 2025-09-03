@@ -40,14 +40,21 @@ class BaseAgent(ABC):
         """
         pass
     
-    def update(self, reward: float = None, info: Dict[str, Any] = None):
+    def update(self, observation: Dict[str, Any] = None, action: Any = None, reward: float = None, done: bool = None, info: Dict[str, Any] = None):
         """
-        update the agent with the reward and info from the last action.
+        update the agent with the observation, action, reward, done status, and info from the last action.
         
         args:
+            observation: current game state observation (optional for backward compatibility)
+            action: action taken by this agent (optional for backward compatibility)
             reward: reward received from the last action (optional for backward compatibility)
+            done: whether the game is done (optional for backward compatibility)
             info: additional information from the last action (optional for backward compatibility)
         """
+        if observation is not None:
+            self.observation_history.append(observation)
+        if action is not None:
+            self.action_history.append(action)
         if reward is not None:
             self.reward_history.append(reward)
         

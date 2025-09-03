@@ -58,57 +58,85 @@ class BasicBiddingAgent:
 
 
 if __name__ == "__main__":
-    # Test the basic bidding agent locally
-    print("Testing BasicBiddingAgent locally...")
-    print("=" * 50)
+    # Configuration variables - modify these as needed
+    server = False  # Set to True to connect to server, False for local testing
+    name = "BasicBiddingAgent"  # Agent name
+    host = "localhost"  # Server host
+    port = 8080  # Server port
+    verbose = False  # Enable verbose debug output
+    game = "adx_oneday"  # Game type (hardcoded for this agent)
     
-    # Import opponent agents and AdX arena for testing
-    from aggressive_bidding_agent import AggressiveBiddingAgent
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    from adx_local_arena import AdXLocalArena
-    import random
-    
-    # Create additional random agents for a full tournament
-    class RandomAdXAgent:
-        def __init__(self, name):
-            self.name = name
-            self.campaign = None
+    if server:
+        # Add server directory to path for imports
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
+        sys.path.insert(0, server_dir)
         
-        def reset(self):
-            """Reset the agent for a new game."""
-            pass
+        from connect_stencil import connect_agent_to_server
+        from adapters import create_adapter
         
-        def setup(self):
-            """Initialize the agent for a new game."""
-            pass
+        async def main():
+            # Create agent and adapter
+            agent = BasicBiddingAgent()
+            server_agent = create_adapter(agent, game)
+            
+            # Connect to server
+            await connect_agent_to_server(server_agent, game, name, host, port, verbose)
         
-        def get_bid_bundle(self) -> OneDayBidBundle:
-            bid_entries = []
-            for segment in MarketSegment.all_segments():
-                if MarketSegment.is_subset(self.campaign.market_segment, segment):
-                    bid_entries.append(SimpleBidEntry(
-                        market_segment=segment,
-                        bid=random.uniform(0.5, 2.0),  # Random bid between 0.5 and 2.0
-                        spending_limit=self.campaign.budget * random.uniform(0.5, 1.0)
-                    ))
-            return OneDayBidBundle(
-                campaign_id=self.campaign.id,
-                day_limit=self.campaign.budget * random.uniform(0.5, 1.0),
-                bid_entries=bid_entries
-            )
-    
-    # Create all agents for testing
-    agent = BasicBiddingAgent()
-    opponent1 = AggressiveBiddingAgent()
-    random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(8)]
-    
-    # Create arena and run tournament
-    agents = [agent, opponent1] + random_agents
-    arena = AdXLocalArena(agents, num_agents_per_game=10, num_games=10, verbose=True)
-    arena.run_tournament()
-    
-    print("\nLocal test completed!")
+        # Run the async main function
+        import asyncio
+        asyncio.run(main())
+    else:
+        # Test the basic bidding agent locally
+        print("Testing BasicBiddingAgent locally...")
+        print("=" * 50)
+        
+        # Import opponent agents and AdX arena for testing
+        from aggressive_bidding_agent import AggressiveBiddingAgent
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from adx_local_arena import AdXLocalArena
+        import random
+        
+        # Create additional random agents for a full tournament
+        class RandomAdXAgent:
+            def __init__(self, name):
+                self.name = name
+                self.campaign = None
+            
+            def reset(self):
+                """Reset the agent for a new game."""
+                pass
+            
+            def setup(self):
+                """Initialize the agent for a new game."""
+                pass
+            
+            def get_bid_bundle(self) -> OneDayBidBundle:
+                bid_entries = []
+                for segment in MarketSegment.all_segments():
+                    if MarketSegment.is_subset(self.campaign.market_segment, segment):
+                        bid_entries.append(SimpleBidEntry(
+                            market_segment=segment,
+                            bid=random.uniform(0.5, 2.0),  # Random bid between 0.5 and 2.0
+                            spending_limit=self.campaign.budget * random.uniform(0.5, 1.0)
+                        ))
+                return OneDayBidBundle(
+                    campaign_id=self.campaign.id,
+                    day_limit=self.campaign.budget * random.uniform(0.5, 1.0),
+                    bid_entries=bid_entries
+                )
+        
+        # Create all agents for testing
+        agent = BasicBiddingAgent()
+        opponent1 = AggressiveBiddingAgent()
+        random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(8)]
+        
+        # Create arena and run tournament
+        agents = [agent, opponent1] + random_agents
+        arena = AdXLocalArena(agents, num_agents_per_game=10, num_games=10, verbose=True)
+        arena.run_tournament()
+        
+        print("\nLocal test completed!")
 
 # Export for server testing
 agent_submission = BasicBiddingAgent()

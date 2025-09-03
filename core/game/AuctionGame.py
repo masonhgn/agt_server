@@ -299,20 +299,33 @@ class AuctionGame(BaseGame):
     
     def step(self, actions: ActionDict) -> Tuple[ObsDict, RewardDict, bool, InfoDict]:
         """Advance the game by applying actions."""
+        print(f"[GAME DEBUG] AuctionGame.step() called with actions: {actions}", flush=True)
+        print(f"[GAME DEBUG] Current round: {self.current_round}, num_rounds: {self.num_rounds}", flush=True)
+        
         if self.current_round >= self.num_rounds:
+            print(f"[GAME DEBUG] Game already finished, raising error", flush=True)
             raise ValueError("Game is already finished")
         
         # Convert numeric indices to player names for internal processing
+        print(f"[GAME DEBUG] Converting agent indices to player names", flush=True)
         agent_actions = {}
         for i, player in enumerate(self.players):
             if i in actions:
                 agent_actions[player] = actions[i]
+                print(f"[GAME DEBUG] Agent {i} -> Player {player}: {actions[i]}")
+            else:
+                print(f"[GAME DEBUG] Warning: No action for agent {i}")
+        
+        print(f"[GAME DEBUG] Converted actions: {agent_actions}", flush=True)
         
         # Run the round
+        print(f"[GAME DEBUG] Running round", flush=True)
         results = self.run_round(agent_actions)
         self.current_round += 1
+        print(f"[GAME DEBUG] Round completed, current_round now: {self.current_round}", flush=True)
         
         # Prepare observations for next round (using numeric indices)
+        print(f"[GAME DEBUG] Preparing observations for next round", flush=True)
         obs = {}
         for i, player in enumerate(self.players):
             obs[i] = {
@@ -323,16 +336,21 @@ class AuctionGame(BaseGame):
                 "last_prices": results['prices'],
                 "last_payments": results['payments']
             }
+            print(f"[GAME DEBUG] Observation for agent {i}: {obs[i]}")
         
         # Rewards are the utilities from this round (using numeric indices)
+        print(f"[GAME DEBUG] Preparing rewards", flush=True)
         rewards = {}
         for i, player in enumerate(self.players):
             rewards[i] = results['utilities'].get(player, 0)
+            print(f"[GAME DEBUG] Reward for agent {i} (player {player}): {rewards[i]}")
         
         # Check if game is done
         done = self.current_round >= self.num_rounds
+        print(f"[GAME DEBUG] Game done: {done}", flush=True)
         
         # Info contains additional data (using numeric indices)
+        print(f"[GAME DEBUG] Preparing info", flush=True)
         info = {}
         for i, player in enumerate(self.players):
             info[i] = {
@@ -341,9 +359,24 @@ class AuctionGame(BaseGame):
                 "payments": results['payments'],
                 "bids": results['bids']
             }
+            print(f"[GAME DEBUG] Info for agent {i}: {info[i]}")
         
+        print(f"[GAME DEBUG] step() returning: obs={obs}, rewards={rewards}, done={done}, info={info}", flush=True)
         return obs, rewards, done, info
     
     def num_players(self) -> int:
         """Get number of players in the game."""
-        return self._num_players 
+        return self._num_players
+    
+    def get_player_name(self, index: int) -> str:
+        """Get player name by index."""
+        if 0 <= index < len(self.players):
+            return self.players[index]
+        raise IndexError(f"Player index {index} out of range")
+    
+    def get_player_index(self, player_name: str) -> int:
+        """Get player index by name."""
+        try:
+            return self.players.index(player_name)
+        except ValueError:
+            raise ValueError(f"Player name '{player_name}' not found") 

@@ -82,15 +82,23 @@ class AdxOfflineStage(BaseStage):
         self,
         actions: ActionDict
     ) -> Tuple[ObsDict, RewardDict, bool, InfoDict]:
+        print(f"[STAGE DEBUG] AdxOfflineStage.step() called with actions: {actions}", flush=True)
+        print(f"[STAGE DEBUG] Day: {self.day}, QC multiplier: {self.qc}, n_auctions: {self.n_auctions}", flush=True)
+        
         # Validate: one bundle per external agent exactly once
         if self._done_once:
+            print(f"[STAGE DEBUG] Error: Bundles already submitted", flush=True)
             raise RuntimeError("Bundles already submitted")
         
         #validate actions
+        print(f"[STAGE DEBUG] Validating actions...", flush=True)
         self._validate_actions(actions)
+        print(f"[STAGE DEBUG] Actions validated successfully", flush=True)
 
         self._bundle = actions  # keep reference
+        print(f"[STAGE DEBUG] Running simulation with {self.n_auctions} auctions...", flush=True)
         self._run_simulation()
+        print(f"[STAGE DEBUG] Simulation completed", flush=True)
 
         reward: RewardDict = {}
         info: InfoDict = {}
@@ -103,18 +111,26 @@ class AdxOfflineStage(BaseStage):
                 "reach_hit": reach_hit,
             }
             if self.day == 0:
-                info[pid]["qc"] = self._quality_score(reach_hit, bundle.reach_goal)
+                qc_score = self._quality_score(reach_hit, bundle.reach_goal)
+                info[pid]["qc"] = qc_score
+                print(f"[STAGE DEBUG] Player {pid} QC score: {qc_score} (reach_hit: {reach_hit}, goal: {bundle.reach_goal})", flush=True)
+            
+            print(f"[STAGE DEBUG] Player {pid} results: reach_hit={reach_hit}, spend={bundle.spend}, profit={profit}", flush=True)
 
         self._done = True
         self._done_once = True
         obs: ObsDict = {pid: {} for pid in actions}
+        print(f"[STAGE DEBUG] step() returning: obs={obs}, reward={reward}, done=True, info={info}", flush=True)
         return obs, reward, True, info
 
     # ------------ internal helpers ----------------------------------
 
     def _run_simulation(self):
         """Toy simulator: each auction draws a random segment and rival price."""
-        for _ in range(self.n_auctions): 
+        print(f"[STAGE DEBUG] Starting simulation with {self.n_auctions} auctions", flush=True)
+        print(f"[STAGE DEBUG] Bundles: {self._bundle}", flush=True)
+        
+        for auction_num in range(self.n_auctions): 
             seg = random.choice(self.SEGMENTS) #uniformly draw a segment
             rival_price = self.rival_sampler(seg) #get rival price
 
@@ -131,6 +147,14 @@ class AdxOfflineStage(BaseStage):
                 bundle = self._bundle[best_pid]
                 bundle.spend += rival_price / 1000.0            # CPM -> per-impression
                 bundle.hit[seg] += 1
+                
+                # Log every 1000th auction for debugging
+                if auction_num % 1000 == 0:
+                    print(f"[STAGE DEBUG] Auction {auction_num}: segment {seg}, rival_price={rival_price:.3f}, winner={best_pid}, bid={best_bid:.3f}", flush=True)
+        
+        print(f"[STAGE DEBUG] Simulation completed. Final bundle states:", flush=True)
+        for pid, bundle in self._bundle.items():
+            print(f"[STAGE DEBUG] Player {pid}: spend={bundle.spend:.3f}, hits={bundle.hit}", flush=True)
 
     def _quality_score(self, reach: int, goal: int) -> float:
         """

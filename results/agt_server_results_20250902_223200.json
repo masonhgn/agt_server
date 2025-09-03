@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "chicken",
+    "tournament": true,
+    "players": [
+      "FRIENDLY_DUCK",
+      "FRIENDLY_DUCK_1"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "FRIENDLY_DUCK",
+        {
+          "total_reward": -500.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "FRIENDLY_DUCK_1",
+        {
+          "total_reward": -500.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]

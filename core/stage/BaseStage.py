@@ -34,12 +34,19 @@ class BaseStage(ABC):
         Simple guard to keep Engine ⇄ Stage invariants honest.
         Raise ValueError if action_dict keys don't match the required movers.
         """
+        print(f"[STAGE DEBUG] BaseStage._validate_actions called with actions: {actions}", flush=True)
+        print(f"[STAGE DEBUG] Expected players: {expected_players}, self.n: {self.n}", flush=True)
+        
         expected = set(expected_players) if expected_players is not None else set(range(self.n))
+        print(f"[STAGE DEBUG] Expected player set: {expected}", flush=True)
+        print(f"[STAGE DEBUG] Actual actions keys: {set(actions)}", flush=True)
+        
         if set(actions) != expected:
-            raise ValueError(
-                f"Stage expected actions for players {sorted(expected)}, "
-                f"got {sorted(actions)}"
-            )
+            error_msg = f"Stage expected actions for players {sorted(expected)}, got {sorted(actions)}"
+            print(f"[STAGE DEBUG] Validation failed: {error_msg}", flush=True)
+            raise ValueError(error_msg)
+        
+        print(f"[STAGE DEBUG] Validation passed successfully", flush=True)
 
 
 

@@ -1,0 +1,39 @@
+[
+  {
+    "game_type": "adx_twoday",
+    "tournament": true,
+    "players": [],
+    "total_rounds": 2,
+    "final_rankings": [
+      [
+        "AggressiveAdXAgent",
+        {
+          "total_reward": 0.0,
+          "games_played": 1
+        }
+      ],
+      [
+        "AggressiveAdXAgent_1",
+        {
+          "total_reward": 0.0,
+          "games_played": 1
+        }
+      ],
+      [
+        "AggressiveAdXAgent_2",
+        {
+          "total_reward": 0.0,
+          "games_played": 1
+        }
+      ],
+      [
+        "AggressiveAdXAgent_3",
+        {
+          "total_reward": 0.0,
+          "games_played": 1
+        }
+      ]
+    ],
+    "error": false
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "bos",
+    "tournament": true,
+    "players": [
+      "BOSCompetitionAgent",
+      "BOSCompetitionAgent_1"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "BOSCompetitionAgent",
+        {
+          "total_reward": 260.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "BOSCompetitionAgent_1",
+        {
+          "total_reward": 220.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]

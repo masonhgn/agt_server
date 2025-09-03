@@ -100,9 +100,20 @@ class Engine:
             if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
                 for i, agent in enumerate(self.agents):
                     if hasattr(agent, 'set_valuations') and i < len(self.game.players):
-                        player_name = self.game.players[i]
-                        valuations = self.game.current_valuations[player_name]
-                        agent.set_valuations(valuations)
+                        try:
+                            # Get player name by index for auction games
+                            if hasattr(self.game, 'get_player_name'):
+                                player_name = self.game.get_player_name(i)
+                            else:
+                                # Fallback for non-auction games
+                                player_name = f"player_{i}"
+                            
+                            valuations = self.game.current_valuations[player_name]
+                            agent.set_valuations(valuations)
+                        except (IndexError, KeyError) as e:
+                            # Log error but continue - agent might not need valuations
+                            print(f"Warning: Could not set valuations for agent {i}: {e}")
+                            pass
             
             # get actions from all agents
             actions = {}
@@ -115,7 +126,9 @@ class Engine:
                     agent.action_history.append(action)
             
             # step the game
+            print(f"[ENGINE DEBUG] Calling game.step() with actions: {actions}", flush=True)
             obs, rewards, done, info = self.game.step(actions)
+            print(f"[ENGINE DEBUG] game.step() returned: obs={obs}, rewards={rewards}, done={done}, info={info}", flush=True)
             
             # update agents with results and track opponent actions
             for i, agent in enumerate(self.agents):
@@ -123,6 +136,7 @@ class Engine:
                 agent_info = info.get(i, {})
                 # Add player_id to agent_info for BOSII agents
                 agent_info['player_id'] = i
+                print(f"[ENGINE DEBUG] Updating agent {i} with reward={reward}, done={done}, info={agent_info}", flush=True)
                 agent.update(obs.get(i, {}), actions.get(i, {}), reward, done, agent_info)
                 self.cumulative_reward[i] += reward
                 
@@ -155,9 +169,20 @@ class Engine:
         if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
             for i, agent in enumerate(self.agents):
                 if hasattr(agent, 'set_valuations') and i < len(self.game.players):
-                    player_name = self.game.players[i]
-                    valuations = self.game.current_valuations[player_name]
-                    agent.set_valuations(valuations)
+                    try:
+                        # Get player name by index for auction games
+                        if hasattr(self.game, 'get_player_name'):
+                            player_name = self.game.get_player_name(i)
+                        else:
+                            # Fallback for non-auction games
+                            player_name = f"player_{i}"
+                        
+                        valuations = self.game.current_valuations[player_name]
+                        agent.set_valuations(valuations)
+                    except (IndexError, KeyError) as e:
+                        # Log error but continue - agent might not need valuations
+                        print(f"Warning: Could not set valuations for agent {i}: {e}")
+                        pass
         
         # get actions from all agents
         actions = {}

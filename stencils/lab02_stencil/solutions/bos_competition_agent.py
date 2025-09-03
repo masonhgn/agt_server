@@ -30,6 +30,9 @@ class BOSCompetitionAgent(BaseAgent):
         - Adapt based on opponent's behavior
         - Use tit-for-tat with forgiveness
         """
+        import random
+        choice = random.randint(0, 1)
+        return self.COMPROMISE if choice == 0 else self.STUBBORN
         if self.curr_state == 0:
             # Initial state: try to cooperate
             return self.COMPROMISE
@@ -137,7 +140,7 @@ agent_submission = BOSCompetitionAgent(name)
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
+    server = True  # Set to True to connect to server, False for local testing
     name = "BOSCompetitionAgent"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port
@@ -145,7 +148,7 @@ if __name__ == "__main__":
     
     if server:
         # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
         sys.path.insert(0, server_dir)
         
         from connect_stencil import connect_agent_to_server

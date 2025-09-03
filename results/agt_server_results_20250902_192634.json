@@ -1,0 +1,44 @@
+[
+  {
+    "game_type": "adx_oneday",
+    "tournament": true,
+    "players": [
+      "AggressiveBiddingAgent",
+      "AggressiveBiddingAgent_1",
+      "AggressiveBiddingAgent_2",
+      "AggressiveBiddingAgent_3"
+    ],
+    "total_rounds": 1,
+    "final_rankings": [
+      [
+        "AggressiveBiddingAgent",
+        {
+          "total_reward": 0,
+          "games_played": 0
+        }
+      ],
+      [
+        "AggressiveBiddingAgent_1",
+        {
+          "total_reward": 0,
+          "games_played": 0
+        }
+      ],
+      [
+        "AggressiveBiddingAgent_2",
+        {
+          "total_reward": 0,
+          "games_played": 0
+        }
+      ],
+      [
+        "AggressiveBiddingAgent_3",
+        {
+          "total_reward": 0,
+          "games_played": 0
+        }
+      ]
+    ],
+    "error": false
+  }
+]

@@ -127,61 +127,96 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
         return self.campaign_day2
 
 
-def main():
-    """
-    Local testing arena for Lab 9 AdX Two-Day Game.
-    Run this file directly to test your agent against example solutions.
-    """
-    try:
-        from core.engine import Engine
-        from core.game.AdxTwoDayGame import AdxTwoDayGame
-        from solutions.example_solution import ExampleTwoDaysTwoCampaignsAgent
-        from solutions.random_agent import RandomAdXAgent
-        from solutions.aggressive_agent import AggressiveAdXAgent
-        from solutions.conservative_agent import ConservativeAdXAgent
-        
-        print("=== Lab 9: AdX Two-Day Game Testing Arena ===\n")
-        
-        # Create your agent
-        my_agent = MyTwoDaysTwoCampaignsAgent()
-        print(f"Your agent: {my_agent.name}")
-        
-        # Create example opponents
-        example_agent = ExampleTwoDaysTwoCampaignsAgent()
-        random_agent = RandomAdXAgent()
-        aggressive_agent = AggressiveAdXAgent()
-        conservative_agent = ConservativeAdXAgent()
-        
-        print(f"Opponents: {example_agent.name}, {random_agent.name}, {aggressive_agent.name}, {conservative_agent.name}\n")
-        
-        # Test against each opponent
-        opponents = [example_agent, random_agent, aggressive_agent, conservative_agent]
-        
-        for opponent in opponents:
-            print(f"Testing against {opponent.name}...")
-            
-            # Create game with 2 players
-            game = AdxTwoDayGame(num_players=2)
-            
-            # Create engine and run game
-            engine = Engine(game, [my_agent, opponent], rounds=1)
-            results = engine.run()
-            
-            print(f"  Your score: {results[0]:.2f}")
-            print(f"  {opponent.name} score: {results[1]:.2f}")
-            print(f"  Winner: {'You' if results[0] > results[1] else opponent.name}")
-            print()
-        
-        print("=== Testing Complete ===")
-        
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print("Make sure you're running this from the lab09_stencil directory")
-    except Exception as e:
-        print(f"Error during testing: {e}")
-        import traceback
-        traceback.print_exc()
-
-
 if __name__ == "__main__":
-    main() 
+    # Configuration variables - modify these as needed
+    server = False  # Set to True to connect to server, False for local testing
+    name = ...  # TODO: Please give your agent a name
+    host = "localhost"  # Server host
+    port = 8080  # Server port
+    verbose = False  # Enable verbose debug output
+    game = "adx_two_day"  # Game type (hardcoded for this agent)
+    
+    if server:
+        # Add server directory to path for imports
+        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
+        sys.path.insert(0, server_dir)
+        
+        from connect_stencil import connect_agent_to_server
+        from adapters import create_adapter
+        
+        async def main():
+            # Generate unique name if not provided
+            if not name:
+                import random
+                agent_name = f"MyTwoDaysTwoCampaignsAgent_{random.randint(1000, 9999)}"
+            else:
+                agent_name = name
+                
+            # Create agent and adapter
+            agent = MyTwoDaysTwoCampaignsAgent()
+            agent.name = agent_name
+            server_agent = create_adapter(agent, game)
+            
+            # Connect to server
+            await connect_agent_to_server(server_agent, game, agent_name, host, port, verbose)
+        
+        # Run the async main function
+        import asyncio
+        asyncio.run(main())
+    else:
+        # Test your agent locally
+        print("Testing MyTwoDaysTwoCampaignsAgent locally...")
+        print("=" * 50)
+        
+        try:
+            from core.engine import Engine
+            from core.game.AdxTwoDayGame import AdxTwoDayGame
+            from solutions.example_solution import ExampleTwoDaysTwoCampaignsAgent
+            from solutions.random_agent import RandomAdXAgent
+            from solutions.aggressive_agent import AggressiveAdXAgent
+            from solutions.conservative_agent import ConservativeAdXAgent
+            
+            print("=== Lab 9: AdX Two-Day Game Testing Arena ===\n")
+            
+            # Create your agent
+            my_agent = MyTwoDaysTwoCampaignsAgent()
+            print(f"Your agent: {my_agent.name}")
+            
+            # Create example opponents
+            example_agent = ExampleTwoDaysTwoCampaignsAgent()
+            random_agent = RandomAdXAgent()
+            aggressive_agent = AggressiveAdXAgent()
+            conservative_agent = ConservativeAdXAgent()
+            
+            print(f"Opponents: {example_agent.name}, {random_agent.name}, {aggressive_agent.name}, {conservative_agent.name}\n")
+            
+            # Test against each opponent
+            opponents = [example_agent, random_agent, aggressive_agent, conservative_agent]
+            
+            for opponent in opponents:
+                print(f"Testing against {opponent.name}...")
+                
+                # Create game with 2 players
+                game = AdxTwoDayGame(num_players=2)
+                
+                # Create engine and run game
+                engine = Engine(game, [my_agent, opponent], rounds=1)
+                results = engine.run()
+                
+                print(f"  Your score: {results[0]:.2f}")
+                print(f"  {opponent.name} score: {results[1]:.2f}")
+                print(f"  Winner: {'You' if results[0] > results[1] else opponent.name}")
+                print()
+            
+            print("=== Testing Complete ===")
+            
+        except ImportError as e:
+            print(f"Import error: {e}")
+            print("Make sure you're running this from the lab09_stencil directory")
+        except Exception as e:
+            print(f"Error during testing: {e}")
+            import traceback
+            traceback.print_exc()
+
+# Export for server testing
+agent_submission = MyTwoDaysTwoCampaignsAgent("MyTwoDaysTwoCampaignsAgent") 

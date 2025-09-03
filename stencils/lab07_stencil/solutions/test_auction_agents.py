@@ -38,9 +38,13 @@ class TruthfulAuctionAgent(BaseAuctionAgent):
         goods = observation.get("goods", set())
         valuation_function = observation.get("valuation_function", None)
         
-        if not goods or not valuation_function:
-            # Fallback if no goods or valuation function provided
-            return {good: 5.0 for good in goods}
+        if not goods:
+            # This is a major issue - no goods available
+            raise ValueError(f"[ERROR] {self.name}: No goods available in observation: {observation}")
+        
+        if not valuation_function:
+            # This is a major issue - no valuation function provided
+            raise ValueError(f"[ERROR] {self.name}: No valuation function provided in observation: {observation}")
         
         bids = {}
         for good in goods:
@@ -83,8 +87,8 @@ class RandomAuctionAgent(BaseAuctionAgent):
         goods = observation.get("goods", set())
         
         if not goods:
-            # Fallback if no goods provided
-            return {"A": random.uniform(1.0, 10.0), "B": random.uniform(1.0, 10.0)}
+            # This is a major issue - no goods available
+            raise ValueError(f"[ERROR] {self.name}: No goods available in observation: {observation}")
         
         bids = {}
         for good in goods:
@@ -122,9 +126,13 @@ class MarginalValueAuctionAgent(BaseAuctionAgent):
         goods = observation.get("goods", set())
         valuation_function = observation.get("valuation_function", None)
         
-        if not goods or not valuation_function:
-            # Fallback if no goods or valuation function provided
-            return {good: 5.0 for good in goods}
+        if not goods:
+            # This is a major issue - no goods available
+            raise ValueError(f"[ERROR] {self.name}: No goods available in observation: {observation}")
+        
+        if not valuation_function:
+            # This is a major issue - no valuation function provided
+            raise ValueError(f"[ERROR] {self.name}: No valuation function provided in observation: {observation}")
         
         bids = {}
         for good in goods:

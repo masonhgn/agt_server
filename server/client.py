@@ -277,10 +277,17 @@ class AGTClient:
             observation = message.get("observation", {})
             print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
             
-            # Special handling for auction games - set valuations on agent
-            if hasattr(self.agent, 'set_valuations') and 'valuations' in observation:
-                self.agent.set_valuations(observation['valuations'])
-                print(f"[CLIENT DEBUG] {self.agent.name}: Set valuations to {observation['valuations']}")
+            # Special handling for auction games - setup agent and set valuations
+            if hasattr(self.agent, 'setup') and 'goods' in observation:
+                # First time setup - initialize goods and goods_to_index mapping
+                if not hasattr(self.agent, '_goods_to_index') or not self.agent._goods_to_index:
+                    self.agent.setup(observation['goods'], observation.get('kth_price', 1))
+                    print(f"[CLIENT DEBUG] {self.agent.name}: Setup completed with goods: {observation['goods']}")
+                
+                # Set valuations for this round
+                if hasattr(self.agent, 'set_valuations') and 'valuations' in observation:
+                    self.agent.set_valuations(observation['valuations'])
+                    print(f"[CLIENT DEBUG] {self.agent.name}: Set valuations to {observation['valuations']}")
             
             action = self.agent.get_action(observation)
             print(f"[CLIENT DEBUG] {self.agent.name}: Sending action: {action}")

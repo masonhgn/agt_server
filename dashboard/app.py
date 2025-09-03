@@ -36,7 +36,8 @@ server_config = {
     'num_rounds': 100,  # Default for RPS
     'num_players': 2,
     'port': AGT_SERVER_PORT,
-    'host': '0.0.0.0'
+    'host': '0.0.0.0',
+    'verbose': False  # Debug output control
 }
 
 # Track server state from console output
@@ -62,6 +63,14 @@ def parse_console_line(line):
     """Parse console output to update server state."""
     global server_state
     # log_console(f"🔍 PARSING LINE: {line}")
+    
+    # Show all SERVER DEBUG statements
+    if "[SERVER DEBUG]" in line:
+        log_console(f"{line}")
+    
+    # Show all GAME DEBUG statements
+    if "[GAME DEBUG]" in line:
+        log_console(f"{line}")
     
     # Simple test - log every line that contains "Player"
     # if "Player" in line:
@@ -275,6 +284,10 @@ def start_agt_server(config):
             '--host', config['host']
         ]
         
+        # Add verbose flag if enabled
+        if config.get('verbose', False):
+            cmd.append('--verbose')
+        
         log_console(f"Starting AGT server with command: {' '.join(cmd)}")
         
         # Start process with output capture
@@ -473,6 +486,22 @@ def update_config():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+@app.route('/api/toggle_verbose', methods=['POST'])
+def toggle_verbose():
+    """Toggle verbose debug output."""
+    global server_config
+    try:
+        server_config['verbose'] = not server_config.get('verbose', False)
+        status = "enabled" if server_config['verbose'] else "disabled"
+        log_console(f"Verbose debug output {status}")
+        return jsonify({
+            "success": True, 
+            "verbose": server_config['verbose'],
+            "message": f"Verbose debug output {status}"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route('/api/start_tournament', methods=['POST'])
 def start_tournament():
     """Start tournaments via AGT server."""
@@ -518,6 +547,11 @@ def restart_tournament():
     except Exception as e:
         log_console(f"Error restarting tournament: {e}")
         return jsonify({"success": False, "error": f"Failed to restart: {str(e)}"})
+
+@app.route('/api/config')
+def get_config():
+    """Get current server configuration."""
+    return jsonify(server_config)
 
 @app.route('/api/console')
 def get_console():

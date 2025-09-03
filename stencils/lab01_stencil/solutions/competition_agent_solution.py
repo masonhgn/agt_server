@@ -68,7 +68,7 @@ class CompetitionAgent(ChickenAgent):
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
+    server = True  # Set to True to connect to server, False for local testing
     name = "FRIENDLY_DUCK"  # Agent name (None for auto-generated)
     host = "localhost"  # Server host
     port = 8080  # Server port

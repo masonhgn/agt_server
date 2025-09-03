@@ -62,6 +62,12 @@ class BaseAuctionAgent(ABC):
         Args:
             valuations: List of valuations for each good (in order)
         """
+        if not isinstance(valuations, list):
+            raise TypeError("Valuations must be a list")
+        
+        if len(valuations) != len(self.goods):
+            raise ValueError(f"Expected {len(self.goods)} valuations, got {len(valuations)}")
+        
         self.valuations = valuations.copy()
         
     def calculate_valuation(self, bundle: Set[str]) -> float:

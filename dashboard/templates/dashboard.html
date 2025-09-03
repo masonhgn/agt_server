@@ -394,6 +394,15 @@
                     <button id="stopServerBtn" class="server-btn" onclick="stopServer()" disabled>
                         Stop Server
                     </button>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc;">
+                        <label for="verboseToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="verboseToggle" onchange="toggleVerbose()">
+                            <span>Verbose Debug Output</span>
+                        </label>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Enable to show detailed server debug messages
+                        </small>
+                    </div>
                 </div>
                 
                 <!-- Configuration -->
@@ -646,6 +655,22 @@
             }
         }
         
+        async function toggleVerbose() {
+            try {
+                const response = await fetch('/api/toggle_verbose', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`Verbose debug output ${result.verbose ? 'enabled' : 'disabled'}`);
+                    // Update checkbox state to match server state
+                    document.getElementById('verboseToggle').checked = result.verbose;
+                } else {
+                    console.error('Failed to toggle verbose mode:', result.error);
+                }
+            } catch (error) {
+                console.error('Error toggling verbose mode:', error);
+            }
+        }
+        
         function updateButtonStates() {
             const startServerBtn = document.getElementById('startServerBtn');
             const stopServerBtn = document.getElementById('stopServerBtn');
@@ -826,6 +851,16 @@
                     document.getElementById('numRounds').value = data.config.num_rounds || 1000;
                     document.getElementById('numPlayers').value = data.config.num_players || 2;
                 }
+            });
+        
+        // Load verbose setting
+        fetch('/api/config')
+            .then(response => response.json())
+            .then(config => {
+                document.getElementById('verboseToggle').checked = config.verbose || false;
+            })
+            .catch(error => {
+                console.error('Error loading verbose config:', error);
             });
     </script>
 </body>

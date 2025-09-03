@@ -59,10 +59,27 @@ class AdXAgentAdapter:
         # Call the AdX agent's get_bid_bundle method
         return self.adx_agent.get_bid_bundle()
     
-    def update(self, reward=None, info=None):
+    def update(self, observation: dict = None, action: dict = None, reward: float = None, done: bool = None, info: dict = None):
         """Update method for Engine compatibility."""
         if reward is not None:
             self.reward_history.append(reward)
+        
+        # Store observation and action if provided
+        if observation is not None:
+            self.observation_history.append(observation)
+        if action is not None:
+            self.action_history.append(action)
+        
+        # Update game round
+        self.game_round += 1
+    
+    def add_opponent_action(self, action):
+        """Add opponent action to history."""
+        self.opp_action_history.append(action)
+    
+    def add_opponent_reward(self, reward):
+        """Add opponent reward to history."""
+        self.opp_reward_history.append(reward)
 
 
 class AdXLocalArena:

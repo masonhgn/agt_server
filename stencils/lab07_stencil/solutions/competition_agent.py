@@ -15,6 +15,18 @@ from independent_histogram import IndependentHistogram
 from local_bid import expected_local_bid
 
 class CompetitionAgent(BaseAuctionAgent):
+    def __init__(self, name: str | None = None):
+        """Initialize the competition agent with all required attributes."""
+        super().__init__(name)
+        
+        # Competition agent parameters - initialize these here so they're always available
+        self.learning_rate = 0.1
+        self.exploration_rate = 0.2
+        self.bid_history = []
+        self.utility_history = []
+        self.price_history = []
+        self.price_histogram = None  # Will be initialized in setup()
+        
     def set_valuations(self, valuations):
         """Override to add debug output when valuations are set."""
         super().set_valuations(valuations)
@@ -24,13 +36,6 @@ class CompetitionAgent(BaseAuctionAgent):
         super().setup(goods, kth_price)
         
         print(f"[DEBUG] {self.name}: setup called with goods: {goods}, kth_price: {kth_price}")
-        
-        # Competition agent parameters
-        self.learning_rate = 0.1
-        self.exploration_rate = 0.2
-        self.bid_history = []
-        self.utility_history = []
-        self.price_history = []
         
         # Initialize histogram for price prediction
         self.price_histogram = IndependentHistogram(
@@ -55,9 +60,8 @@ class CompetitionAgent(BaseAuctionAgent):
         print(f"[DEBUG] {self.name}: goods to index mapping: {self._goods_to_index}")
         
         if not goods:
-            # Fallback strategy
-            print(f"[DEBUG] {self.name}: No goods available, using fallback strategy")
-            return {good: 10.0 for good in goods}
+            # This is a major issue - no goods available
+            raise ValueError(f"[ERROR] {self.name}: No goods available in observation: {observation}")
         
         # Strategy 1: Marginal value bidding with price prediction
         if random.random() > self.exploration_rate and len(self.price_history) > 10:
@@ -157,7 +161,21 @@ class CompetitionAgent(BaseAuctionAgent):
                 self.exploration_rate = max(0.05, self.exploration_rate - 0.005)
 
 ################### SUBMISSION #####################
+# Create the agent submission with proper initialization
 agent_submission = CompetitionAgent("Competition Agent")
+# Ensure all required attributes are set
+if not hasattr(agent_submission, 'exploration_rate'):
+    agent_submission.exploration_rate = 0.2
+if not hasattr(agent_submission, 'learning_rate'):
+    agent_submission.learning_rate = 0.1
+if not hasattr(agent_submission, 'bid_history'):
+    agent_submission.bid_history = []
+if not hasattr(agent_submission, 'utility_history'):
+    agent_submission.utility_history = []
+if not hasattr(agent_submission, 'price_history'):
+    agent_submission.price_history = []
+if not hasattr(agent_submission, 'price_histogram'):
+    agent_submission.price_histogram = None
 ####################################################
 
 if __name__ == "__main__":

@@ -61,10 +61,11 @@ class PlayerConnection:
 class AGTServer:
     """Modern AGT Server for lab competitions."""
     
-    def __init__(self, config: Dict[str, Any], host: str = "0.0.0.0", port: int = 8080):
+    def __init__(self, config: Dict[str, Any], host: str = "0.0.0.0", port: int = 8080, verbose: bool = False):
         self.config = config
         self.host = host
         self.port = port
+        self.verbose = verbose
         
         # Server state
         self.players: Dict[str, PlayerConnection] = {}
@@ -131,7 +132,7 @@ class AGTServer:
             "auction": {
                 "name": "Simultaneous Auction",
                 "game_class": AuctionGame,
-                "num_players": 4,
+                "num_players": 2,
                 "num_rounds": 10,
                 "description": "Simultaneous sealed bid auction"
             },
@@ -386,22 +387,29 @@ class AGTServer:
     
     async def start_tournament(self, game_type: str):
         """Start a tournament with all connected players."""
+        self.debug_print(f"start_tournament called for {game_type}")
         game_data = self.games[game_type]
         players = game_data["players"]
         
+        self.debug_print(f"Game data: {game_data}")
+        self.debug_print(f"Players: {[p.name for p in players]}")
+        
         if len(players) < 2:
             self.logger.warning(f"Not enough players to start tournament: {len(players)}")
+            self.debug_print(f"Not enough players ({len(players)}), cannot start tournament")
             return
         
         if game_data["tournament_started"]:
             self.logger.warning(f"Tournament already started for {game_type}")
+            self.debug_print(f"Tournament already started, cannot start again")
             return
         
         print(f"Starting tournament for {game_type} with {len(players)} players!", flush=True)
-        print(f"Starting tournament for {game_type} with {len(players)} players!", flush=True)
+        self.debug_print(f"Setting tournament_started to True")
         game_data["tournament_started"] = True
         
         # Announce tournament start to all players
+        self.debug_print(f"Announcing tournament start to players")
         for player in players:
             await self.send_message(player.writer, {
                 "message": "tournament_start",
@@ -412,14 +420,24 @@ class AGTServer:
             })
         
         # Start lab tournament loop
-        asyncio.create_task(self.run_lab(game_type, players))
+        self.debug_print(f"Creating tournament task")
+        self.debug_print(f"Current event loop: {asyncio.get_running_loop()}")
+        task = asyncio.create_task(self.run_lab(game_type, players))
+        self.debug_print(f"Tournament task created: {task}")
+        self.debug_print(f"Task done: {task.done()}")
+        self.debug_print(f"Task pending: {not task.done()}")
     
     async def run_lab(self, game_type: str, players: List[PlayerConnection]):
         """Run a lab tournament with random pairings each round."""
+        self.debug_print(f"==========================================")
+        self.debug_print(f"run_lab called for {game_type} with {len(players)} players")
+        self.debug_print(f"==========================================")
         game_data = self.games[game_type]
         game_config = game_data["config"]
         num_players_per_game = game_config["num_players"]  # 2 for RPS
         total_rounds = game_config["num_rounds"]  # 1000 rounds
+        
+        self.debug_print(f"Tournament config: num_players_per_game={num_players_per_game}, total_rounds={total_rounds}")
         
         # Track player statistics
         player_stats = {player.name: {"total_reward": 0, "games_played": 0} for player in players}
@@ -429,52 +447,72 @@ class AGTServer:
             
             for round_num in range(total_rounds):
                 print(f"TOURNAMENT ROUND {round_num + 1}/{total_rounds}", flush=True)
+                self.debug_print(f"Starting round {round_num + 1}")
                 
                 # Create random pairings for this round
+                self.debug_print(f"Creating pairings for round {round_num + 1}")
                 pairings = self.create_round_pairings(players, num_players_per_game)
+                self.debug_print(f"Created pairings: {[[p.name for p in pairing] for pairing in pairings]}")
                 
                 if not pairings:
                     self.logger.warning(f"No valid pairings for round {round_num + 1}")
+                    self.debug_print(f"No valid pairings, skipping round")
                     continue
                 
                 # Run all games in parallel for this round
+                self.debug_print(f"Running {len(pairings)} games in parallel for round {round_num + 1}")
                 await self.run_round_games(game_type, pairings, round_num, player_stats)
+                self.debug_print(f"Completed all games for round {round_num + 1}")
                 
                 # Send round summary to all players
+                self.debug_print(f"Sending round summary for round {round_num + 1}")
                 await self.send_round_summary(players, round_num, player_stats)
                 
                 # Small delay between rounds
                 await asyncio.sleep(0.1)
             
             # Tournament finished
+            self.debug_print(f"All rounds completed, finishing tournament")
             await self.finish_tournament(game_type, players, player_stats)
             print(f"TOURNAMENT {game_type} ended.", flush=True)
             
         except Exception as e:
             self.logger.error(f"error running {game_type} tournament: {e}")
+            self.debug_print(f"Exception in tournament: {e}")
             print(f"error running {game_type} tournament: {e}")
             await self.finish_tournament(game_type, players, player_stats, error=True)
+        finally:
+            self.debug_print(f"==========================================")
+            self.debug_print(f"run_lab method completed for {game_type}")
+            self.debug_print(f"==========================================")
     
     async def run_round_games(self, game_type: str, pairings: List[List[PlayerConnection]], round_num: int, player_stats: Dict):
         """Run all games for a single round in parallel."""
+        self.debug_print(f"run_round_games called with {len(pairings)} pairings")
         tasks = []
         
-        for pairing in pairings:
+        for i, pairing in enumerate(pairings):
+            self.debug_print(f"Creating task {i} for pairing: {[p.name for p in pairing]}")
             task = asyncio.create_task(self.run_single_game(game_type, pairing, round_num, player_stats))
             tasks.append(task)
         
+        self.debug_print(f"Created {len(tasks)} tasks, waiting for completion")
         # Wait for all games to complete
         await asyncio.gather(*tasks)
+        self.debug_print(f"All {len(tasks)} tasks completed")
     
     async def run_single_game(self, game_type: str, players: List[PlayerConnection], round_num: int, player_stats: Dict):
         """Run a single game between a group of players."""
-        print(f"[SERVER DEBUG] ENTERING run_single_game with game_type: {game_type}, players: {[p.name for p in players]}, round: {round_num}", flush=True)
+        self.debug_print(f"ENTERING run_single_game with game_type: {game_type}, players: {[p.name for p in players]}, round: {round_num}")
+        self.debug_print(f"Player stats at start: {player_stats}")
         game_config = self.game_configs[game_type]
         
         # Create new game instance for this pairing
         if game_type == "auction":
             # Special handling for auction games - use new interface
             player_names = [player.name for player in players]
+            
+            self.debug_print(f"Creating auction game with players: {player_names}")
             
             game = game_config["game_class"](
                 goods={"A", "B", "C", "D"},
@@ -485,44 +523,100 @@ class AGTServer:
                 value_range=(10, 50)
             )
             
+            self.debug_print(f"Auction game created successfully")
+            self.debug_print(f"Game goods: {game.goods}")
+            self.debug_print(f"Game players: {game.players}")
+            
             # Note: Agents are on the client side, not stored in PlayerConnection
-            print(f"[SERVER DEBUG] Auction game created with {len(players)} players")
+            self.debug_print(f"Auction game created with {len(players)} players")
         elif game_type in ["adx_twoday", "adx_oneday"]:
             num_players = len(players)
             if game_type == "adx_twoday":
                 game = game_config["game_class"](num_players=num_players)
             else:  # adx_oneday
                 game = game_config["game_class"](num_agents=num_players)
+            
+            self.debug_print(f"AdX game created successfully")
+            self.debug_print(f"Game type: {game_type}")
+            self.debug_print(f"Game class: {game_config['game_class']}")
+            self.debug_print(f"Number of players: {num_players}")
+            self.debug_print(f"Game object: {game}")
         else:
             # For other games, create single round game
             game = game_config["game_class"](rounds=1)
         
         try:
+            self.debug_print(f"Initializing game")
             # Initialize game
             obs = game.reset()
-            print(f"[SERVER DEBUG] Game type: {game_type}")
-            print(f"[SERVER DEBUG] Initial obs: {obs}")
+            self.debug_print(f"Game type: {game_type}")
+            self.debug_print(f"Initial obs: {obs}")
+            
+            # Special handling for AdX games - generate campaigns and send to players
+            if game_type in ["adx_twoday", "adx_oneday"]:
+                self.debug_print(f"Handling AdX game initialization")
+                self.debug_print(f"Initial obs from game.reset(): {obs}")
+                
+                # For AdX games, we need to send campaign information to each player
+                for i, player in enumerate(players):
+                    if i in obs:
+                        campaign_info = obs[i]
+                        self.debug_print(f"Player {player.name} gets campaign: {campaign_info}")
+                        
+                        # Update observation with campaign information
+                        obs[i] = {
+                            "campaign": campaign_info,
+                            "round": round_num + 1
+                        }
+                        self.debug_print(f"Updated observation for {player.name}: {obs[i]}")
+                    else:
+                        self.debug_print(f"Warning: No campaign info for player {player.name} (index {i})")
+                        # Create default campaign info
+                        obs[i] = {
+                            "campaign": {"id": f"campaign_{i}", "market_segment": "Male", "reach": 100, "budget": 50.0},
+                            "round": round_num + 1
+                        }
+                        self.debug_print(f"Created default campaign for {player.name}: {obs[i]}")
             
             # Special handling for auction games - generate valuations
             if game_type == "auction":
+                self.debug_print(f"Generating valuations for auction game")
+                # Generate valuations for the round
                 game.generate_valuations_for_round()
+                self.debug_print(f"Generated valuations: {game.current_valuations}")
+                
                 # Update observations with goods information and valuations
                 for i, player in enumerate(players):
-                    obs[i] = {
-                        "goods": game.goods,
-                        "valuations": game.current_valuations[player.name],
-                        "valuation_type": game.valuation_type,
-                        "kth_price": game.kth_price
-                    }
-                    print(f"[SERVER DEBUG] Sent observation to {player.name}: {obs[i]}")
+                    player_name = player.name
+                    if player_name in game.current_valuations:
+                        obs[i] = {
+                            "goods": game.goods,
+                            "valuations": game.current_valuations[player_name],
+                            "valuation_type": game.valuation_type,
+                            "kth_price": game.kth_price,
+                            "round": round_num + 1
+                        }
+                        self.debug_print(f"Sent observation to {player_name}: {obs[i]}")
+                    else:
+                        self.debug_print(f"Warning: No valuations found for player {player_name}")
+                        # Fallback observation
+                        obs[i] = {
+                            "goods": game.goods,
+                            "valuations": [0] * len(game.goods),
+                            "valuation_type": game.valuation_type,
+                            "kth_price": game.kth_price,
+                            "round": round_num + 1
+                        }
             
             # Get actions from all players
+            self.debug_print(f"Getting actions from players")
             actions = {}
             for i, player in enumerate(players):
                 # Clear any pending action
                 player.pending_action = None
                 
                 # Request action
+                self.debug_print(f"Requesting action from {player.name}")
                 await self.send_message(player.writer, {
                     "message": "request_action",
                     "round": round_num + 1,
@@ -537,23 +631,46 @@ class AGTServer:
                 
                 if player.pending_action is not None:
                     actions[i] = player.pending_action
-                    print(f"[SERVER DEBUG] Received action from {player.name}: {player.pending_action}")
+                    self.debug_print(f"Received action from {player.name}: {player.pending_action}")
                 else:
                     # Use default action if timeout
                     actions[i] = self.get_default_action(game_type)
                     self.logger.warning(f"Timeout waiting for action from {player.name}, using default")
-                    print(f"[SERVER DEBUG] Using default action for {player.name}: {actions[i]}")
+                    self.debug_print(f"Using default action for {player.name}: {actions[i]}")
+            
+            self.debug_print(f"All actions collected: {actions}")
             
             # Step the game
+            self.debug_print(f"Stepping the game")
             obs, rewards, done, info = game.step(actions)
+            self.debug_print(f"Game step completed")
+            self.debug_print(f"New obs: {obs}")
+            self.debug_print(f"Rewards: {rewards}")
+            self.debug_print(f"Done: {done}")
+            self.debug_print(f"Info: {info}")
             
             # Debug output for auction games
             if game_type == "auction":
-                print(f"[SERVER DEBUG] Actions: {actions}")
-                print(f"[SERVER DEBUG] Rewards: {rewards}")
-                print(f"[SERVER DEBUG] Info: {info}")
+                self.debug_print(f"Actions: {actions}")
+                self.debug_print(f"Rewards: {rewards}")
+                self.debug_print(f"Info: {info}")
+            
+            # Debug output for AdX games
+            if game_type in ["adx_twoday", "adx_oneday"]:
+                self.debug_print(f"AdX Actions: {actions}")
+                self.debug_print(f"AdX Rewards: {rewards}")
+                self.debug_print(f"AdX Info: {info}")
+                self.debug_print(f"AdX Done: {done}")
+                
+                # Check if rewards are all zero
+                if all(reward == 0 for reward in rewards.values()):
+                    self.debug_print(f"WARNING: All AdX rewards are zero! This might indicate a scoring issue.")
+                    self.debug_print(f"Game state after step: {game.get_game_state() if hasattr(game, 'get_game_state') else 'No get_game_state method'}")
+                    self.debug_print(f"Game type: {type(game)}")
+                    self.debug_print(f"Game methods: {[method for method in dir(game) if not method.startswith('_')]}")
             
             # Update player statistics
+            self.debug_print(f"Updating player statistics")
             for i, player in enumerate(players):
                 reward = rewards.get(i, 0)
                 player_stats[player.name]["total_reward"] += reward
@@ -562,8 +679,11 @@ class AGTServer:
                 # Update PlayerConnection object for dashboard
                 player.total_reward += reward
                 player.games_played += 1
+                
+                self.debug_print(f"Player {player.name} got reward {reward}, total now {player_stats[player.name]['total_reward']}")
             
             # Send results to players and update agents
+            self.debug_print(f"Sending results to players")
             for i, player in enumerate(players):
                 reward = rewards.get(i, 0)
                 player_obs = obs.get(i, {})
@@ -580,8 +700,10 @@ class AGTServer:
                     "info": player_info
                 })
                 
+            self.debug_print(f"Single game completed successfully")
+                
         except Exception as e:
-            print(f"[SERVER DEBUG] Exception in single game for {game_type}: {e}", flush=True)
+            self.debug_print(f"Exception in single game for {game_type}: {e}")
             import traceback
             traceback.print_exc()
             self.logger.error(f"Error in single game for {game_type}: {e}")
@@ -682,17 +804,25 @@ class AGTServer:
         """Create random pairings for a tournament round."""
         import random
         
+        self.debug_print(f"create_round_pairings called with {len(players)} players, {num_per_game} per game")
+        
         # Shuffle players
         shuffled_players = players.copy()
         random.shuffle(shuffled_players)
+        self.debug_print(f"Shuffled players: {[p.name for p in shuffled_players]}")
         
         # Create groups
         pairings = []
         for i in range(0, len(shuffled_players), num_per_game):
             group = shuffled_players[i:i + num_per_game]
+            self.debug_print(f"Group {i//num_per_game}: {[p.name for p in group]}")
             if len(group) == num_per_game:  # Only complete groups
                 pairings.append(group)
+                self.debug_print(f"Added complete group to pairings")
+            else:
+                self.debug_print(f"Skipping incomplete group")
         
+        self.debug_print(f"Final pairings: {[[p.name for p in pairing] for pairing in pairings]}")
         return pairings
     
 
@@ -754,29 +884,47 @@ class AGTServer:
             print(f"Error receiving message: {e}")
         return None
     
+    def debug_print(self, message: str, flush: bool = True):
+        """Print debug message only if verbose mode is enabled."""
+        if self.verbose:
+            print(f"[SERVER DEBUG] {message}", flush=flush)
+    
     async def start(self):
         """Start the server."""
-        server = await asyncio.start_server(
-            self.handle_client,
-            self.host,
-            self.port
-        )
-        
-        print(f"AGT Tournament Server", flush=True)
-        print("=====================", flush=True)
-        print(f"Server running on {self.host}:{self.port}", flush=True)
-        if self.allowed_games is not None:
-            print(f"Game restrictions: {', '.join(self.allowed_games)}", flush=True)
-        else:
-            print("No game restrictions: all games available", flush=True)
-        print("Commands:", flush=True)
-        print("  Ctrl+Z                - Start tournaments", flush=True)
-        print("  Ctrl+C                - Exit server", flush=True)
-        print("", flush=True)
-        print("Waiting for players to connect...", flush=True)
-        
-        async with server:
-            await server.serve_forever()
+        try:
+            if self.verbose:
+                print(f"[DEBUG] Attempting to start server on {self.host}:{self.port}")
+                print(f"[DEBUG] Allowed games: {self.allowed_games}")
+                print(f"[DEBUG] Game configs: {list(self.game_configs.keys())}")
+            
+            server = await asyncio.start_server(
+                self.handle_client,
+                self.host,
+                self.port
+            )
+            
+            print(f"AGT Tournament Server", flush=True)
+            print("=====================", flush=True)
+            print(f"Server running on {self.host}:{self.port}", flush=True)
+            if self.allowed_games is not None:
+                print(f"Game restrictions: {', '.join(self.allowed_games)}", flush=True)
+            else:
+                print("No game restrictions: all games available", flush=True)
+            print("Commands:", flush=True)
+            print("  Ctrl+Z                - Start tournaments", flush=True)
+            print("  Ctrl+C                - Exit server", flush=True)
+            print("", flush=True)
+            print("Waiting for players to connect...", flush=True)
+            
+            async with server:
+                await server.serve_forever()
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to start AGT server: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+            raise
     
     def save_results(self):
         """Save game results to file."""
@@ -801,6 +949,8 @@ async def main():
     parser.add_argument('--games', type=str, nargs='+', 
                        choices=['rps', 'bos', 'bosii', 'chicken', 'pd', 'lemonade', 'auction', 'adx_twoday', 'adx_oneday'],
                        help='Restrict server to specific game types (multiple allowed, required if no config specified)')
+    parser.add_argument('--verbose', '-v', action='store_true', 
+                       help='Enable verbose debug output (shows all debug messages)')
     # Dashboard is now separate - run with: python dashboard/app.py
 
     
@@ -841,7 +991,7 @@ async def main():
             print("Example config: {\"allowed_games\": [\"rps\"]}")
             return
     
-    server = AGTServer(config, args.host, args.port)
+    server = AGTServer(config, args.host, args.port, args.verbose)
     
     # Flag to track if tournaments have been started
     tournaments_started = False
@@ -893,17 +1043,20 @@ async def main():
         # Dashboard is now separate - run with: python dashboard/app.py
         
         # Start server
+        print(f"[DEBUG] Creating server task...")
         server_task = asyncio.create_task(server.start())
         
         # Wait for manual interrupt to start tournaments
         while True:
             await asyncio.sleep(1)
             
-
-            
     except Exception as e:
-        print(f"server error: {e}")
+        print(f"[ERROR] Server error: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
         server.save_results()
+        raise
 
 
 if __name__ == "__main__":

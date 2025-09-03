@@ -311,6 +311,16 @@ class AuctionAdapter(AGTAgent):
         
         return action
     
+    def setup(self, goods, kth_price=1):
+        """Setup the auction agent with goods and kth_price."""
+        if hasattr(self.auction_agent, 'setup'):
+            self.auction_agent.setup(goods, kth_price)
+    
+    def set_valuations(self, valuations):
+        """Set valuations on the auction agent."""
+        if hasattr(self.auction_agent, 'set_valuations'):
+            self.auction_agent.set_valuations(valuations)
+    
     def reset(self):
         """reset the auction agent."""
         super().reset()
@@ -328,7 +338,7 @@ class AuctionAdapter(AGTAgent):
 
 
 class ADXAdapter(AGTAgent):
-    """adapter for adx agents from lab 9."""
+    """adapter for adx agents from lab 8 (one-day games)."""
     
     def __init__(self, adx_agent):
         super().__init__(adx_agent.name)
@@ -369,6 +379,58 @@ class ADXAdapter(AGTAgent):
             self.adx_agent.update(reward, info)
 
 
+class ADXTwoDayAdapter(AGTAgent):
+    """adapter for adx agents from lab 9 (two-day games)."""
+    
+    def __init__(self, adx_agent):
+        super().__init__(adx_agent.name)
+        self.adx_agent = adx_agent
+        self.game_history = []
+    
+    def get_action(self, observation: Dict[str, Any]) -> Dict[str, Any]:
+        """convert server observation to adx agent format."""
+        # adx two-day agents expect campaign information in nested format
+        campaign = observation.get("campaign", None)
+        day = observation.get("day", 1)
+        
+        print(f"[ADAPTER DEBUG] ADXTwoDayAdapter.get_action called with observation: {observation}", flush=True)
+        
+        # Always use get_action(observation) for two-day agents
+        action = self.adx_agent.get_action(observation)
+        
+        print(f"[ADAPTER DEBUG] Action returned: {action}", flush=True)
+        print(f"[ADAPTER DEBUG] Action type: {type(action)}", flush=True)
+        
+        # Convert TwoDaysBidBundle to dictionary for JSON serialization
+        if hasattr(action, 'to_dict'):
+            serializable_action = action.to_dict()
+            print(f"[ADAPTER DEBUG] Converted action to dict: {serializable_action}", flush=True)
+        else:
+            serializable_action = action
+            print(f"[ADAPTER DEBUG] Action has no to_dict method, using as-is", flush=True)
+        
+        # store history
+        self.game_history.append({
+            "campaign": campaign,
+            "day": day,
+            "my_action": action
+        })
+        
+        return serializable_action
+    
+    def reset(self):
+        """reset the adx agent."""
+        super().reset()
+        if hasattr(self.adx_agent, 'reset'):
+            self.adx_agent.reset()
+    
+    def update(self, reward: float, info: Dict[str, Any]):
+        """update the adx agent with results."""
+        super().update(reward, info)
+        if hasattr(self.adx_agent, 'update'):
+            self.adx_agent.update(reward, info)
+
+
 # helper function to create adapters
 def create_adapter(agent, game_type: str) -> AGTAgent:
     """create an appropriate adapter for the given agent and game type."""
@@ -387,6 +449,8 @@ def create_adapter(agent, game_type: str) -> AGTAgent:
     elif game_type == "auction":
         return AuctionAdapter(agent)
     elif game_type == "adx_twoday":
+        return ADXTwoDayAdapter(agent)
+    elif game_type == "adx_oneday":
         return ADXAdapter(agent)
     else:
         raise ValueError(f"unknown game type: {game_type}")
