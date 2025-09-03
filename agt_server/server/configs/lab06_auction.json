@@ -1,0 +1,7 @@
+{
+    "server_name": "AGT Lab 6 - Simultaneous Auction",
+    "max_players": 50,
+    "timeout": 30,
+    "save_results": true,
+    "allowed_games": ["auction"]
+} 

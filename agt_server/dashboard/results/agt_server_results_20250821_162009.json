@@ -1,0 +1,28 @@
+[
+  {
+    "game_type": "rps",
+    "tournament": true,
+    "players": [
+      "CompetitionAgent_3182",
+      "ExampleCompetition"
+    ],
+    "total_rounds": 100,
+    "final_rankings": [
+      [
+        "CompetitionAgent_3182",
+        {
+          "total_reward": 5.0,
+          "games_played": 100
+        }
+      ],
+      [
+        "ExampleCompetition",
+        {
+          "total_reward": -5.0,
+          "games_played": 100
+        }
+      ]
+    ],
+    "error": false
+  }
+]

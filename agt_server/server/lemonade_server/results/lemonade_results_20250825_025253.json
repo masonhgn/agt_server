@@ -1,0 +1,141 @@
+{
+  "timestamp": "2025-08-25T02:52:53.286156",
+  "rankings": [
+    {
+      "name": "ml_agent",
+      "score": 171.00000000000003
+    },
+    {
+      "name": "smart_agent",
+      "score": 170.91666666666666
+    },
+    {
+      "name": "fixed_agent",
+      "score": 160.0
+    },
+    {
+      "name": "rl_agent",
+      "score": 142.00000000000003
+    },
+    {
+      "name": "random_agent",
+      "score": 141.66666666666666
+    }
+  ],
+  "scores": {
+    "rl_agent": 142.00000000000003,
+    "ml_agent": 171.00000000000003,
+    "smart_agent": 170.91666666666666,
+    "random_agent": 141.66666666666666,
+    "fixed_agent": 160.0
+  },
+  "metadata": {
+    "total_agents": 8,
+    "competitions_run": 3,
+    "rounds_per_competition": 20
+  },
+  "game_logs": [
+    {
+      "game_number": 1,
+      "agents": [
+        "smart_agent",
+        "smart_agent",
+        "random_agent"
+      ],
+      "rounds": 20,
+      "agent_actions": {
+        "smart_agent": {
+          "6": 20,
+          "0": 20
+        },
+        "random_agent": {
+          "4": 1,
+          "1": 1,
+          "6": 2,
+          "8": 4,
+          "0": 2,
+          "2": 1,
+          "7": 2,
+          "5": 2,
+          "10": 1,
+          "3": 2,
+          "11": 2
+        }
+      },
+      "agent_utilities": {
+        "smart_agent": 184.33333333333331,
+        "random_agent": 121.33333333333333
+      }
+    },
+    {
+      "game_number": 2,
+      "agents": [
+        "rl_agent",
+        "smart_agent",
+        "ml_agent"
+      ],
+      "rounds": 20,
+      "agent_actions": {
+        "rl_agent": {
+          "2": 1,
+          "8": 3,
+          "9": 1,
+          "11": 3,
+          "10": 3,
+          "4": 4,
+          "5": 1,
+          "7": 1,
+          "1": 2,
+          "6": 1
+        },
+        "smart_agent": {
+          "6": 20
+        },
+        "ml_agent": {
+          "10": 10,
+          "9": 4,
+          "2": 4,
+          "8": 2
+        }
+      },
+      "agent_utilities": {
+        "rl_agent": 142.00000000000003,
+        "smart_agent": 167.0,
+        "ml_agent": 171.00000000000003
+      }
+    },
+    {
+      "game_number": 3,
+      "agents": [
+        "smart_agent",
+        "fixed_agent",
+        "random_agent"
+      ],
+      "rounds": 20,
+      "agent_actions": {
+        "smart_agent": {
+          "6": 20
+        },
+        "fixed_agent": {
+          "3": 20
+        },
+        "random_agent": {
+          "3": 1,
+          "2": 2,
+          "5": 2,
+          "6": 1,
+          "11": 4,
+          "9": 4,
+          "8": 3,
+          "10": 1,
+          "1": 2
+        }
+      },
+      "agent_utilities": {
+        "smart_agent": 158.0,
+        "fixed_agent": 160.0,
+        "random_agent": 162.0
+      }
+    }
+  ]
+}

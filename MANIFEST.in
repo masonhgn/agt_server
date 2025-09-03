@@ -1,0 +1,42 @@
+# Include package data
+include agt_server/dashboard/templates/*
+include agt_server/server/configs/*.json
+include agt_server/server/configs/*.md
+
+# Include documentation
+include README.md
+include requirements.txt
+include LICENSE
+
+# Include Python files
+recursive-include agt_server *.py
+recursive-include agt_server *.pyi
+
+# Exclude unnecessary files
+exclude *.pyc
+exclude *.pyo
+exclude *.pyd
+exclude __pycache__
+exclude *.so
+exclude .DS_Store
+exclude .git*
+exclude .vscode
+exclude .idea
+exclude *.log
+exclude *.tmp
+exclude *.bak
+
+# Exclude test and development files
+exclude tests/
+exclude test_*.py
+exclude docs/
+exclude stencils/
+exclude results/
+exclude test_results/
+exclude .pytest_cache/
+exclude .coverage
+exclude htmlcov/
+exclude .tox/
+exclude .mypy_cache/
+exclude .flake8
+exclude setup.cfg

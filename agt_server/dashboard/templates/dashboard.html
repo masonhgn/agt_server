@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AGT Server Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .status-card h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1em;
+        }
+        .server-controls {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .server-controls h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .config-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .config-item label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .config-item input, .config-item select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .console-section {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 400px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .console-content {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .console-line {
+            margin: 2px 0;
+            line-height: 1.4;
+        }
+        .player-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #28a745;
+        }
+        .player-name {
+            font-weight: bold;
+        }
+        .player-status {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .game-section {
+            margin-bottom: 30px;
+        }
+        .game-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .refresh-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+        .auto-refresh {
+            margin-bottom: 20px;
+        }
+        .tournament-controls {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .start-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        .start-btn:hover {
+            background: #218838;
+        }
+        .start-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .restart-btn {
+            background: #ffc107;
+            color: #212529;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        .restart-btn:hover {
+            background: #e0a800;
+        }
+        .stop-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        .stop-btn:hover {
+            background: #c82333;
+        }
+        .server-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        .server-btn:hover {
+            background: #138496;
+        }
+        .server-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .tournament-complete {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .tournament-complete h2 {
+            color: #155724;
+            margin-top: 0;
+        }
+        .tournament-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .tournament-active {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .tournament-inactive {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .leaderboard {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .leaderboard h3 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+        }
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        .rank {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #007bff;
+            min-width: 40px;
+        }
+        .leaderboard-item:nth-child(1) {
+            border-left-color: #ffd700;
+            background: linear-gradient(135deg, #fff9c4, #fff59d);
+        }
+        .leaderboard-item:nth-child(2) {
+            border-left-color: #c0c0c0;
+            background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+        }
+        .leaderboard-item:nth-child(3) {
+            border-left-color: #cd7f32;
+            background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+        }
+        .player-info {
+            flex: 1;
+            margin-left: 15px;
+        }
+        .player-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .player-stats {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .score {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #28a745;
+        }
+        .server-offline {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .clear-btn:hover {
+            background: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AGT Server Dashboard</h1>
+            <p>Complete control center for AGT tournament server</p>
+        </div>
+        
+        <div class="auto-refresh">
+            <label>
+                <input type="checkbox" id="autoRefresh" checked> Auto-refresh every second
+            </label>
+            <button class="refresh-btn" onclick="refreshData()">Refresh Now</button>
+        </div>
+        
+        <div class="main-grid">
+            <div class="left-panel">
+                <!-- Server Controls -->
+                <div class="server-controls">
+                    <h3>Server Management</h3>
+                    <button id="startServerBtn" class="server-btn" onclick="startServer()">
+                        Start Server
+                    </button>
+                    <button id="stopServerBtn" class="server-btn" onclick="stopServer()" disabled>
+                        Stop Server
+                    </button>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc;">
+                        <label for="verboseToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="verboseToggle" onchange="toggleVerbose()">
+                            <span>Verbose Debug Output</span>
+                        </label>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Enable to show detailed server debug messages
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Configuration -->
+                <div class="config-section">
+                    <h3>Server Configuration</h3>
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <label for="gameType">Game Type:</label>
+                            <select id="gameType">
+                                <option value="rps">Rock Paper Scissors</option>
+                                <option value="bos">Battle of the Sexes</option>
+                                <option value="bosii">Battle of the Sexes II</option>
+                                <option value="chicken">Chicken Game</option>
+                                <option value="lemonade">Lemonade Stand</option>
+                                <option value="auction">Auction</option>
+                                <option value="adx_oneday">ADX One Day</option>
+                                <option value="adx_twoday">ADX Two Day</option>
+                            </select>
+                        </div>
+                        <div class="config-item">
+                            <label for="serverPort">Server Port:</label>
+                            <input type="number" id="serverPort" value="8080" min="1024" max="65535">
+                        </div>
+                        <div class="config-item">
+                            <label for="numRounds">Rounds per Tournament:</label>
+                            <input type="number" id="numRounds" value="1000" min="1" max="10000">
+                        </div>
+                        <div class="config-item">
+                            <label for="numPlayers">Players per Game:</label>
+                            <input type="number" id="numPlayers" value="2" min="2" max="10">
+                        </div>
+                    </div>
+                    <button class="refresh-btn" onclick="updateConfig()" style="margin-top: 10px;">
+                        Update Configuration
+                    </button>
+                </div>
+                
+                <!-- Console Output -->
+                <div class="console-section">
+                    <div class="console-header">
+                        <span>Server Console Output</span>
+                        <button class="clear-btn" onclick="clearConsole()">Clear</button>
+                    </div>
+                    <div id="consoleContent" class="console-content"></div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <!-- Tournament Controls -->
+                <div class="tournament-controls">
+                    <button id="startTournamentBtn" class="start-btn" onclick="startTournament()" disabled>
+                        Start Tournament
+                    </button>
+                    <button id="restartTournamentBtn" class="restart-btn" onclick="restartTournament()" style="display: none;">
+                        Restart Tournament
+                    </button>
+                </div>
+                
+                <!-- Status Cards -->
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h3>Server Status</h3>
+                        <p><strong>Status:</strong> <span id="serverStatus">Unknown</span></p>
+                        <p><strong>Uptime:</strong> <span id="serverUptime">N/A</span></p>
+                        <p><strong>Total Players:</strong> <span id="totalPlayers">0</span></p>
+                    </div>
+                    <div class="status-card">
+                        <h3>Games</h3>
+                        <p><strong>Active Games:</strong> <span id="activeGames">0</span></p>
+                        <p><strong>Total Tournaments:</strong> <span id="totalTournaments">0</span></p>
+                        <p><strong>Active Tournaments:</strong> <span id="activeTournaments">0</span></p>
+                    </div>
+                    <div class="status-card">
+                        <h3>Tournament</h3>
+                        <p><strong>Current Round:</strong> <span id="currentRound">0</span></p>
+                        <p><strong>Total Rounds:</strong> <span id="totalRounds">0</span></p>
+                        <p><strong>Progress:</strong> <span id="tournamentProgress">0%</span></p>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Content -->
+                <div id="dashboard-content">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval;
+        let consoleEventSource;
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            if (document.getElementById('autoRefresh').checked) {
+                autoRefreshInterval = setInterval(refreshData, 1000);
+            }
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        document.getElementById('autoRefresh').addEventListener('change', function() {
+            if (this.checked) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+        
+        function startConsoleStream() {
+            if (consoleEventSource) {
+                consoleEventSource.close();
+            }
+            
+            consoleEventSource = new EventSource('/api/console');
+            consoleEventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.messages) {
+                    data.messages.forEach(message => {
+                        addConsoleLine(message);
+                    });
+                }
+            };
+            consoleEventSource.onerror = function(event) {
+                console.error('Console stream error:', event);
+            };
+        }
+        
+        function addConsoleLine(message) {
+            const consoleContent = document.getElementById('consoleContent');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.textContent = message;
+            consoleContent.appendChild(line);
+            consoleContent.scrollTop = consoleContent.scrollHeight;
+        }
+        
+        function clearConsole() {
+            fetch('/api/clear_console', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('consoleContent').innerHTML = '';
+                    }
+                });
+        }
+        
+        function getConfig() {
+            return {
+                game_type: document.getElementById('gameType').value,
+                port: parseInt(document.getElementById('serverPort').value),
+                num_rounds: parseInt(document.getElementById('numRounds').value),
+                num_players: parseInt(document.getElementById('numPlayers').value),
+                host: '0.0.0.0'
+            };
+        }
+        
+        async function updateConfig() {
+            try {
+                const config = getConfig();
+                const response = await fetch('/api/update_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('Configuration updated successfully');
+                } else {
+                    console.error('Failed to update configuration:', result.error);
+                }
+            } catch (error) {
+                console.error('Error updating configuration:', error);
+            }
+        }
+        
+        async function startServer() {
+            try {
+                const config = getConfig();
+                const response = await fetch('/api/start_server', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('Server started successfully');
+                    updateButtonStates();
+                    refreshData();
+                } else {
+                    console.error('Failed to start server:', result.error);
+                }
+            } catch (error) {
+                console.error('Error starting server:', error);
+            }
+        }
+        
+        async function stopServer() {
+            if (confirm('Are you sure you want to stop the server? This will disconnect all players.')) {
+                try {
+                    const response = await fetch('/api/stop_server', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('Server stopped successfully');
+                        updateButtonStates();
+                        refreshData();
+                    } else {
+                        console.error('Failed to stop server:', result.error);
+                    }
+                } catch (error) {
+                    console.error('Error stopping server:', error);
+                }
+            }
+        }
+        
+        async function startTournament() {
+            try {
+                const response = await fetch('/api/start_tournament', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('Tournament started successfully');
+                    refreshData();
+                } else {
+                    console.error('Failed to start tournament:', result.error);
+                }
+            } catch (error) {
+                console.error('Error starting tournament:', error);
+            }
+        }
+        
+        async function restartTournament() {
+            try {
+                const response = await fetch('/api/restart_tournament', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('Tournament restarted successfully');
+                    refreshData();
+                } else {
+                    console.error('Failed to restart tournament:', result.error);
+                }
+            } catch (error) {
+                console.error('Error restarting tournament:', error);
+            }
+        }
+        
+        async function toggleVerbose() {
+            try {
+                const response = await fetch('/api/toggle_verbose', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`Verbose debug output ${result.verbose ? 'enabled' : 'disabled'}`);
+                    // Update checkbox state to match server state
+                    document.getElementById('verboseToggle').checked = result.verbose;
+                } else {
+                    console.error('Failed to toggle verbose mode:', result.error);
+                }
+            } catch (error) {
+                console.error('Error toggling verbose mode:', error);
+            }
+        }
+        
+        function updateButtonStates() {
+            const startServerBtn = document.getElementById('startServerBtn');
+            const stopServerBtn = document.getElementById('stopServerBtn');
+            const startTournamentBtn = document.getElementById('startTournamentBtn');
+            const restartTournamentBtn = document.getElementById('restartTournamentBtn');
+            
+            // These will be updated based on server status
+            // For now, just enable/disable based on basic logic
+        }
+        
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('dashboard-content').innerHTML = 
+                    '<div class="server-offline">Error loading dashboard data</div>';
+            }
+        }
+        
+        function updateDashboard(data) {
+            const content = document.getElementById('dashboard-content');
+            const startServerBtn = document.getElementById('startServerBtn');
+            const stopServerBtn = document.getElementById('stopServerBtn');
+            const startTournamentBtn = document.getElementById('startTournamentBtn');
+            const restartTournamentBtn = document.getElementById('restartTournamentBtn');
+            
+            // Update status displays
+            document.getElementById('serverStatus').textContent = data.server_status || 'Unknown';
+            document.getElementById('serverUptime').textContent = data.uptime || 'N/A';
+            document.getElementById('totalPlayers').textContent = data.total_players || 0;
+            document.getElementById('activeGames').textContent = data.active_games || 0;
+            document.getElementById('totalTournaments').textContent = data.total_tournaments || 0;
+            document.getElementById('activeTournaments').textContent = data.active_tournaments || 0;
+            
+            // Update round information
+            document.getElementById('currentRound').textContent = data.current_round || 0;
+            document.getElementById('totalRounds').textContent = data.total_rounds || 0;
+            
+            // Calculate and display progress percentage
+            const currentRound = data.current_round || 0;
+            const totalRounds = data.total_rounds || 0;
+            const progress = totalRounds > 0 ? Math.round((currentRound / totalRounds) * 100) : 0;
+            document.getElementById('tournamentProgress').textContent = `${progress}%`;
+            
+            // Update button states
+            const serverRunning = data.server_status === 'Running';
+            startServerBtn.disabled = serverRunning;
+            stopServerBtn.disabled = !serverRunning;
+            startTournamentBtn.disabled = !serverRunning;
+            
+            if (data.active_tournaments > 0) {
+                startTournamentBtn.disabled = true;
+                startTournamentBtn.textContent = 'Tournament Running';
+                restartTournamentBtn.style.display = 'none';
+            } else if (data.tournament_completed) {
+                startTournamentBtn.style.display = 'none';
+                restartTournamentBtn.style.display = 'inline-block';
+                restartTournamentBtn.textContent = 'Restart Tournament';
+            } else {
+                startTournamentBtn.style.display = 'inline-block';
+                startTournamentBtn.disabled = !serverRunning;
+                startTournamentBtn.textContent = 'Start Tournament';
+                restartTournamentBtn.style.display = 'none';
+            }
+            
+            // Check if server is offline
+            if (data.error || data.server_status === 'Stopped') {
+                content.innerHTML = `
+                    <div class="server-offline">
+                        <h2>Server Offline</h2>
+                        <p>AGT server is not running. Use the "Start Server" button to launch it.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            // Add tournament completion section if tournament is finished
+            if (data.tournament_completed) {
+                html += `
+                    <div class="tournament-complete">
+                        <h2>🏆 Tournament Complete!</h2>
+                        <p>All rounds have been played. Final results are below.</p>
+                    </div>
+                `;
+            }
+            
+            // Add leaderboard if we have player stats
+            if (data.leaderboard && data.leaderboard.length > 0) {
+                const leaderboardTitle = data.tournament_completed ? 'Final Leaderboard' : 'Live Leaderboard';
+                html += `
+                    <div class="leaderboard">
+                        <h3>${leaderboardTitle}</h3>
+                        ${data.leaderboard.map((player, index) => `
+                            <div class="leaderboard-item">
+                                <div class="rank">#${player.rank || (index + 1)}</div>
+                                <div class="player-info">
+                                    <div class="player-name">${player.name}</div>
+                                    <div class="player-stats">
+                                        Games: ${player.games_played} | 
+                                        Avg Reward: ${player.avg_reward.toFixed(2)}
+                                    </div>
+                                </div>
+                                <div class="score">${player.total_reward.toFixed(2)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Add game sections
+            if (data.games && Object.keys(data.games).length > 0) {
+                html += '<h2>Game Status</h2>';
+                
+                for (const [gameType, gameData] of Object.entries(data.games)) {
+                    const tournamentClass = gameData.tournament_started ? 'tournament-active' : 'tournament-inactive';
+                    const tournamentStatus = gameData.tournament_started ? 'Active' : 'Waiting for Start';
+                    
+                    html += `
+                        <div class="game-section">
+                            <div class="game-title">${gameData.name} (${gameType})</div>
+                            <div class="tournament-status ${tournamentClass}">
+                                <strong>Tournament Status:</strong> ${tournamentStatus}
+                            </div>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-value">${gameData.players.length}</div>
+                                    <div class="stat-label">Players Connected</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${gameData.config.num_players}</div>
+                                    <div class="stat-label">Players per Game</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${gameData.config.num_rounds}</div>
+                                    <div class="stat-label">Total Rounds</div>
+                                </div>
+                            </div>
+                            
+                            <div class="player-list">
+                                <h4>Connected Players (${gameData.players.length})</h4>
+                                ${gameData.players.length > 0 ? 
+                                    gameData.players.map(player => `
+                                        <div class="player-item">
+                                            <span class="player-name">${player.name}</span>
+                                            <span class="player-status">Connected ${player.connected_time}</span>
+                                        </div>
+                                    `).join('') : 
+                                    '<p>No players connected</p>'
+                                }
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                html += '<p>No games configured</p>';
+            }
+            
+            content.innerHTML = html;
+        }
+        
+        // Initial setup
+        refreshData();
+        startAutoRefresh();
+        startConsoleStream();
+        
+        // Load initial config
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.config) {
+                    document.getElementById('gameType').value = data.config.game_type || 'rps';
+                    document.getElementById('serverPort').value = data.config.port || 8080;
+                    document.getElementById('numRounds').value = data.config.num_rounds || 1000;
+                    document.getElementById('numPlayers').value = data.config.num_players || 2;
+                }
+            });
+        
+        // Load verbose setting
+        fetch('/api/config')
+            .then(response => response.json())
+            .then(config => {
+                document.getElementById('verboseToggle').checked = config.verbose || false;
+            })
+            .catch(error => {
+                console.error('Error loading verbose config:', error);
+            });
+    </script>
+</body>
+</html>

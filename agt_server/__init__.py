@@ -25,17 +25,17 @@ __version__ = "0.1.0"
 __author__ = "AGT Server Team"
 
 # Import main classes for easy access
-from .server.server import AGTServer
-from .core.engine import GameEngine
+from agt_server.server.server import AGTServer
+from agt_server.core.engine import Engine as GameEngine
 
 # Import game classes
-from .core.game.RPSGame import RPSGame
-from .core.game.BOSGame import BOSGame
-from .core.game.BOSIIGame import BOSIIGame
-from .core.game.ChickenGame import ChickenGame
-from .core.game.PDGame import PDGame
-from .core.game.LemonadeGame import LemonadeGame
-from .core.game.AuctionGame import AuctionGame
+from agt_server.core.game.RPSGame import RPSGame
+from agt_server.core.game.BOSGame import BOSGame
+from agt_server.core.game.BOSIIGame import BOSIIGame
+from agt_server.core.game.ChickenGame import ChickenGame
+from agt_server.core.game.PDGame import PDGame
+from agt_server.core.game.LemonadeGame import LemonadeGame
+from agt_server.core.game.AuctionGame import AuctionGame
 
 __all__ = [
     "AGTServer",

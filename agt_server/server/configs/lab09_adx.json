@@ -1,0 +1,7 @@
+{
+    "server_name": "AGT Lab 9 - Ad Exchange (Two Day)",
+    "max_players": 50,
+    "timeout": 30,
+    "save_results": true,
+    "allowed_games": ["adx_twoday"]
+} 

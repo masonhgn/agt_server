@@ -1,0 +1,6 @@
+[console_scripts]
+agt-dashboard = agt_server.cli:run_dashboard
+agt-server = agt_server.cli:run_server
+
+[gui_scripts]
+agt-dashboard-gui = agt_server.cli:run_dashboard
