@@ -1,7 +1,0 @@
-{
-    "server_name": "AGT Lab 1 - Matrix Games (RPS & Chicken)",
-    "max_players": 50,
-    "timeout": 30,
-    "save_results": true,
-    "allowed_games": ["rps", "chicken"]
-}

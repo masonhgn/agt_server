@@ -445,31 +445,21 @@ class AGTServer:
         try:
             print(f"TOURNAMENT {game_type} started with {len(players)} players", flush=True)
             
-            for round_num in range(total_rounds):
-                print(f"TOURNAMENT ROUND {round_num + 1}/{total_rounds}", flush=True)
-                self.debug_print(f"Starting round {round_num + 1}")
-                
-                # Create random pairings for this round
-                self.debug_print(f"Creating pairings for round {round_num + 1}")
-                pairings = self.create_round_pairings(players, num_players_per_game)
-                self.debug_print(f"Created pairings: {[[p.name for p in pairing] for pairing in pairings]}")
-                
-                if not pairings:
-                    self.logger.warning(f"No valid pairings for round {round_num + 1}")
-                    self.debug_print(f"No valid pairings, skipping round")
-                    continue
-                
-                # Run all games in parallel for this round
-                self.debug_print(f"Running {len(pairings)} games in parallel for round {round_num + 1}")
-                await self.run_round_games(game_type, pairings, round_num, player_stats)
-                self.debug_print(f"Completed all games for round {round_num + 1}")
-                
-                # Send round summary to all players
-                self.debug_print(f"Sending round summary for round {round_num + 1}")
-                await self.send_round_summary(players, round_num, player_stats)
-                
-                # Small delay between rounds
-                await asyncio.sleep(0.1)
+            # Create all possible pairings once (like old server)
+            self.debug_print(f"Creating all possible pairings")
+            all_pairings = self.create_round_pairings(players, num_players_per_game)
+            self.debug_print(f"Created {len(all_pairings)} total pairings")
+            
+            if not all_pairings:
+                self.logger.warning(f"No valid pairings found")
+                self.debug_print(f"No valid pairings, cannot start tournament")
+                return
+            
+            # Run all pairings (each pairing plays num_rounds internally)
+            print(f"Running {len(all_pairings)} games, each with {total_rounds} rounds", flush=True)
+            self.debug_print(f"Running {len(all_pairings)} games in parallel")
+            await self.run_all_pairings(game_type, all_pairings, total_rounds, player_stats)
+            self.debug_print(f"Completed all games")
             
             # Tournament finished
             self.debug_print(f"All rounds completed, finishing tournament")
@@ -486,14 +476,14 @@ class AGTServer:
             self.debug_print(f"run_lab method completed for {game_type}")
             self.debug_print(f"==========================================")
     
-    async def run_round_games(self, game_type: str, pairings: List[List[PlayerConnection]], round_num: int, player_stats: Dict):
-        """Run all games for a single round in parallel."""
-        self.debug_print(f"run_round_games called with {len(pairings)} pairings")
+    async def run_all_pairings(self, game_type: str, pairings: List[List[PlayerConnection]], num_rounds: int, player_stats: Dict):
+        """Run all pairings in parallel, each playing num_rounds internally."""
+        self.debug_print(f"run_all_pairings called with {len(pairings)} pairings, {num_rounds} rounds each")
         tasks = []
         
         for i, pairing in enumerate(pairings):
             self.debug_print(f"Creating task {i} for pairing: {[p.name for p in pairing]}")
-            task = asyncio.create_task(self.run_single_game(game_type, pairing, round_num, player_stats))
+            task = asyncio.create_task(self.run_single_game(game_type, pairing, num_rounds, player_stats))
             tasks.append(task)
         
         self.debug_print(f"Created {len(tasks)} tasks, waiting for completion")
@@ -501,11 +491,15 @@ class AGTServer:
         await asyncio.gather(*tasks)
         self.debug_print(f"All {len(tasks)} tasks completed")
     
-    async def run_single_game(self, game_type: str, players: List[PlayerConnection], round_num: int, player_stats: Dict):
-        """Run a single game between a group of players."""
-        self.debug_print(f"ENTERING run_single_game with game_type: {game_type}, players: {[p.name for p in players]}, round: {round_num}")
+    async def run_single_game(self, game_type: str, players: List[PlayerConnection], num_rounds: int, player_stats: Dict):
+        """Run a single game between a group of players for multiple rounds."""
+        self.debug_print(f"ENTERING run_single_game with game_type: {game_type}, players: {[p.name for p in players]}, rounds: {num_rounds}")
         self.debug_print(f"Player stats at start: {player_stats}")
         game_config = self.game_configs[game_type]
+        
+        # Initialize history tracking (like old server)
+        action_history = []
+        utility_history = []
         
         # Create new game instance for this pairing
         if game_type == "auction":
@@ -517,7 +511,7 @@ class AGTServer:
             game = game_config["game_class"](
                 goods={"A", "B", "C", "D"},
                 player_names=player_names,
-                num_rounds=1,  # Single round game
+                num_rounds=num_rounds,  # Multiple rounds game
                 kth_price=1,
                 valuation_type="additive",
                 value_range=(10, 50)
@@ -542,8 +536,8 @@ class AGTServer:
             self.debug_print(f"Number of players: {num_players}")
             self.debug_print(f"Game object: {game}")
         else:
-            # For other games, create single round game
-            game = game_config["game_class"](rounds=1)
+            # For other games, create multi-round game
+            game = game_config["game_class"](rounds=num_rounds)
         
         try:
             self.debug_print(f"Initializing game")
@@ -552,155 +546,194 @@ class AGTServer:
             self.debug_print(f"Game type: {game_type}")
             self.debug_print(f"Initial obs: {obs}")
             
-            # Special handling for AdX games - generate campaigns and send to players
-            if game_type in ["adx_twoday", "adx_oneday"]:
-                self.debug_print(f"Handling AdX game initialization")
-                self.debug_print(f"Initial obs from game.reset(): {obs}")
+            # Run multiple rounds within the same game instance
+            for round_num in range(num_rounds):
+                self.debug_print(f"Starting round {round_num + 1}/{num_rounds}")
                 
-                # For AdX games, we need to send campaign information to each player
+                # Special handling for AdX games - generate campaigns and send to players
+                if game_type in ["adx_twoday", "adx_oneday"]:
+                    self.debug_print(f"Handling AdX game initialization for round {round_num + 1}")
+                    self.debug_print(f"Initial obs from game.reset(): {obs}")
+                    
+                    # For AdX games, we need to send campaign information to each player
+                    for i, player in enumerate(players):
+                        if i in obs:
+                            campaign_info = obs[i]
+                            self.debug_print(f"Player {player.name} gets campaign: {campaign_info}")
+                            
+                            # Update observation with campaign information
+                            obs[i] = {
+                                "campaign": campaign_info,
+                                "round": round_num + 1
+                            }
+                            self.debug_print(f"Updated observation for {player.name}: {obs[i]}")
+                        else:
+                            self.debug_print(f"Warning: No campaign info for player {player.name} (index {i})")
+                            # Create default campaign info
+                            obs[i] = {
+                                "campaign": {"id": f"campaign_{i}", "market_segment": "Male", "reach": 100, "budget": 50.0},
+                                "round": round_num + 1
+                            }
+                            self.debug_print(f"Created default campaign for {player.name}: {obs[i]}")
+                
+                # Special handling for auction games - generate valuations
+                if game_type == "auction":
+                    self.debug_print(f"Generating valuations for auction game round {round_num + 1}")
+                    # Generate valuations for the round
+                    game.generate_valuations_for_round()
+                    self.debug_print(f"Generated valuations: {game.current_valuations}")
+                    
+                    # Update observations with goods information and valuations
+                    for i, player in enumerate(players):
+                        player_name = player.name
+                        if player_name in game.current_valuations:
+                            obs[i] = {
+                                "goods": game.goods,
+                                "valuations": game.current_valuations[player_name],
+                                "valuation_type": game.valuation_type,
+                                "kth_price": game.kth_price,
+                                "round": round_num + 1
+                            }
+                            self.debug_print(f"Sent observation to {player_name}: {obs[i]}")
+                        else:
+                            self.debug_print(f"Warning: No valuations found for player {player_name}")
+                            # Fallback observation
+                            obs[i] = {
+                                "goods": game.goods,
+                                "valuations": [0] * len(game.goods),
+                                "valuation_type": game.valuation_type,
+                                "kth_price": game.kth_price,
+                                "round": round_num + 1
+                            }
+                
+                # Get actions from all players
+                self.debug_print(f"Getting actions from players for round {round_num + 1}")
+                actions = {}
                 for i, player in enumerate(players):
-                    if i in obs:
-                        campaign_info = obs[i]
-                        self.debug_print(f"Player {player.name} gets campaign: {campaign_info}")
-                        
-                        # Update observation with campaign information
-                        obs[i] = {
-                            "campaign": campaign_info,
-                            "round": round_num + 1
-                        }
-                        self.debug_print(f"Updated observation for {player.name}: {obs[i]}")
+                    # Clear any pending action
+                    player.pending_action = None
+                    
+                    # Update observation with round information
+                    player_obs = obs.get(i, {})
+                    if not player_obs or player_obs == {}:
+                        # For games that don't provide observations, provide basic round information
+                        player_obs = {"round": round_num + 1, "game_type": game_type}
                     else:
-                        self.debug_print(f"Warning: No campaign info for player {player.name} (index {i})")
-                        # Create default campaign info
-                        obs[i] = {
-                            "campaign": {"id": f"campaign_{i}", "market_segment": "Male", "reach": 100, "budget": 50.0},
-                            "round": round_num + 1
-                        }
-                        self.debug_print(f"Created default campaign for {player.name}: {obs[i]}")
-            
-            # Special handling for auction games - generate valuations
-            if game_type == "auction":
-                self.debug_print(f"Generating valuations for auction game")
-                # Generate valuations for the round
-                game.generate_valuations_for_round()
-                self.debug_print(f"Generated valuations: {game.current_valuations}")
-                
-                # Update observations with goods information and valuations
-                for i, player in enumerate(players):
-                    player_name = player.name
-                    if player_name in game.current_valuations:
-                        obs[i] = {
-                            "goods": game.goods,
-                            "valuations": game.current_valuations[player_name],
-                            "valuation_type": game.valuation_type,
-                            "kth_price": game.kth_price,
-                            "round": round_num + 1
-                        }
-                        self.debug_print(f"Sent observation to {player_name}: {obs[i]}")
+                        # For games that provide observations (like matrix games), ensure round is included
+                        player_obs["round"] = round_num + 1
+                    
+                    # Request action
+                    self.debug_print(f"Requesting action from {player.name}")
+                    await self.send_message(player.writer, {
+                        "message": "request_action",
+                        "round": round_num + 1,
+                        "observation": player_obs
+                    })
+                    
+                    # Wait for action response with timeout
+                    timeout = 5.0
+                    start_time = time.time()
+                    while player.pending_action is None and (time.time() - start_time) < timeout:
+                        await asyncio.sleep(0.1)
+                    
+                    if player.pending_action is not None:
+                        actions[i] = player.pending_action
+                        self.debug_print(f"Received action from {player.name}: {player.pending_action}")
                     else:
-                        self.debug_print(f"Warning: No valuations found for player {player_name}")
-                        # Fallback observation
-                        obs[i] = {
-                            "goods": game.goods,
-                            "valuations": [0] * len(game.goods),
-                            "valuation_type": game.valuation_type,
-                            "kth_price": game.kth_price,
-                            "round": round_num + 1
-                        }
-            
-            # Get actions from all players
-            self.debug_print(f"Getting actions from players")
-            actions = {}
-            for i, player in enumerate(players):
-                # Clear any pending action
-                player.pending_action = None
+                        # Use default action if timeout
+                        actions[i] = self.get_default_action(game_type)
+                        self.logger.warning(f"Timeout waiting for action from {player.name}, using default")
+                        self.debug_print(f"Using default action for {player.name}: {actions[i]}")
                 
-                # Request action
-                self.debug_print(f"Requesting action from {player.name}")
-                await self.send_message(player.writer, {
-                    "message": "request_action",
-                    "round": round_num + 1,
-                    "observation": obs.get(i, {})
-                })
+                self.debug_print(f"All actions collected for round {round_num + 1}: {actions}")
                 
-                # Wait for action response with timeout
-                timeout = 5.0
-                start_time = time.time()
-                while player.pending_action is None and (time.time() - start_time) < timeout:
-                    await asyncio.sleep(0.1)
-                
-                if player.pending_action is not None:
-                    actions[i] = player.pending_action
-                    self.debug_print(f"Received action from {player.name}: {player.pending_action}")
-                else:
-                    # Use default action if timeout
-                    actions[i] = self.get_default_action(game_type)
-                    self.logger.warning(f"Timeout waiting for action from {player.name}, using default")
-                    self.debug_print(f"Using default action for {player.name}: {actions[i]}")
-            
-            self.debug_print(f"All actions collected: {actions}")
-            
-            # Step the game
-            self.debug_print(f"Stepping the game")
-            obs, rewards, done, info = game.step(actions)
-            self.debug_print(f"Game step completed")
-            self.debug_print(f"New obs: {obs}")
-            self.debug_print(f"Rewards: {rewards}")
-            self.debug_print(f"Done: {done}")
-            self.debug_print(f"Info: {info}")
-            
-            # Debug output for auction games
-            if game_type == "auction":
-                self.debug_print(f"Actions: {actions}")
+                # Step the game
+                self.debug_print(f"Stepping the game for round {round_num + 1}")
+                obs, rewards, done, info = game.step(actions)
+                self.debug_print(f"Game step completed for round {round_num + 1}")
+                self.debug_print(f"New obs: {obs}")
                 self.debug_print(f"Rewards: {rewards}")
+                self.debug_print(f"Done: {done}")
                 self.debug_print(f"Info: {info}")
-            
-            # Debug output for AdX games
-            if game_type in ["adx_twoday", "adx_oneday"]:
-                self.debug_print(f"AdX Actions: {actions}")
-                self.debug_print(f"AdX Rewards: {rewards}")
-                self.debug_print(f"AdX Info: {info}")
-                self.debug_print(f"AdX Done: {done}")
                 
-                # Check if rewards are all zero
-                if all(reward == 0 for reward in rewards.values()):
-                    self.debug_print(f"WARNING: All AdX rewards are zero! This might indicate a scoring issue.")
-                    self.debug_print(f"Game state after step: {game.get_game_state() if hasattr(game, 'get_game_state') else 'No get_game_state method'}")
-                    self.debug_print(f"Game type: {type(game)}")
-                    self.debug_print(f"Game methods: {[method for method in dir(game) if not method.startswith('_')]}")
-            
-            # Update player statistics
-            self.debug_print(f"Updating player statistics")
-            for i, player in enumerate(players):
-                reward = rewards.get(i, 0)
-                player_stats[player.name]["total_reward"] += reward
-                player_stats[player.name]["games_played"] += 1
+                # Track action and utility history (like old server)
+                action_history.append(actions.copy())
+                utility_history.append([rewards.get(i, 0) for i in range(len(players))])
                 
-                # Update PlayerConnection object for dashboard
-                player.total_reward += reward
-                player.games_played += 1
+                # Debug output for auction games
+                if game_type == "auction":
+                    self.debug_print(f"Actions: {actions}")
+                    self.debug_print(f"Rewards: {rewards}")
+                    self.debug_print(f"Info: {info}")
                 
-                self.debug_print(f"Player {player.name} got reward {reward}, total now {player_stats[player.name]['total_reward']}")
-            
-            # Send results to players and update agents
-            self.debug_print(f"Sending results to players")
-            for i, player in enumerate(players):
-                reward = rewards.get(i, 0)
-                player_obs = obs.get(i, {})
-                player_action = actions.get(i, {})
-                player_info = info.get(i, {})
+                # Debug output for AdX games
+                if game_type in ["adx_twoday", "adx_oneday"]:
+                    self.debug_print(f"AdX Actions: {actions}")
+                    self.debug_print(f"AdX Rewards: {rewards}")
+                    self.debug_print(f"AdX Info: {info}")
+                    self.debug_print(f"AdX Done: {done}")
+                    
+                    # Check if rewards are all zero
+                    if all(reward == 0 for reward in rewards.values()):
+                        self.debug_print(f"WARNING: All AdX rewards are zero! This might indicate a scoring issue.")
+                        self.debug_print(f"Game state after step: {game.get_game_state() if hasattr(game, 'get_game_state') else 'No get_game_state method'}")
+                        self.debug_print(f"Game type: {type(game)}")
+                        self.debug_print(f"Game methods: {[method for method in dir(game) if not method.startswith('_')]}")
                 
-                # Note: Agents are updated on the client side, not here
+                # Update player statistics
+                self.debug_print(f"Updating player statistics for round {round_num + 1}")
+                for i, player in enumerate(players):
+                    reward = rewards.get(i, 0)
+                    player_stats[player.name]["total_reward"] += reward
+                    player_stats[player.name]["games_played"] += 1
+                    
+                    # Update PlayerConnection object for dashboard
+                    player.total_reward += reward
+                    player.games_played += 1
+                    
+                    self.debug_print(f"Player {player.name} got reward {reward}, total now {player_stats[player.name]['total_reward']}")
                 
-                await self.send_message(player.writer, {
-                    "message": "round_result",
-                    "round": round_num + 1,
-                    "reward": reward,
-                    "opponent_actions": {j: actions[j] for j in range(len(players)) if j != i},
-                    "info": player_info
-                })
+                # Send results to players and update agents
+                self.debug_print(f"Sending results to players for round {round_num + 1}")
+                for i, player in enumerate(players):
+                    reward = rewards.get(i, 0)
+                    player_obs = obs.get(i, {})
+                    player_action = actions.get(i, {})
+                    player_info = info.get(i, {})
+                    
+                    # Add to player's game history (like old server)
+                    game_result = {
+                        "round": round_num + 1,
+                        "reward": reward,
+                        "action": player_action,
+                        "opponent_actions": {j: actions[j] for j in range(len(players)) if j != i},
+                        "info": player_info,
+                        "action_history": action_history.copy(),
+                        "utility_history": utility_history.copy()
+                    }
+                    player.game_history.append(game_result)
+                    
+                    # Note: Agents are updated on the client side, not here
+                    
+                    await self.send_message(player.writer, {
+                        "message": "round_result",
+                        "round": round_num + 1,
+                        "reward": reward,
+                        "opponent_actions": {j: actions[j] for j in range(len(players)) if j != i},
+                        "info": player_info,
+                        "action_history": action_history.copy(),
+                        "utility_history": utility_history.copy()
+                    })
                 
-            self.debug_print(f"Single game completed successfully")
+                # Check if game is done
+                if done:
+                    self.debug_print(f"Game completed after {round_num + 1} rounds")
+                    break
+                
+                # Small delay between rounds
+                await asyncio.sleep(0.1)
+                
+            self.debug_print(f"Multi-round game completed successfully")
                 
         except Exception as e:
             self.debug_print(f"Exception in single game for {game_type}: {e}")
@@ -801,28 +834,30 @@ class AGTServer:
             return 0
     
     def create_round_pairings(self, players: List[PlayerConnection], num_per_game: int) -> List[List[PlayerConnection]]:
-        """Create random pairings for a tournament round."""
-        import random
+        """Create all possible pairings for a tournament round (like old server)."""
+        from itertools import permutations, combinations
         
         self.debug_print(f"create_round_pairings called with {len(players)} players, {num_per_game} per game")
         
-        # Shuffle players
-        shuffled_players = players.copy()
-        random.shuffle(shuffled_players)
-        self.debug_print(f"Shuffled players: {[p.name for p in shuffled_players]}")
+        # Get player addresses (like old server)
+        player_addresses = list(players)
         
-        # Create groups
-        pairings = []
-        for i in range(0, len(shuffled_players), num_per_game):
-            group = shuffled_players[i:i + num_per_game]
-            self.debug_print(f"Group {i//num_per_game}: {[p.name for p in group]}")
-            if len(group) == num_per_game:  # Only complete groups
-                pairings.append(group)
-                self.debug_print(f"Added complete group to pairings")
-            else:
-                self.debug_print(f"Skipping incomplete group")
+        # Check if order matters (like old server)
+        # For most games, order doesn't matter, so we use combinations
+        # But we can make this configurable if needed
+        order_matters = False  # Set to True if player order matters for the game
         
-        self.debug_print(f"Final pairings: {[[p.name for p in pairing] for pairing in pairings]}")
+        if order_matters:
+            pairings = list(permutations(player_addresses, r=num_per_game))
+        else:
+            pairings = list(combinations(player_addresses, r=num_per_game))
+        
+        # Convert to list of lists
+        pairings = [list(pairing) for pairing in pairings]
+        
+        self.debug_print(f"Created {len(pairings)} pairings using {'permutations' if order_matters else 'combinations'}")
+        self.debug_print(f"First few pairings: {[[p.name for p in pairing] for pairing in pairings[:3]]}")
+        
         return pairings
     
 

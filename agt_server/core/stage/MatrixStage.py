@@ -43,7 +43,7 @@ class MatrixStage(BaseStage):
 
         # One-shot stage ends immediately
         self._done = True
-        obs: ObsDict = {0: {}, 1: {}} #none because we've already made all our moves, there's nothing to observe
+        obs: ObsDict = {0: {"round_complete": True}, 1: {"round_complete": True}} #indicate round is complete
         info: InfoDict = {}
 
         return obs, reward, True, info

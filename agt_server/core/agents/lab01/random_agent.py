@@ -17,4 +17,4 @@ class RandomAgent(RPSAgent):
     
     def setup(self):
         """Initialize the agent for a new game."""
-        self.actions = [self.ROCK, self.PAPER]
+        pass 
