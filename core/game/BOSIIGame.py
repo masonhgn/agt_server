@@ -84,17 +84,26 @@ class BOSIIGame(BaseGame):
         # Column player mood probabilities
         self.good_mood_prob = 2/3
         self.bad_mood_prob = 1/3
+        
+        # Track action history for observations
+        self.last_actions = {0: None, 1: None}
     
     def reset(self, seed=None) -> ObsDict:
         self.t = 0
         if seed is not None:
             np.random.seed(seed)
-        return {0: {}, 1: {}}
+        # Reset action history
+        self.last_actions = {0: None, 1: None}
+        # Provide initial observations with no opponent action yet
+        return {0: {"round": 0, "opponent_last_action": None}, 1: {"round": 0, "opponent_last_action": None}}
     
     def players_to_move(self):
         return [0, 1]
     
     def step(self, actions: ActionDict) -> tuple[ObsDict, RewardDict, bool, InfoDict]:
+        # Store current actions for next round's observations
+        self.last_actions = actions.copy()
+        
         # Create new stage with random column mood
         self.stage = BOSIIStage()
         column_mood = np.random.choice(
@@ -108,5 +117,12 @@ class BOSIIGame(BaseGame):
         
         self.t += 1
         done = self.t >= self.rounds
+        
+        # update observations with opponent's last action for next round
+        if not done:
+            obs = {
+                0: {"round": self.t, "opponent_last_action": self.last_actions[1]},
+                1: {"round": self.t, "opponent_last_action": self.last_actions[0]}
+            }
         
         return obs, reward, done, info 
