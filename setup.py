@@ -5,7 +5,7 @@ Setup script for AGT Lab Server package
 from setuptools import setup, find_packages
 setup(
     name="agt-lab-server",
-    version="0.1.0",
+    version="0.1.1",
     description="AGT Lab Server for Game Theory Competitions - A tournament server for game theory lab competitions",
     author="AGT Server Team",
     packages=find_packages(),
