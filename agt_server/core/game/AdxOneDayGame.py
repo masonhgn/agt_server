@@ -17,10 +17,12 @@ class OneDayBidBundle:
     # Internal tracking for simulation
     total_spent: float = 0.0
     impressions_won: Dict[MarketSegment, int] = field(default_factory=dict)
+    segment_spending: Dict[MarketSegment, float] = field(default_factory=dict)
 
     def __post_init__(self):
         for entry in self.bid_entries:
             self.impressions_won[entry.market_segment] = 0
+            self.segment_spending[entry.market_segment] = 0.0
 
 # --- AdxOneDayGame ---
 class AdxOneDayGame(BaseGame):
@@ -144,9 +146,10 @@ class AdxOneDayGame(BaseGame):
             for agent_id, bundle in self.bid_bundles.items():
                 for entry in bundle.bid_entries:
                     if MarketSegment.is_subset(entry.market_segment, user_segment):
-                        # Check spending limits
-                        spent = bundle.impressions_won.get(entry.market_segment, 0) * entry.bid
-                        if spent < entry.spending_limit and bundle.total_spent < bundle.day_limit:
+                        # Check spending limits - use actual spending, not bid amount
+                        # We need to track actual prices paid per segment
+                        segment_spent = getattr(bundle, 'segment_spending', {}).get(entry.market_segment, 0.0)
+                        if segment_spent < entry.spending_limit and bundle.total_spent < bundle.day_limit:
                             bids.append((agent_id, entry.bid, entry.market_segment))
             if not bids:
                 continue
@@ -158,3 +161,8 @@ class AdxOneDayGame(BaseGame):
             bundle = self.bid_bundles[winner_id]
             bundle.impressions_won[win_segment] += 1
             bundle.total_spent += price
+            
+            # Track spending per segment for proper limit enforcement
+            if not hasattr(bundle, 'segment_spending'):
+                bundle.segment_spending = {}
+            bundle.segment_spending[win_segment] = bundle.segment_spending.get(win_segment, 0.0) + price

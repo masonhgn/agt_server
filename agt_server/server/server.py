@@ -146,7 +146,7 @@ class AGTServer:
             "adx_oneday": {
                 "name": "Ad Exchange (One Day)",
                 "game_class": AdxOneDayGame,
-                "num_players": 2,
+                "num_players": 50,  # Use all connected players (max 50 from config)
                 "num_rounds": 1,
                 "description": "One-day ad exchange game"
             }
@@ -434,8 +434,15 @@ class AGTServer:
         self.debug_print(f"==========================================")
         game_data = self.games[game_type]
         game_config = game_data["config"]
-        num_players_per_game = game_config["num_players"]  # 2 for RPS
-        total_rounds = game_config["num_rounds"]  # 1000 rounds
+        
+        # For ADX games, use all connected players in a single game
+        if game_type == "adx_oneday":
+            num_players_per_game = len(players)
+            print(f"ADX Tournament: {len(players)} players in single game", flush=True)
+        else:
+            num_players_per_game = game_config["num_players"]
+        
+        total_rounds = game_config["num_rounds"]
         
         self.debug_print(f"Tournament config: num_players_per_game={num_players_per_game}, total_rounds={total_rounds}")
         
@@ -833,11 +840,17 @@ class AGTServer:
         else:
             return 0
     
+
     def create_round_pairings(self, players: List[PlayerConnection], num_per_game: int) -> List[List[PlayerConnection]]:
         """Create all possible pairings for a tournament round (like old server)."""
         from itertools import permutations, combinations
         
         self.debug_print(f"create_round_pairings called with {len(players)} players, {num_per_game} per game")
+        
+        # For ADX games, just return all players as a single group
+        if num_per_game == len(players):
+            self.debug_print(f"ADX game: using all {len(players)} players in single game")
+            return [list(players)]
         
         # Get player addresses (like old server)
         player_addresses = list(players)
