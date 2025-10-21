@@ -11,9 +11,9 @@ from core.game import ObsDict, ActionDict, RewardDict, InfoDict
 # --- OneDayBidBundle ---
 @dataclass
 class OneDayBidBundle:
-    campaign_id: int
-    day_limit: float
-    bid_entries: List[SimpleBidEntry]
+    campaign_id: int # campaign id of the agent
+    day_limit: float # total budget for the day
+    bid_entries: List[SimpleBidEntry] # list of bid entries for the day
     # Internal tracking for simulation
     total_spent: float = 0.0
     impressions_won: Dict[MarketSegment, int] = field(default_factory=dict)
@@ -27,7 +27,7 @@ class OneDayBidBundle:
 # --- AdxOneDayGame ---
 class AdxOneDayGame(BaseGame):
     """
-    TAC AdX Game (One-Day Variant).
+    TAC AdX Game (One-Day Variant)
     Each agent is assigned a campaign and submits a OneDayBidBundle before the day starts.
     The game simulates user arrivals and second-price auctions for each impression.
     """
@@ -49,8 +49,8 @@ class AdxOneDayGame(BaseGame):
         self.num_agents = num_agents
         self.campaigns: Dict[int, Campaign] = {}
         self.bid_bundles: Dict[int, OneDayBidBundle] = {}
-        self.user_arrivals: List[MarketSegment] = []
-        self.agent_campaigns: Dict[int, Campaign] = {}
+        self.user_arrivals: List[MarketSegment] = [] #the actual user segments that will arrive that agents can bid on
+        self.agent_campaigns: Dict[int, Campaign] = {} #the campaign of each agent, which will determine the market segment they want to bid on
         self._generate_user_arrivals()
         self.metadata = {"num_players": num_agents}
 
@@ -60,10 +60,15 @@ class AdxOneDayGame(BaseGame):
         self.campaigns.clear()
         self.bid_bundles.clear()
         self.agent_campaigns.clear()
+
+
+        # generate the campaigns for each agent
         for agent_id in range(self.num_agents):
             campaign = self._generate_campaign(agent_id)
             self.campaigns[campaign.id] = campaign
             self.agent_campaigns[agent_id] = campaign
+
+        #generate all user arrivals (market segments)
         self._generate_user_arrivals()
         obs = {}
         for agent_id in range(self.num_agents):
@@ -82,22 +87,24 @@ class AdxOneDayGame(BaseGame):
         rewards = {}
         info = {}
         for agent_id in range(self.num_agents):
-            campaign = self.agent_campaigns[agent_id]
-            bundle = self.bid_bundles[agent_id]
-            total_impressions = 0
-            for entry in bundle.bid_entries:
+            campaign = self.agent_campaigns[agent_id] #get the campaign of this agent
+            bundle = self.bid_bundles[agent_id] #get the bid bundle of this agent
+            total_impressions = 0 #counter for total impressions won by this agent
+            for entry in bundle.bid_entries: #traverse all bid entries of the bundle this agent submitted
+
+                #make sure that the bid entry's market segment is a subset of the agent's campaign's market segment otherwise they shouldn't profit from this bid
                 if MarketSegment.is_subset(campaign.market_segment, entry.market_segment):
                     total_impressions += bundle.impressions_won.get(entry.market_segment, 0)
-            reach_fulfilled = min(total_impressions, campaign.reach)
+            reach_fulfilled = min(total_impressions, campaign.reach) #if they won more impressions than their reach, then they only get paid for their reach
             profit = (reach_fulfilled / campaign.reach) * campaign.budget - bundle.total_spent
             rewards[agent_id] = profit
-            info[agent_id] = {
+            info[agent_id] = { #the infoset sent back to the agent
                 "impressions": total_impressions,
                 "reach_fulfilled": reach_fulfilled,
                 "total_spent": bundle.total_spent
             }
         done = True
-        obs = {}
+        obs = {} #this can be empty because this is only a one-day game and therefore we won't need to step() again
         return obs, rewards, done, info
 
     def players_to_move(self) -> List[int]:
@@ -143,6 +150,14 @@ class AdxOneDayGame(BaseGame):
         # For each user, run a second-price auction
         for user_segment in self.user_arrivals:
             bids = []
+
+            #traverse all agents and their bid bundles to see if they can bid on this user segment
+            '''
+            for example, if the user segment is FEMALE, then the agent can bid on the FEMALE_YOUNG_LOW_INCOME, 
+            FEMALE_YOUNG_HIGH_INCOME, FEMALE_OLD_LOW_INCOME, FEMALE_OLD_HIGH_INCOME segments
+
+            '''
+  
             for agent_id, bundle in self.bid_bundles.items():
                 for entry in bundle.bid_entries:
                     if MarketSegment.is_subset(entry.market_segment, user_segment):
@@ -152,6 +167,7 @@ class AdxOneDayGame(BaseGame):
                         if segment_spent < entry.spending_limit and bundle.total_spent < bundle.day_limit:
                             bids.append((agent_id, entry.bid, entry.market_segment))
             if not bids:
+
                 continue
             # Find highest and second-highest bid
             bids.sort(key=lambda x: x[1], reverse=True)

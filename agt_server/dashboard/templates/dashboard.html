@@ -367,6 +367,13 @@
         .clear-btn:hover {
             background: #545b62;
         }
+        .disabled-control {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .disabled-control input[type="checkbox"] {
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -400,7 +407,7 @@
                             <span>Verbose Debug Output</span>
                         </label>
                         <small style="color: #666; display: block; margin-top: 5px;">
-                            Enable to show detailed server debug messages
+                            Enable to show detailed server debug messages (only changeable when server is off)
                         </small>
                     </div>
                 </div>
@@ -425,10 +432,6 @@
                         <div class="config-item">
                             <label for="serverPort">Server Port:</label>
                             <input type="number" id="serverPort" value="8080" min="1024" max="65535">
-                        </div>
-                        <div class="config-item">
-                            <label for="numRounds">Rounds per Tournament:</label>
-                            <input type="number" id="numRounds" value="1000" min="1" max="10000">
                         </div>
                         <div class="config-item">
                             <label for="numPlayers">Players per Game:</label>
@@ -561,7 +564,6 @@
             return {
                 game_type: document.getElementById('gameType').value,
                 port: parseInt(document.getElementById('serverPort').value),
-                num_rounds: parseInt(document.getElementById('numRounds').value),
                 num_players: parseInt(document.getElementById('numPlayers').value),
                 host: '0.0.0.0'
             };
@@ -699,6 +701,7 @@
             const stopServerBtn = document.getElementById('stopServerBtn');
             const startTournamentBtn = document.getElementById('startTournamentBtn');
             const restartTournamentBtn = document.getElementById('restartTournamentBtn');
+            const verboseToggle = document.getElementById('verboseToggle');
             
             // Update status displays
             document.getElementById('serverStatus').textContent = data.server_status || 'Unknown';
@@ -723,6 +726,15 @@
             startServerBtn.disabled = serverRunning;
             stopServerBtn.disabled = !serverRunning;
             startTournamentBtn.disabled = !serverRunning;
+            
+            // Disable verbose toggle when server is running
+            verboseToggle.disabled = serverRunning;
+            const verboseLabel = verboseToggle.closest('label');
+            if (serverRunning) {
+                verboseLabel.classList.add('disabled-control');
+            } else {
+                verboseLabel.classList.remove('disabled-control');
+            }
             
             if (data.active_tournaments > 0) {
                 startTournamentBtn.disabled = true;
@@ -848,7 +860,6 @@
                 if (data.config) {
                     document.getElementById('gameType').value = data.config.game_type || 'rps';
                     document.getElementById('serverPort').value = data.config.port || 8080;
-                    document.getElementById('numRounds').value = data.config.num_rounds || 1000;
                     document.getElementById('numPlayers').value = data.config.num_players || 2;
                 }
             });

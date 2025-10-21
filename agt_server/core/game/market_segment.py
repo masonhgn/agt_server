@@ -36,4 +36,4 @@ class MarketSegment(Enum):
     def is_subset(cls, campaign_segment, user_segment):
         attrs1 = set(campaign_segment.value.split('_'))
         attrs2 = set(user_segment.value.split('_'))
-        return attrs1.issubset(attrs2) 
+        return attrs2.issubset(attrs1) 

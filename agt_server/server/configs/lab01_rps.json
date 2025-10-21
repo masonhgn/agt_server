@@ -3,5 +3,10 @@
     "max_players": 50,
     "timeout": 30,
     "save_results": true,
-    "allowed_games": ["rps"]
+    "allowed_games": ["rps"],
+    "name": "Rock Paper Scissors",
+    "game_class": "RPSGame",
+    "num_players": 2,
+    "num_rounds": 100,
+    "description": "Classic Rock Paper Scissors game"
 } 

@@ -3,5 +3,10 @@
     "max_players": 50,
     "timeout": 30,
     "save_results": true,
-    "allowed_games": ["adx_twoday"]
+    "allowed_games": ["adx_twoday"],
+    "name": "Ad Exchange (Two Day)",
+    "game_class": "AdxTwoDayGame",
+    "num_players": 2,
+    "num_rounds": 2,
+    "description": "Two-day ad exchange game"
 } 

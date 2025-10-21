@@ -8,10 +8,12 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import inspect
+import random
 
 from core.engine import Engine, MoveTimeout
 from core.game.base_game import BaseGame
 from core.agents.common.base_agent import BaseAgent
+from core.utils import debug_print
 
 
 class LocalArena:
@@ -28,7 +30,8 @@ class LocalArena:
         self,
         game_class: type[BaseGame],
         agents: List[BaseAgent],
-        num_rounds: int = 1000,
+        num_agents_per_game: int,
+        num_rounds: int,
         timeout: float = 1.0,
         save_results: bool = True,
         results_path: Optional[str] = None,
@@ -36,6 +39,7 @@ class LocalArena:
     ):
         self.game_class = game_class
         self.agents = agents
+        self.num_agents_per_game = num_agents_per_game
         self.num_rounds = num_rounds
         self.timeout = timeout
         self.save_results = save_results
@@ -50,50 +54,61 @@ class LocalArena:
         if self.save_results:
             Path(self.results_path).mkdir(exist_ok=True)
     
+
+
+
+
+
     def run_tournament(self) -> pd.DataFrame:
-        """run a full tournament between all pairs of agents."""
-        if self.verbose:
-            print(f"starting tournament with {len(self.agents)} agents")
-            print(f"games: {self.num_rounds} rounds each")
-            print(f"timeout: {self.timeout}s per move")
-            print("=" * 50)
-        
+        """run a full tournament of num_rounds rounds between num_agents_per_game agents"""
+
+        debug_print(f"starting tournament with {len(self.agents)} agents")
+        debug_print(f"games: {self.num_rounds} rounds each")
+        debug_print(f"timeout: {self.timeout}s per move")
+        debug_print("=" * 50)
+
+
+
+
+
         # initialize results
         agent_names = [agent.name for agent in self.agents]
         self.game_results = {name: {other: 0.0 for other in agent_names} for name in agent_names}
         self.agent_stats = {name: {} for name in agent_names}
         
-        # run all pairwise games
+
         game_num = 1
-        total_games = len(list(combinations(self.agents, 2)))
-        
-        for agent1, agent2 in combinations(self.agents, 2):
+
+        #we'll create num_pairings pairings of num_agents_per_game agents each
+        num_groupings = 10
+
+        for grouping in range(num_groupings):
+            #we'll create a pairing of num_agents_per_game agents each
+            grouping = random.sample(self.agents, min(self.num_agents_per_game, len(self.agents)))
+
             if self.verbose:
-                print(f"game {game_num}/{total_games}: {agent1.name} vs {agent2.name}")
+                debug_print(f"grouping: {grouping}")
+            for g in grouping: g.reset() #initialize
             
-            # reset agents for new game
-            agent1.reset()
-            agent2.reset()
-            
-            # create game instance
+            #we'll run a game between the pairing
             game = self.game_class()  # type: ignore
-            
-            # run the game
+
             try:
-                engine = Engine(game, [agent1, agent2], rounds=self.num_rounds)
+                engine = Engine(game, grouping, rounds=self.num_rounds)
                 final_rewards = engine.run()
-                # record results
-                self.game_results[agent1.name][agent2.name] = engine.cumulative_reward[0]
-                self.game_results[agent2.name][agent1.name] = engine.cumulative_reward[1]
-                if self.verbose:
-                    print(f"  {agent1.name}: {engine.cumulative_reward[0]:.1f}")
-                    print(f"  {agent2.name}: {engine.cumulative_reward[1]:.1f}")
+
+
+                #record the results for each agent
+                for agent in grouping:
+                    self.game_results[agent.name][agent.name] = final_rewards[agent.name]
+                    if self.verbose:
+                        debug_print(f"  {agent.name}: {final_rewards[agent.name]:.1f}")
             except MoveTimeout as e:
                 if self.verbose:
-                    print(f"  error: {e}")
+                    debug_print(f"  error: {e}")
                 # record timeout as large negative score
-                self.game_results[agent1.name][agent2.name] = -1000
-                self.game_results[agent2.name][agent1.name] = -1000
+                for agent in grouping:
+                    self.game_results[agent.name][agent.name] = -10e9
             
             game_num += 1
         
@@ -177,7 +192,7 @@ class LocalArena:
         game_df.to_csv(game_results_file)
         
         if self.verbose:
-            print(f"results saved to {self.results_path}/")
+            debug_print(f"results saved to {self.results_path}/")
     
     def _print_summary(self, results_df: pd.DataFrame):
         """print a summary of the tournament results."""

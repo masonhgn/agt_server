@@ -256,6 +256,10 @@ class AGTClient:
         elif msg_type == "server_shutdown":
             self.log(f"Server is shutting down: {message.get('reason', 'Unknown reason')}", "warning")
             return True  # Signal to exit
+        elif msg_type == "tournament_error":
+            error_message = message.get("error", "Unknown tournament error")
+            self.log(f"Tournament error: {error_message}", "error")
+            return True  # Signal to exit
         elif msg_type == "tournament_start":
             players = message.get('players', [])
             num_rounds = message.get('num_rounds', 0)
@@ -289,11 +293,32 @@ class AGTClient:
                     self.agent.set_valuations(observation['valuations'])
                     print(f"[CLIENT DEBUG] {self.agent.name}: Set valuations to {observation['valuations']}")
             
+            # All agents should have get_action method (either native or via adapter)
             action = self.agent.get_action(observation)
             print(f"[CLIENT DEBUG] {self.agent.name}: Sending action: {action}")
+            
+            # For ADX games, we need to serialize the OneDayBidBundle to a simple format
+            if hasattr(action, 'campaign_id') and hasattr(action, 'bid_entries'):
+                # This is a OneDayBidBundle - convert to simple dict
+                serialized_action = {
+                    "campaign_id": action.campaign_id,
+                    "day_limit": action.day_limit,
+                    "bid_entries": [
+                        {
+                            "market_segment": entry.market_segment.value,
+                            "bid": entry.bid,
+                            "spending_limit": entry.spending_limit
+                        }
+                        for entry in action.bid_entries
+                    ]
+                }
+            else:
+                # For other games, use the action as-is
+                serialized_action = action
+            
             await self.send_message({
                 "message": "action",
-                "action": action
+                "action": serialized_action
             })
         elif msg_type == "round_result":
             # Handle round result
@@ -433,8 +458,17 @@ async def main():
                     
                     # look for agent_submission
                     if hasattr(agent_module, 'agent_submission'):
-                        agent = agent_module.agent_submission
-                        print(f"[SUCCESS] Loaded agent from {args.agent_file}")
+                        raw_agent = agent_module.agent_submission
+                        
+                        # Wrap with appropriate adapter based on game type
+                        try:
+                            from adapters import create_adapter
+                            agent = create_adapter(raw_agent, args.game)
+                            print(f"[SUCCESS] Loaded and wrapped agent from {args.agent_file} for game {args.game}")
+                        except Exception as adapter_error:
+                            print(f"[WARNING] Could not create adapter for {args.game}: {adapter_error}")
+                            print("Using raw agent (may not work for all game types)")
+                            agent = raw_agent
         except Exception as e:
             print(f"[WARNING] Could not load agent from {args.agent_file}: {e}")
             print("Using default random agent instead.")

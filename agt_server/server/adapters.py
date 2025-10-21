@@ -348,14 +348,35 @@ class ADXAdapter(AGTAgent):
     def get_action(self, observation: Dict[str, Any]) -> Dict[str, Any]:
         """convert server observation to adx agent format."""
         # adx agents expect campaign information
-        campaign = observation.get("campaign", None)
+        campaign_dict = observation.get("campaign", None)
         day = observation.get("day", 1)
         
+        # Set campaign on the ADX agent before calling get_bid_bundle
+        if campaign_dict is not None:
+            # Convert dictionary back to Campaign object
+            from core.game.campaign import Campaign
+            from core.game.market_segment import MarketSegment
+            
+            # Convert market_segment dict back to MarketSegment enum
+            market_segment_dict = campaign_dict.get('market_segment', {})
+            market_segment_value = market_segment_dict.get('_value_', '')
+            market_segment = MarketSegment(market_segment_value)
+            
+            # Create Campaign object
+            campaign = Campaign(
+                id=campaign_dict.get('id', 0),
+                market_segment=market_segment,
+                reach=campaign_dict.get('reach', 0),
+                budget=campaign_dict.get('budget', 0.0),
+                start_day=campaign_dict.get('start_day', 1),
+                end_day=campaign_dict.get('end_day', 1)
+            )
+            
+            self.adx_agent.campaign = campaign
+
         # get action from adx agent
-        if hasattr(self.adx_agent, 'get_bid_bundle'):
-            action = self.adx_agent.get_bid_bundle(day)
-        else:
-            action = self.adx_agent.get_action(observation)
+        action = self.adx_agent.get_bid_bundle()
+
         
         # store history
         self.game_history.append({
@@ -369,14 +390,12 @@ class ADXAdapter(AGTAgent):
     def reset(self):
         """reset the adx agent."""
         super().reset()
-        if hasattr(self.adx_agent, 'reset'):
-            self.adx_agent.reset()
+        self.adx_agent.reset()
     
     def update(self, reward: float, info: Dict[str, Any]):
         """update the adx agent with results."""
         super().update(reward, info)
-        if hasattr(self.adx_agent, 'update'):
-            self.adx_agent.update(reward, info)
+        self.adx_agent.update(reward, info)
 
 
 class ADXTwoDayAdapter(AGTAgent):

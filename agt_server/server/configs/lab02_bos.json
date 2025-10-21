@@ -3,5 +3,10 @@
     "max_players": 50,
     "timeout": 30,
     "save_results": true,
-    "allowed_games": ["bos", "bosii"]
+    "allowed_games": ["bos", "bosii"],
+    "name": "Battle of the Sexes",
+    "game_class": "BOSGame",
+    "num_players": 2,
+    "num_rounds": 100,
+    "description": "Battle of the Sexes coordination game"
 } 

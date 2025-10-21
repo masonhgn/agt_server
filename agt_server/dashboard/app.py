@@ -33,7 +33,6 @@ agt_process = None
 console_output = queue.Queue()
 server_config = {
     'game_type': 'rps',
-    'num_rounds': 100,  # Default for RPS
     'num_players': 2,
     'port': AGT_SERVER_PORT,
     'host': '0.0.0.0',
@@ -62,19 +61,10 @@ def log_console(message):
 def parse_console_line(line):
     """Parse console output to update server state."""
     global server_state
-    # log_console(f"🔍 PARSING LINE: {line}")
     
-    # Show all SERVER DEBUG statements
-    if "[SERVER DEBUG]" in line:
-        log_console(f"{line}")
-    
-    # Show all GAME DEBUG statements
-    if "[GAME DEBUG]" in line:
-        log_console(f"{line}")
-    
-    # Simple test - log every line that contains "Player"
-    # if "Player" in line:
-    #     log_console(f"LINE CONTAINS 'Player': {line}")  # Commented out debug output
+    # Print ALL console output to dashboard console
+    if line.strip():  # Only log non-empty lines
+        log_console(line)
     
     # Parse player connections
     if "Player" in line and "joined" in line and "game!" in line:
@@ -488,18 +478,26 @@ def update_config():
 
 @app.route('/api/toggle_verbose', methods=['POST'])
 def toggle_verbose():
-    """Toggle verbose debug output."""
-    global server_config
+    """Toggle verbose debug output (only when server is off)."""
+    global server_config, agt_process
     try:
+        # Check if server is running - only allow toggle when server is off
+        if agt_process and agt_process.poll() is None:
+            return jsonify({"success": False, "error": "Cannot change verbose setting while server is running. Stop the server first."})
+        
+        # Toggle verbose setting
         server_config['verbose'] = not server_config.get('verbose', False)
         status = "enabled" if server_config['verbose'] else "disabled"
-        log_console(f"Verbose debug output {status}")
+        
+        log_console(f"Verbose debug output {status} (will apply when server starts)")
         return jsonify({
             "success": True, 
             "verbose": server_config['verbose'],
-            "message": f"Verbose debug output {status}"
+            "message": f"Verbose debug output {status} (will apply when server starts)"
         })
+            
     except Exception as e:
+        log_console(f"Error toggling verbose mode: {e}")
         return jsonify({"success": False, "error": str(e)})
 
 @app.route('/api/start_tournament', methods=['POST'])
