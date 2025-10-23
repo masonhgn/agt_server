@@ -31,6 +31,7 @@ DASHBOARD_PORT = int(os.environ.get('DASHBOARD_PORT', '8081'))
 # Global state
 agt_process = None
 console_output = queue.Queue()
+console_history = []  # Persistent console history
 server_config = {
     'game_type': 'rps',
     'num_players': 2,
@@ -56,13 +57,15 @@ server_state = {
 def log_console(message):
     """Add message to console output queue with timestamp."""
     timestamp = datetime.now().strftime('%H:%M:%S')
-    console_output.put(f"[{timestamp}] {message}")
+    formatted_message = f"[{timestamp}] {message}"
+    console_output.put(formatted_message)
+    console_history.append(formatted_message)  # Add to persistent history
 
 def parse_console_line(line):
     """Parse console output to update server state."""
     global server_state
     
-    # Print ALL console output to dashboard console
+    # Print ALL console output to dashboard console unconditionally
     if line.strip():  # Only log non-empty lines
         log_console(line)
     
@@ -555,6 +558,11 @@ def get_config():
 def get_console():
     """Get console output as Server-Sent Events."""
     def generate():
+        # First, send all historical messages
+        if console_history:
+            data = json.dumps({"messages": console_history, "historical": True})
+            yield f"data: {data}\n\n"
+        
         while True:
             try:
                 # Get all available console messages
@@ -563,7 +571,7 @@ def get_console():
                     messages.append(console_output.get_nowait())
                 
                 if messages:
-                    data = json.dumps({"messages": messages})
+                    data = json.dumps({"messages": messages, "historical": False})
                     yield f"data: {data}\n\n"
                 
                 time.sleep(0.5)  # Check every 500ms
@@ -576,8 +584,9 @@ def get_console():
 @app.route('/api/clear_console', methods=['POST'])
 def clear_console():
     """Clear console output."""
-    global console_output
+    global console_output, console_history
     console_output = queue.Queue()
+    console_history = []  # Clear persistent history too
     return jsonify({"success": True})
 
 if __name__ == '__main__':

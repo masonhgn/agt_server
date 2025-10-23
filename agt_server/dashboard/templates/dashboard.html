@@ -531,9 +531,18 @@
             consoleEventSource.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 if (data.messages) {
-                    data.messages.forEach(message => {
-                        addConsoleLine(message);
-                    });
+                    if (data.historical) {
+                        // Clear console and add all historical messages
+                        document.getElementById('consoleContent').innerHTML = '';
+                        data.messages.forEach(message => {
+                            addConsoleLine(message);
+                        });
+                    } else {
+                        // Add new messages
+                        data.messages.forEach(message => {
+                            addConsoleLine(message);
+                        });
+                    }
                 }
             };
             consoleEventSource.onerror = function(event) {

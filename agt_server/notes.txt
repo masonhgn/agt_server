@@ -1,0 +1,5 @@
+TODO:
+
+organize agent solutions:
+    - implemented agents should be fully implemented and in core.agents
+    - stencils should only contain unimplemented agents

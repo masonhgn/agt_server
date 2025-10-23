@@ -4,7 +4,7 @@ Chicken agent base class for Chicken games.
 """
 
 from core.agents.common.base_agent import BaseAgent
-
+from typing import List, Any
 
 class ChickenAgent(BaseAgent):
     """Base class for Chicken game agents."""
@@ -69,25 +69,43 @@ class ChickenAgent(BaseAgent):
         """Initialize the agent for a new game."""
         pass
     
-    # Default implementations for Lab 1 abstract methods
-    def predict(self) -> list[float]:
+    # Optional methods for Lab 1 - these have default implementations for non-Lab1 agents
+    def predict(self) -> List[float]:
         """
-        Default implementation: predict uniform distribution.
-        Subclasses should override this for Fictitious Play.
+        Predict opponent's next move distribution.
+        This method will be called directly by the server for Fictitious Play agents.
+        Default implementation for non-Lab1 agents.
+        
+        returns:
+            probability distribution over opponent's next move
         """
-        return [1/2, 1/2]
+        # Default implementation - Lab 1 agents should override this
+        raise NotImplementedError("predict() method not implemented - this agent is not a Lab 1 Fictitious Play agent")
     
-    def optimize(self, dist: list[float]) -> int:
+    def optimize(self, dist: List[float]) -> Any:
         """
-        Default implementation: return random action.
-        Subclasses should override this for Fictitious Play.
+        Find best response to opponent's predicted distribution.
+        This method will be called directly by the server for Fictitious Play agents.
+        Default implementation for non-Lab1 agents.
+        
+        args:
+            dist: probability distribution over opponent's next move
+            
+        returns:
+            the best action to take
         """
-        import random
-        return random.choice(self.actions)
+        # Default implementation - Lab 1 agents should override this
+        raise NotImplementedError("optimize() method not implemented - this agent is not a Lab 1 Fictitious Play agent")
     
-    def calc_move_probs(self) -> list[float]:
+    def calc_move_probs(self) -> List[float]:
         """
-        Default implementation: return uniform distribution.
-        Subclasses should override this for Exponential Weights.
+        Calculate move probabilities using Exponential Weights strategy.
+        This method will be called directly by the server for Exponential Weights agents.
+        Default implementation for non-Lab1 agents.
+        
+        returns:
+            probability distribution over your next move
         """
-        return [1/2, 1/2]
+        # Default implementation - Lab 1 agents should override this
+        raise NotImplementedError("calc_move_probs() method not implemented - this agent is not a Lab 1 Exponential Weights agent")
+    

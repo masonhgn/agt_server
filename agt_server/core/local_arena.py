@@ -98,11 +98,15 @@ class LocalArena:
                 final_rewards = engine.run()
 
 
-                #record the results for each agent
-                for agent in grouping:
-                    self.game_results[agent.name][agent.name] = final_rewards[agent.name]
-                    if self.verbose:
-                        debug_print(f"  {agent.name}: {final_rewards[agent.name]:.1f}")
+                for agent_idx, agent in enumerate(grouping):
+                    # Use index-based access for final_rewards
+                    agent_score = final_rewards[agent_idx]
+                    
+                    # Record against all other agents in the grouping
+                    for opponent_idx, opponent in enumerate(grouping):
+                        if agent_idx != opponent_idx:
+                            self.game_results[agent.name][opponent.name] = agent_score
+
             except MoveTimeout as e:
                 if self.verbose:
                     debug_print(f"  error: {e}")

@@ -54,6 +54,13 @@ class AuctionGame(BaseGame):
         # Current valuations for each player (set each round)
         self.current_valuations = {player: [0] * len(goods) for player in self.players}
         
+    def roundwise_reset(self) -> None:
+        """
+        Reset the game for a new round.
+        """
+        self.generate_valuations_for_round()
+
+
     def generate_valuations_for_round(self):
         """
         Generate valuations for all players for the current round.

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+
+
 """
 engine for running games between agents.
 
@@ -9,7 +12,7 @@ import time
 import threading
 from typing import Any, Callable, Dict, Hashable, List, Tuple
 import random
-
+import asyncio
 from core.game import ObsDict, ActionDict, RewardDict, BaseGame
 from core.agents.common.base_agent import BaseAgent
 
@@ -38,31 +41,11 @@ class Engine:
         self.rounds = rounds
         self.cumulative_reward = [0] * len(agents)
         
-    def _get_agent_action(self, agent: BaseAgent, obs: Dict[str, Any]) -> Any:
-        """
-        Get action from agent using the appropriate method based on agent type.
-        For Lab 1 agents, this calls predict()/optimize() or calc_move_probs() directly.
-        For other agents, this calls get_action().
-        """
-        # Check if this is a Lab 1 agent by looking for the specific method implementations
-        if hasattr(agent, 'predict') and hasattr(agent, 'optimize') and hasattr(agent, 'calc_move_probs'):
-            # This is a Lab 1 agent - use the new architecture
-            if hasattr(agent, '_is_fictitious_play') and agent._is_fictitious_play:
-                # Fictitious Play agent: call predict() then optimize()
-                dist = agent.predict()
-                action = agent.optimize(dist)
-            elif hasattr(agent, '_is_exponential_weights') and agent._is_exponential_weights:
-                # Exponential Weights agent: call calc_move_probs() then sample
-                move_probs = agent.calc_move_probs()
-                action = random.choices(agent.actions, weights=move_probs, k=1)[0]
-            else:
-                # Default: use get_action() for backward compatibility
-                action = agent.get_action(obs)
+    async def _get_agent_action(self, agent: BaseAgent, obs: Dict[str, Any]) -> Any:
+        if hasattr(agent, 'get_action') and asyncio.iscoroutinefunction(agent.get_action):
+            return await agent.get_action(obs)
         else:
-            # Regular agent: use get_action()
-            action = agent.get_action(obs)
-        
-        return action
+            return agent.get_action(obs) 
         
     def run(self, num_rounds: int = None) -> List[float]:
         """

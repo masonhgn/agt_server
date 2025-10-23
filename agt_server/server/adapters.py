@@ -14,14 +14,11 @@ from typing import Dict, Any, List
 # add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Handle import from different working directories
-try:
-    from client import AGTAgent
-except ImportError:
-    from server.client import AGTAgent
+# Use BaseAgent from core instead of redundant AGTAgent
+from core.agents.common.base_agent import BaseAgent
 
 
-class RPSAdapter(AGTAgent):
+class RPSAdapter(BaseAgent):
     """adapter for rps agents from lab 1."""
     
     def __init__(self, rps_agent):
@@ -58,7 +55,7 @@ class RPSAdapter(AGTAgent):
             self.rps_agent.update(reward, info)
 
 
-class BOSAdapter(AGTAgent):
+class BOSAdapter(BaseAgent):
     """adapter for bos agents from lab 2."""
     
     def __init__(self, bos_agent):
@@ -95,7 +92,7 @@ class BOSAdapter(AGTAgent):
             self.bos_agent.update(reward, info)
 
 
-class BOSIIAdapter(AGTAgent):
+class BOSIIAdapter(BaseAgent):
     """adapter for bosii agents from lab 2."""
     
     def __init__(self, bosii_agent):
@@ -146,7 +143,7 @@ class BOSIIAdapter(AGTAgent):
             self.bosii_agent.update(reward, info)
 
 
-class ChickenAdapter(AGTAgent):
+class ChickenAdapter(BaseAgent):
     """adapter for chicken agents from lab 3."""
     
     def __init__(self, chicken_agent):
@@ -183,7 +180,7 @@ class ChickenAdapter(AGTAgent):
             self.chicken_agent.update(reward, info)
 
 
-class PDAdapter(AGTAgent):
+class PDAdapter(BaseAgent):
     """adapter for pd agents from lab 1."""
     
     def __init__(self, pd_agent):
@@ -220,7 +217,7 @@ class PDAdapter(AGTAgent):
             self.pd_agent.update(reward, info)
 
 
-class LemonadeAdapter(AGTAgent):
+class LemonadeAdapter(BaseAgent):
     """adapter for lemonade agents from lab 4."""
     
     def __init__(self, lemonade_agent):
@@ -287,7 +284,7 @@ class LemonadeAdapter(AGTAgent):
                     self.lemonade_agent.add_opponent_action(pos)
 
 
-class AuctionAdapter(AGTAgent):
+class AuctionAdapter(BaseAgent):
     """adapter for auction agents from lab 6."""
     
     def __init__(self, auction_agent):
@@ -337,7 +334,7 @@ class AuctionAdapter(AGTAgent):
             pass
 
 
-class ADXAdapter(AGTAgent):
+class ADXAdapter(BaseAgent):
     """adapter for adx agents from lab 8 (one-day games)."""
     
     def __init__(self, adx_agent):
@@ -357,9 +354,8 @@ class ADXAdapter(AGTAgent):
             from core.game.campaign import Campaign
             from core.game.market_segment import MarketSegment
             
-            # Convert market_segment dict back to MarketSegment enum
-            market_segment_dict = campaign_dict.get('market_segment', {})
-            market_segment_value = market_segment_dict.get('_value_', '')
+            # Convert market_segment string back to MarketSegment enum
+            market_segment_value = campaign_dict.get('market_segment', '')
             market_segment = MarketSegment(market_segment_value)
             
             # Create Campaign object
@@ -398,7 +394,7 @@ class ADXAdapter(AGTAgent):
         self.adx_agent.update(reward, info)
 
 
-class ADXTwoDayAdapter(AGTAgent):
+class ADXTwoDayAdapter(BaseAgent):
     """adapter for adx agents from lab 9 (two-day games)."""
     
     def __init__(self, adx_agent):
@@ -451,7 +447,7 @@ class ADXTwoDayAdapter(AGTAgent):
 
 
 # helper function to create adapters
-def create_adapter(agent, game_type: str) -> AGTAgent:
+def create_adapter(agent, game_type: str) -> BaseAgent:
     """create an appropriate adapter for the given agent and game type."""
     if game_type == "rps":
         return RPSAdapter(agent)
@@ -475,7 +471,7 @@ def create_adapter(agent, game_type: str) -> AGTAgent:
         raise ValueError(f"unknown game type: {game_type}")
 
 
-def load_agent_from_stencil(stencil_path: str, game_type: str) -> AGTAgent:
+def load_agent_from_stencil(stencil_path: str, game_type: str) -> BaseAgent:
     """Load an agent from a completed stencil and create an adapter."""
     try:
         # Add the stencil directory to the path
