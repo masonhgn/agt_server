@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from core.game.AdxOneDayGame import OneDayBidBundle
 from core.game.bid_entry import SimpleBidEntry
+from core.game.campaign import Campaign
 from core.game.market_segment import MarketSegment
 from typing import Dict, Any
 from core.agents.common.base_agent import BaseAgent
@@ -32,11 +33,7 @@ class AggressiveBiddingAgent(BaseAgent):
     def get_action(self, observation: Dict[str, Any]) -> OneDayBidBundle:
         # Convert campaign dictionary to Campaign object if needed
         campaign_data = observation['campaign']
-        if isinstance(campaign_data, dict):
-            from core.game.campaign import Campaign
-            self.campaign = Campaign.from_dict(campaign_data)
-        else:
-            self.campaign = campaign_data
+        self.campaign = Campaign.from_dict(campaign_data) if isinstance(campaign_data, dict) else campaign_data
         """
         Aggressive bidding strategy: bid $2.0 on matching segments with budget allocation.
         

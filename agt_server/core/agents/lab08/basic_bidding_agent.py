@@ -38,7 +38,7 @@ class BasicBiddingAgent(BaseAgent):
         # Convert campaign dictionary to Campaign object if needed
         campaign_data = observation['campaign']
         self.campaign = Campaign.from_dict(campaign_data) if isinstance(campaign_data, dict) else campaign_data
-
+        
         """
         Basic bidding strategy: bid $1.0 on all matching segments.
         
@@ -48,7 +48,7 @@ class BasicBiddingAgent(BaseAgent):
         3. Uses the full budget as spending limits to ensure maximum reach
         """
         bid_entries = []
-        
+
         # Iterate through all market segments
         for segment in MarketSegment.all_segments():
             # Check if this segment matches the campaign target
@@ -70,7 +70,7 @@ class BasicBiddingAgent(BaseAgent):
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = True  # Set to True to connect to server, False for local testing
+    server = False  # Set to True to connect to server, False for local testing
     name = "BasicBiddingAgent"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port

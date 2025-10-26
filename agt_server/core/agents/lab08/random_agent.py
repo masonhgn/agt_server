@@ -3,6 +3,7 @@ from core.game.AdxOneDayGame import OneDayBidBundle
 from core.game.bid_entry import SimpleBidEntry
 from core.game.market_segment import MarketSegment
 import random
+from core.game.campaign import Campaign
 from typing import Dict, Any
 from core.agents.common.base_agent import BaseAgent
 
@@ -21,7 +22,8 @@ class RandomAdXAgent(BaseAgent):
         pass
     
     def get_action(self, observation: Dict[str, Any]) -> OneDayBidBundle:
-        self.campaign = observation['campaign']
+        campaign_data = observation['campaign']
+        self.campaign = Campaign.from_dict(campaign_data) if isinstance(campaign_data, dict) else campaign_data
         bid_entries = []
         for segment in MarketSegment.all_segments():
             if MarketSegment.is_subset(self.campaign.market_segment, segment):
