@@ -28,12 +28,6 @@ class BaseGame(ABC):
         """
 
 
-    @abstractmethod
-    def roundwise_reset(self) -> None:
-        """
-        Reset the game for a new round.
-        """
-        pass
 
 
     @abstractmethod

@@ -2,140 +2,149 @@ import sys, os
 # Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from core.game.AdxOneDayGame import OneDayBidBundle
+from core.game.AdxOneDayGame import OneDayBidBundle, AdxOneDayGame
 from core.game.bid_entry import SimpleBidEntry
 from core.game.market_segment import MarketSegment
+from core.game.campaign import Campaign
+from typing import Dict, Any
+from server.connect_stencil import connect_agent_to_server
+from core.agents.lab08.random_agent import RandomAdXAgent
+from core.agents.lab08.aggressive_bidding_agent import AggressiveBiddingAgent
+from core.local_arena import LocalArena
+from core.agents.common.base_agent import BaseAgent
 
-class MyOneDayAgent:
+class MyAdXAgent(BaseAgent):
     """
     Your implementation of the AdX One Day agent.
     
-    This class should implement the get_bid_bundle() method to return your OneDayBidBundle.
-    The writeup describes this as MyOneDayAgent.java that extends OneDayAgent.
-    
-    Your agent will be assigned a campaign at the beginning of the game.
-    You can access it via self.campaign which contains:
+    This agent should implement a bidding strategy for the AdX One Day game.
+    You will be assigned a campaign with:
     - id: campaign ID
-    - market_segment: target demographic (e.g., Female_Old)
-    - reach: number of impressions needed
-    - budget: total budget available
+    - market_segment: target demographic (e.g., Female_Old, Male_Young_HighIncome)
+    - reach: number of impressions needed to fulfill the campaign
+    - budget: total budget available for bidding
+    
+    Your goal is to bid on market segments to win impressions that match your campaign,
+    while staying within your budget and maximizing profit.
+    
+    Key concepts:
+    - Market segments can be 1, 2, or 3 attributes (e.g., Female, Female_Old, Female_Old_HighIncome)
+    - You can bid on any segment that matches your campaign (use MarketSegment.is_subset)
+    - Second-price sealed-bid auctions determine winners
+    - You only get credit for impressions that match your campaign's target segment
+    - Profit = (reach_fulfilled / total_reach) * budget - total_spending
     """
-    def __init__(self):
-        self.name = "TODO: Enter your name or ID here"
-        self.campaign = None  # Will be set by the game environment
+    
+    def __init__(self, name: str = "MyAdXAgent"):
+        super().__init__(name)
+        self.game_title = "adx_oneday"
+        # TODO: Add any instance variables you need for your strategy
 
-    def get_bid_bundle(self) -> OneDayBidBundle:
+    def reset(self):
+        """Reset the agent for a new game."""
+        # TODO: Reset any game-specific state variables
+        pass
+    
+    def setup(self):
+        """Initialize the agent for a new game."""
+        # TODO: Initialize any strategy-specific variables
+        pass
+
+    def get_action(self, observation: Dict[str, Any]) -> OneDayBidBundle:
         """
         Return a OneDayBidBundle for your assigned campaign.
         
-        This method should:
-        1. Create SimpleBidEntry objects for relevant market segments
-        2. Set appropriate bids and spending limits
-        3. Return a OneDayBidBundle with your campaign ID, day limit, and bid entries
+        This is the main method you need to implement. It should:
+        1. Extract your campaign from the observation
+        2. Create SimpleBidEntry objects for relevant market segments
+        3. Set appropriate bids and spending limits
+        4. Return a OneDayBidBundle
         
-        Example (from writeup):
-        - Create SimpleBidEntry for campaign's market segment
-        - Add bid entries to a list
-        - Create OneDayBidBundle with campaign ID, budget as day limit, and bid entries
-        
-        Helper functions (equivalent to Java writeup):
-        - MarketSegment.all_segments() - iterate over all market segments
-        - MarketSegment.is_subset(campaign_segment, user_segment) - check if user segment matches campaign
+        Args:
+            observation: Dictionary containing your campaign information
+            
+        Returns:
+            OneDayBidBundle: Your bidding strategy for this game
         """
-        raise NotImplementedError("Implement your bidding strategy here.")
-
-# For compatibility with existing code
-MyAdXAgent = MyOneDayAgent
+        # Convert campaign dictionary to Campaign object if needed
+        campaign_data = observation['campaign']
+        self.campaign = Campaign.from_dict(campaign_data) if isinstance(campaign_data, dict) else campaign_data
+        
+        # TODO: Implement your bidding strategy here
+        # 
+        # Example strategy (you should replace this with your own):
+        # 1. Find all market segments that match your campaign
+        # 2. Create bid entries for those segments
+        # 3. Set bids and spending limits based on your strategy
+        # 4. Return the bid bundle
+        
+        bid_entries = []
+        
+        # Example: Bid on all segments that match your campaign
+        for segment in MarketSegment.all_segments():
+            # Check if this segment matches your campaign target
+            if MarketSegment.is_subset(self.campaign.market_segment, segment):
+                # TODO: Implement your bidding logic here
+                # Example: Simple strategy - bid $1.0 on each matching segment
+                bid_entries.append(SimpleBidEntry(
+                    market_segment=segment,
+                    bid=1.0,  # TODO: Calculate your bid amount
+                    spending_limit=self.campaign.budget  # TODO: Set appropriate spending limit
+                ))
+        
+        # Create and return the bid bundle
+        return OneDayBidBundle(
+            campaign_id=self.campaign.id,
+            day_limit=self.campaign.budget,  # TODO: Set your total day spending limit
+            bid_entries=bid_entries
+        )
 
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
-    name = ...  # TODO: Please give your agent a name
+    server = True  # Set to True to connect to server, False for local testing
+    name = "MyAdXAgent"  # TODO: Give your agent a unique name
     host = "localhost"  # Server host
     port = 8080  # Server port
     verbose = False  # Enable verbose debug output
     game = "adx_oneday"  # Game type (hardcoded for this agent)
     
     if server:
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
         async def main():
-            # Generate unique name if not provided
-            if not name:
-                import random
-                agent_name = f"MyOneDayAgent_{random.randint(1000, 9999)}"
-            else:
-                agent_name = name
-                
-            # Create agent and adapter
-            agent = MyOneDayAgent()
-            agent.name = agent_name
-            server_agent = create_adapter(agent, game)
+            # Create agent and connect to server
+            agent = MyAdXAgent()
             
             # Connect to server
-            await connect_agent_to_server(server_agent, game, agent_name, host, port, verbose)
+            await connect_agent_to_server(agent, game, name, host, port, verbose)
         
         # Run the async main function
         import asyncio
         asyncio.run(main())
     else:
         # Test your agent locally
-        print("Testing MyOneDayAgent locally...")
+        print("Testing MyAdXAgent locally...")
         print("=" * 50)
         
-        # Import opponent agents and AdX arena for testing
-        from solutions.basic_bidding_agent import BasicBiddingAgent
-        from solutions.aggressive_bidding_agent import AggressiveBiddingAgent
-        from adx_local_arena import AdXLocalArena
-        import random
-        
-        # Create additional random agents for a full tournament
-        class RandomAdXAgent:
-            def __init__(self, name):
-                self.name = name
-                self.campaign = None
-            
-            def reset(self):
-                """Reset the agent for a new game."""
-                pass
-            
-            def setup(self):
-                """Initialize the agent for a new game."""
-                pass
-            
-            def get_bid_bundle(self) -> OneDayBidBundle:
-                bid_entries = []
-                for segment in MarketSegment.all_segments():
-                    if MarketSegment.is_subset(self.campaign.market_segment, segment):
-                        bid_entries.append(SimpleBidEntry(
-                            market_segment=segment,
-                            bid=random.uniform(0.5, 2.0),  # Random bid between 0.5 and 2.0
-                            spending_limit=self.campaign.budget * random.uniform(0.5, 1.0)
-                        ))
-                return OneDayBidBundle(
-                    campaign_id=self.campaign.id,
-                    day_limit=self.campaign.budget * random.uniform(0.5, 1.0),
-                    bid_entries=bid_entries
-                )
-        
         # Create all agents for testing
-        agent = MyOneDayAgent()
-        opponent1 = BasicBiddingAgent()
-        opponent2 = AggressiveBiddingAgent()
-        random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(7)]
+        agent = MyAdXAgent(name="MyAdXAgent")
+        opponent1 = AggressiveBiddingAgent()
+        random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(8)]
         
         # Create arena and run tournament
-        agents = [agent, opponent1, opponent2] + random_agents
-        arena = AdXLocalArena(agents, num_agents_per_game=10, num_games=10, verbose=True)
+        agents = [agent, opponent1] + random_agents
+        arena = LocalArena(
+            game_title="adx_oneday",
+            game_class=AdxOneDayGame,
+            agents=agents,
+            num_agents_per_game=10,
+            num_rounds=10,
+            timeout=30.0,
+            save_results=False,
+            verbose=True
+        )
         arena.run_tournament()
         
         print("\nLocal test completed!")
 
 # Export for server testing
-agent_submission = MyOneDayAgent("MyOneDayAgent") 
+agent_submission = MyAdXAgent()

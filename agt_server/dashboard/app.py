@@ -13,10 +13,12 @@ import sys
 import subprocess
 import threading
 import queue
+import json
 import signal
 import psutil
 import json
 from datetime import datetime
+from binary_encoding import decode_message
 
 # Add the parent directory to the path to import server modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -37,19 +39,15 @@ server_config = {
     'num_players': 2,
     'port': AGT_SERVER_PORT,
     'host': '0.0.0.0',
-    'verbose': False  # Debug output control
 }
 
-# Track server state from console output
+# Track server state from console output (single-game format)
 server_state = {
     'total_players': 0,
-    'active_games': 0,
-    'total_tournaments': 0,
-    'active_tournaments': 0,
-    'tournament_completed': False,
     'leaderboard': [],
-    'games': {},
-    'uptime': 'N/A',
+    'current_game': None,  # Game type as string
+    'players': [],  # List of connected players
+    'tournament_started': False,
     'current_round': 0,
     'total_rounds': 0
 }
@@ -61,190 +59,103 @@ def log_console(message):
     console_output.put(formatted_message)
     console_history.append(formatted_message)  # Add to persistent history
 
+
 def parse_console_line(line):
-    """Parse console output to update server state."""
+    """Parse clean console output to update server state."""
     global server_state
-    
+    log_console(f"Parsing console line: {line}")
     # Print ALL console output to dashboard console unconditionally
     if line.strip():  # Only log non-empty lines
         log_console(line)
     
-    # Parse player connections
-    if "Player" in line and "joined" in line and "game!" in line:
-        # log_console(f"FOUND PLAYER JOIN LINE: {line}")  # Commented out debug output
-        # log_console(f"MATCHING PATTERN: Found player join line")  # Commented out debug output
-        # Example: "Player CompetitionAgent joined rps game! (1 players total)"
-        import re
-        match = re.search(r'Player ([^ ]+) joined (\w+) game! \((\d+) players total\)', line)
-        if match:
-            player_name = match.group(1)
-            game_type = match.group(2)
-            player_count = int(match.group(3))
-            
-            # log_console(f"PARSED: Player {player_name} joined {game_type} game! ({player_count} players total)")  # Commented out debug output
-            
-            # Update server state
-            if game_type not in server_state['games']:
-                # Use appropriate defaults based on game type
-                game_defaults = {
-                    'rps': {'num_players': 2, 'num_rounds': 100},
-                    'bos': {'num_players': 2, 'num_rounds': 100},
-                    'bosii': {'num_players': 2, 'num_rounds': 100},
-                    'chicken': {'num_players': 2, 'num_rounds': 100},
-                    'pd': {'num_players': 2, 'num_rounds': 100},
-                    'lemonade': {'num_players': 3, 'num_rounds': 100},
-                    'auction': {'num_players': 4, 'num_rounds': 10},
-                    'adx_twoday': {'num_players': 2, 'num_rounds': 2},
-                    'adx_oneday': {'num_players': 2, 'num_rounds': 1}
-                }
+    # Parse binary encoded messages
+    if line.startswith("encoded:"):
+        message_type, data = decode_message(line)
+        
+        log_console(f"Decoded - message_type: {message_type}, data: {data}, data type: {type(data)}")
+        
+        if message_type is None or data is None:
+            log_console(f"Failed to decode message: {line}")
+            return
+        
+        if message_type == 'PLAYER_CONNECT':
+            try:
+                player_name = data['player_name']
+                address = data['address']
                 
-                defaults = game_defaults.get(game_type, {'num_players': 2, 'num_rounds': 100})
+                # Add player if not already present
+                if not any(p['name'] == player_name for p in server_state['players']):
+                    server_state['players'].append({
+                        'name': player_name,
+                        'connected_time': datetime.now().strftime('%H:%M:%S')
+                    })
+                    server_state['total_players'] = len(server_state['players'])
+                    log_console(f"Added player {player_name}. Total players: {server_state['total_players']}")
+                else:
+                    log_console(f"Player {player_name} already exists")
+            except Exception as e:
+                log_console(f"Error in PLAYER_CONNECT handling: {e}")
+                log_console(f"data type: {type(data)}, data: {data}")
+                log_console(f"server_state type: {type(server_state)}, server_state: {server_state}")
+            
+
+
+
+
+
+
+
+
+            
+        elif message_type == 'PLAYER_DISCONNECT':
+            try:
+                player_name = data['player_name']
+                remaining_count = data['remaining_count']
                 
-                server_state['games'][game_type] = {
-                    'name': game_type.upper(),
-                    'players': [],
-                    'config': defaults,
-                    'tournament_started': False
-                }
-            
-            # Add player if not already present
-            if not any(p['name'] == player_name for p in server_state['games'][game_type]['players']):
-                server_state['games'][game_type]['players'].append({
-                    'name': player_name,
-                    'connected_time': 'now'
-                })
-                # log_console(f"ADDED: Player {player_name} to {game_type} game")  # Commented out debug output
-            else:
-                # log_console(f"SKIPPED: Player {player_name} already in {game_type} game")  # Commented out debug output
-                pass
-            
-            server_state['total_players'] = sum(len(game['players']) for game in server_state['games'].values())
-            server_state['active_games'] = len([g for g in server_state['games'].values() if g['players']])
-            
-            # log_console(f"UPDATED: Total players = {server_state['total_players']}, Active games = {server_state['active_games']}")  # Commented out debug output
-        else:
-            # log_console(f"PARSE FAILED: Could not parse line: {line}")  # Commented out debug output
-            # log_console(f"REGEX TEST: Looking for pattern in: {repr(line)}")  # Commented out debug output
-            pass
-    
-    # Parse player disconnections
-    elif "Player" in line and "disconnected from" in line and "players remaining" in line:
-        # Example: "Player CompetitionAgent disconnected from rps game! (0 players remaining)"
-        import re
-        match = re.search(r'Player ([^ ]+) disconnected from (\w+) game! \((\d+) players remaining\)', line)
-        if match:
-            player_name = match.group(1)
-            game_type = match.group(2)
-            remaining_count = int(match.group(3))
-            
-            if game_type in server_state['games']:
-                # Remove player
-                server_state['games'][game_type]['players'] = [
-                    p for p in server_state['games'][game_type]['players'] 
+                # Remove player from players list
+                server_state['players'] = [
+                    p for p in server_state['players'] 
                     if p['name'] != player_name
                 ]
+                server_state['total_players'] = len(server_state['players'])
+                log_console(f"❌ Removed player {player_name}. Remaining: {remaining_count}")
+            except Exception as e:
+                log_console(f"Error in PLAYER_DISCONNECT handling: {e}")
+                log_console(f"data type: {type(data)}, data: {data}")
+            
+        elif message_type == 'TOURNAMENT_START':
+            try:
+                game_type = data['game_type']
+                player_count = data['player_count']
                 
-                server_state['total_players'] = sum(len(game['players']) for game in server_state['games'].values())
-                server_state['active_games'] = len([g for g in server_state['games'].values() if g['players']])
-    
-    # Parse tournament starts
-    elif "Starting tournament for" in line and "players!" in line:
-        # Example: "Starting tournament for rps with 2 players!"
-        import re
-        match = re.search(r'Starting tournament for (\w+) with (\d+) players!', line)
-        if match:
-            game_type = match.group(1)
-            player_count = int(match.group(2))
-            
-            log_console(f"TOURNAMENT STARTED: {game_type} with {player_count} players")
-            
-            if game_type in server_state['games']:
-                server_state['games'][game_type]['tournament_started'] = True
-                server_state['active_tournaments'] += 1
-                server_state['total_tournaments'] += 1
-                # Initialize round counter
-                if 'current_round' not in server_state:
-                    server_state['current_round'] = 0
-    
-    # Parse round updates
-    elif "TOURNAMENT ROUND" in line:
-        # Example: "TOURNAMENT ROUND 1/1000"
-        import re
-        match = re.search(r'TOURNAMENT ROUND (\d+)/(\d+)', line)
-        if match:
-            current_round = int(match.group(1))
-            total_rounds = int(match.group(2))
-            server_state['current_round'] = current_round
-            server_state['total_rounds'] = total_rounds
-            log_console(f"ROUND UPDATE: {current_round}/{total_rounds}")
-    
-    # Parse tournament completion
-    elif "TOURNAMENT" in line and "ended" in line:
-        # Example: "TOURNAMENT rps ended."
-        import re
-        match = re.search(r'TOURNAMENT (\w+) ended', line)
-        if match:
-            game_type = match.group(1)
-            log_console(f"TOURNAMENT COMPLETED: {game_type}")
-            
-            if game_type in server_state['games']:
-                server_state['games'][game_type]['tournament_started'] = False
-                server_state['active_tournaments'] = max(0, server_state['active_tournaments'] - 1)
-                server_state['tournament_completed'] = True
-                server_state['current_round'] = server_state.get('total_rounds', 0)
-    
-    # Parse results saved (tournament completion)
-    elif "Results saved to" in line:
-        log_console("TOURNAMENT RESULTS SAVED")
-        server_state['tournament_completed'] = True
-        server_state['active_tournaments'] = 0
-    
-    # Parse final leaderboard
-    elif "FINAL LEADERBOARD for" in line:
-        # Example: "FINAL LEADERBOARD for rps:"
-        import re
-        match = re.search(r'FINAL LEADERBOARD for (\w+):', line)
-        if match:
-            game_type = match.group(1)
-            log_console(f"FINAL LEADERBOARD START: {game_type}")
-            # The leaderboard entries will follow in subsequent lines
-    
-    # Parse leaderboard entries
-    elif line.strip().startswith("#") and ":" in line and ("Total:" in line or "Games:" in line):
-        # Example: "  #1: CompetitionAgent - Total: 45.20, Games: 50, Avg: 0.90"
-        import re
-        # match = re.search(r'#(\d+): (\w+) - Total: ([\d.]+), Games: (\d+), Avg: ([\d.]+)', line.strip())
-        match = re.search(r'#\s*(\d+):\s+(.+?)\s+-\s+Total:\s+([+-]?\d+(?:\.\d+)?),\s+Games:\s+(\d+),\s+Avg:\s+([+-]?\d+(?:\.\d+)?)',
-        line.strip())
-        if match:
-            rank = int(match.group(1))
-            player_name = match.group(2)
-            total_reward = float(match.group(3))
-            games_played = int(match.group(4))
-            avg_reward = float(match.group(5))
-            
-            # Add to leaderboard
-            leaderboard_entry = {
-                'name': player_name,
-                'rank': rank,
-                'total_reward': total_reward,
-                'games_played': games_played,
-                'avg_reward': avg_reward
-            }
-            
-            # Update or add to leaderboard
-            existing_index = next((i for i, entry in enumerate(server_state['leaderboard']) 
-                                 if entry['name'] == player_name), None)
-            if existing_index is not None:
-                server_state['leaderboard'][existing_index] = leaderboard_entry
-            else:
-                server_state['leaderboard'].append(leaderboard_entry)
-            
-            # Sort leaderboard by total reward (descending)
-            server_state['leaderboard'].sort(key=lambda x: x['total_reward'], reverse=True)
-            
-            log_console(f"LEADERBOARD ENTRY: #{rank} {player_name} - {total_reward:.2f} points")
+                server_state['tournament_started'] = True
+                log_console(f"🏁 Tournament started: {game_type} with {player_count} players")
+            except Exception as e:
+                log_console(f"Error in TOURNAMENT_START handling: {e}")
+                log_console(f"data type: {type(data)}, data: {data}")
 
+            
+        elif message_type == 'TOURNAMENT_END':
+            try:
+                game_type = data['game_type']
+                
+                server_state['tournament_started'] = False
+                server_state['tournament_completed'] = True
+                log_console(f"🏁 Tournament ended: {game_type}")
+            except Exception as e:
+                log_console(f"Error in TOURNAMENT_END handling: {e}")
+                log_console(f"data type: {type(data)}, data: {data}")
+        
+        elif message_type == 'RESULTS_SAVED':
+            try:
+                filename = data['filename']
+                log_console(f"💾 Results saved: {filename}")
+            except Exception as e:
+                log_console(f"Error in RESULTS_SAVED handling: {e}")
+                log_console(f"data type: {type(data)}, data: {data}")
+        
+        else:
+            log_console(f"🔍 Unknown message type: {message_type}")
 def start_agt_server(config):
     """Start the AGT server with given configuration."""
     global agt_process, server_state
@@ -253,16 +164,13 @@ def start_agt_server(config):
         log_console("Server is already running")
         return False
     
-    # Reset server state for new server
+    # Reset server state for new server (single-game format)
     server_state = {
         'total_players': 0,
-        'active_games': 0,
-        'total_tournaments': 0,
-        'active_tournaments': 0,
-        'tournament_completed': False,
         'leaderboard': [],
-        'games': {},
-        'uptime': 'N/A',
+        'current_game': config['game_type'],
+        'players': [],
+        'tournament_started': False,
         'current_round': 0,
         'total_rounds': 0
     }
@@ -277,9 +185,6 @@ def start_agt_server(config):
             '--host', config['host']
         ]
         
-        # Add verbose flag if enabled
-        if config.get('verbose', False):
-            cmd.append('--verbose')
         
         log_console(f"Starting AGT server with command: {' '.join(cmd)}")
         
@@ -293,8 +198,7 @@ def start_agt_server(config):
             bufsize=0,  # Unbuffered output
             universal_newlines=True
         )
-        # log_console(f"Subprocess started with PID: {agt_process.pid}")  # Commented out debug output
-        
+
         # Start output monitoring thread
         def monitor_output():
             # log_console("MONITOR OUTPUT: Starting output monitoring thread")  # Commented out debug output
@@ -306,7 +210,7 @@ def start_agt_server(config):
                         line_text = line.strip()
                         line_count += 1
                         # log_console(f"RAW OUTPUT #{line_count}: {line_text}")  # Commented out debug output
-                        # Parse console output to update server state
+                        # Log console output to dashboard console
                         parse_console_line(line_text)
                     else:
                         # No output available, sleep briefly
@@ -358,13 +262,11 @@ def stop_agt_server():
             # Reset server state
             server_state = {
                 'total_players': 0,
-                'active_games': 0,
-                'total_tournaments': 0,
-                'active_tournaments': 0,
                 'tournament_completed': False,
                 'leaderboard': [],
-                'games': {},
-                'uptime': 'N/A',
+                'current_game': None,
+                'players': [],
+                'tournament_started': False,
                 'current_round': 0,
                 'total_rounds': 0
             }
@@ -378,13 +280,11 @@ def stop_agt_server():
             # Reset server state
             server_state = {
                 'total_players': 0,
-                'active_games': 0,
-                'total_tournaments': 0,
-                'active_tournaments': 0,
                 'tournament_completed': False,
                 'leaderboard': [],
-                'games': {},
-                'uptime': 'N/A',
+                'current_game': None,
+                'players': [],
+                'tournament_started': False,
                 'current_round': 0,
                 'total_rounds': 0
             }
@@ -415,28 +315,24 @@ def get_status():
         # Check if our server is running
         server_running = agt_process and agt_process.poll() is None
         
-        # Debug logging (commented out to reduce noise)
-        # log_console(f"🔍 API STATUS CALL: server_running={server_running}, total_players={server_state['total_players']}")
-        # log_console(f"🔍 SERVER STATE: {server_state}")
+        # Debug logging
+        print(datetime.now().strftime('%H:%M:%S'))
+        log_console(f"aPI STATUS CALL: server_running={server_running}, total_players={server_state['total_players']}")
+        #log_console(f"SERVER STATE: {server_state}")
         
-        # Return status based on parsed console output
+        # Return status based on parsed console output (single-game format)
         status_data = {
             "server_status": "Running" if server_running else "Stopped",
-            "server_controlled": True,
-            "uptime": server_state['uptime'],
             "total_players": server_state['total_players'],
-            "active_games": server_state['active_games'],
-            "total_tournaments": server_state['total_tournaments'],
-            "active_tournaments": server_state['active_tournaments'],
-            "tournament_completed": server_state['tournament_completed'],
+            "players": server_state['players'],  # List of connected players
             "leaderboard": server_state['leaderboard'],
-            "games": server_state['games'],
+            "current_game": server_state['current_game'],  # Game type as string
+            "tournament_started": server_state.get('tournament_started', False),
             "config": server_config,
             "current_round": server_state.get('current_round', 0),
             "total_rounds": server_state.get('total_rounds', 0)
         }
         
-        # log_console(f"📤 SENDING STATUS: {status_data}")
         return jsonify(status_data)
         
     except Exception as e:
@@ -479,29 +375,6 @@ def update_config():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-@app.route('/api/toggle_verbose', methods=['POST'])
-def toggle_verbose():
-    """Toggle verbose debug output (only when server is off)."""
-    global server_config, agt_process
-    try:
-        # Check if server is running - only allow toggle when server is off
-        if agt_process and agt_process.poll() is None:
-            return jsonify({"success": False, "error": "Cannot change verbose setting while server is running. Stop the server first."})
-        
-        # Toggle verbose setting
-        server_config['verbose'] = not server_config.get('verbose', False)
-        status = "enabled" if server_config['verbose'] else "disabled"
-        
-        log_console(f"Verbose debug output {status} (will apply when server starts)")
-        return jsonify({
-            "success": True, 
-            "verbose": server_config['verbose'],
-            "message": f"Verbose debug output {status} (will apply when server starts)"
-        })
-            
-    except Exception as e:
-        log_console(f"Error toggling verbose mode: {e}")
-        return jsonify({"success": False, "error": str(e)})
 
 @app.route('/api/start_tournament', methods=['POST'])
 def start_tournament():
@@ -529,19 +402,14 @@ def restart_tournament():
         global server_state
         server_state = {
             'total_players': server_state['total_players'],  # Keep current players
-            'active_games': server_state['active_games'],
-            'total_tournaments': 0,
-            'active_tournaments': 0,
             'tournament_completed': False,
             'leaderboard': [],
-            'games': server_state['games'],  # Keep current games
+            'current_game': server_state['current_game'],  # Keep current game type
+            'players': server_state['players'],  # Keep current players
+            'tournament_started': False,
             'current_round': 0,
             'total_rounds': 0
         }
-        
-        # Reset tournament_started flag for all games
-        for game in server_state['games'].values():
-            game['tournament_started'] = False
         
         log_console("Tournament state reset for restart")
         return jsonify({"success": True, "message": "Tournament state reset"})

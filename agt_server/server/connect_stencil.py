@@ -49,17 +49,8 @@ async def connect_agent_to_server(agent, game_type: str, name: str = None,
         await client.connect()
         
         if client.connected:
-            print("Connected to server!")
-            print(f"Joining {game_type} game...")
-            
-            if await client.join_game(game_type):
-                print("Joined game successfully!")
-                print("Waiting for game to start...")
-                await client.run()
-                return True
-            else:
-                print("Failed to join game")
-                return False
+            await client.run()
+            return True
         else:
             print("Failed to connect to server")
             return False

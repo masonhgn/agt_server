@@ -7,7 +7,7 @@ Demonstrates how Q-learners can learn collusive strategies in competitive settin
 import sys
 import os
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 # Add the core directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))

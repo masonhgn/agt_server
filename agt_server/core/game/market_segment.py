@@ -33,7 +33,48 @@ class MarketSegment(Enum):
         return list(cls)
 
     @classmethod
-    def is_subset(cls, campaign_segment, user_segment):
-        attrs1 = set(campaign_segment.value.split('_'))
-        attrs2 = set(user_segment.value.split('_'))
-        return attrs2.issubset(attrs1) 
+    def is_subset(cls, subset_segment, superset_segment):
+        """
+        Check if subset_segment is a subset of superset_segment.
+        Returns True if all attributes in subset_segment are also in superset_segment.
+        
+        Examples:
+        - is_subset(Female_Old_HighIncome, Female_Old) = True
+        - is_subset(Female_Old, Female_Old_HighIncome) = False
+        """
+        subset_attrs = set(subset_segment.value.split('_'))
+        superset_attrs = set(superset_segment.value.split('_'))
+        return subset_attrs.issubset(superset_attrs)
+    
+    @classmethod
+    def can_serve(cls, bid_entry_segment, user_segment):
+        """
+        Check if a bid entry can serve a user.
+        Returns True if the user segment contains all attributes of the bid entry segment.
+        
+        Examples:
+        - can_serve(Female_Old, Female_Old_HighIncome) = True (can serve)
+        - can_serve(Female_Old_HighIncome, Female_Old) = False (cannot serve)
+        """
+        bid_attrs = set(bid_entry_segment.value.split('_'))
+        user_attrs = set(user_segment.value.split('_'))
+        return bid_attrs.issubset(user_attrs)
+    
+    @classmethod
+    def matches_campaign(cls, bid_entry_segment, campaign_segment):
+        """
+        Check if a bid entry matches a campaign.
+        Returns True if the bid entry segment contains all attributes of the campaign segment.
+        
+        Examples:
+        - matches_campaign(Female_Old_HighIncome, Female_Old) = True (matches)
+        - matches_campaign(Female_Old, Female_Old_HighIncome) = False (doesn't match)
+        """
+        campaign_attrs = set(campaign_segment.value.split('_'))
+        bid_attrs = set(bid_entry_segment.value.split('_'))
+        return campaign_attrs.issubset(bid_attrs) 
+
+    
+
+
+    

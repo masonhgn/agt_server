@@ -79,8 +79,8 @@ class AGTClient:
     
     def log(self, message: str, level: str = "info"):
         """Log message with appropriate level and formatting."""
-        if level == "debug" and not self.verbose:
-            return
+        # if level == "debug" and not self.verbose:
+        #     return
         
         prefix = ""
         if level == "debug":
@@ -133,7 +133,7 @@ class AGTClient:
             "message": "provide_client_info",
             "device_id": self.agent.device_id,
             "player_name": self.agent.name,
-            "game_type": self.agent.game_type
+            "game_type": self.agent.game_title
         })
 
 
@@ -316,10 +316,54 @@ class AGTClient:
 
 
 
+        elif msg_type == "agent_setup":
+            # Handle agent setup from async engine
+            game_type = message.get("game_type", "unknown")
+            print(f"[CLIENT DEBUG] {self.agent.name}: Received agent setup for {game_type}")
+            
+            # Reset the agent for a new game
+            if hasattr(self.agent, 'reset'):
+                self.agent.reset()
+            
+            # Setup the agent if needed
+            if hasattr(self.agent, 'setup'):
+                self.agent.setup()
+            
+            self.log(f"Agent setup complete for {game_type}", "info")
+            
+        elif msg_type == "agent_valuations":
+            # Handle valuations from async engine (for auction games)
+            valuations = message.get("valuations", [])
+            print(f"[CLIENT DEBUG] {self.agent.name}: Received valuations: {valuations}")
+            
+            # Set valuations on the agent
+            if hasattr(self.agent, 'set_valuations'):
+                self.agent.set_valuations(valuations)
+            
+            self.log(f"Valuations set: {valuations}", "info")
+            
+        elif msg_type == "agent_update":
+            # Handle agent update from async engine
+            observation = message.get("observation", {})
+            action = message.get("action", {})
+            reward = message.get("reward", 0)
+            done = message.get("done", False)
+            info = message.get("info", {})
+            
+            print(f"[CLIENT DEBUG] {self.agent.name}: Received agent update - reward: {reward}, done: {done}")
+            
+            # Update the agent with the results
+            if hasattr(self.agent, 'update'):
+                self.agent.update(observation, action, reward, done, info)
+            
+            # Log the result
+            self.log(f"Round result: +{reward:.2f} points", "info")
+            
         elif msg_type == "request_action":
             # Handle action request silently unless verbose
             observation = message.get("observation", {})
             print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
+            
             
             # # Special handling for auction games - setup agent and set valuations
             # if hasattr(self.agent, 'setup') and 'goods' in observation:
@@ -337,28 +381,17 @@ class AGTClient:
             action = self.agent.get_action(observation)
             print(f"[CLIENT DEBUG] {self.agent.name}: Sending action: {action}")
             
-            # # For ADX games, we need to serialize the OneDayBidBundle to a simple format
-            # if hasattr(action, 'campaign_id') and hasattr(action, 'bid_entries'):
-            #     # This is a OneDayBidBundle - convert to simple dict
-            #     serialized_action = {
-            #         "campaign_id": action.campaign_id,
-            #         "day_limit": action.day_limit,
-            #         "bid_entries": [
-            #             {
-            #                 "market_segment": entry.market_segment.value,
-            #                 "bid": entry.bid,
-            #                 "spending_limit": entry.spending_limit
-            #             }
-            #             for entry in action.bid_entries
-            #         ]
-            #     }
-            # else:
-            #     # For other games, use the action as-is
-            #     serialized_action = action
+            # For ADX games, we need to serialize the OneDayBidBundle to a simple format
+            if hasattr(action, 'to_dict'):
+                # This is a OneDayBidBundle - convert to dict using to_dict method
+                serialized_action = action.to_dict()
+            else:
+                # For other games, use the action as-is
+                serialized_action = action
             
             await self.send_message({
                 "message": "action",
-                "action": action
+                "action": serialized_action
             })
 
 
@@ -378,6 +411,39 @@ class AGTClient:
             round_num = message.get('round', 0)
             self.log(f"Round {round_num}: +{reward:.2f} points", "info")
 
+        elif msg_type == "waiting_for_tournament":
+            # Handle waiting message from server
+            status = message.get("status", "unknown")
+            message_text = message.get("message_text", "Waiting for tournament...")
+            print(f"[CLIENT DEBUG] {self.agent.name}: {message_text}")
+            print(f"[CLIENT DEBUG] {self.agent.name}: Status: {status}")
+            self.log(f"Status: {status} - {message_text}", "info")
+            
+            # Continue waiting for tournament messages
+            print(f"[CLIENT DEBUG] {self.agent.name}: Ready for tournament messages")
+
+        elif msg_type == "tournament_complete":
+            # Handle tournament completion with JSON results
+            results = message.get("results", {})
+            tournament_results = results.get("tournament_results", [])
+            summary = results.get("summary", {})
+            
+            print(f"[CLIENT DEBUG] {self.agent.name}: Tournament completed!")
+            print(f"[CLIENT DEBUG] {self.agent.name}: Results: {len(tournament_results)} players")
+            
+            # Display results
+            print("\n" + "="*50)
+            print("TOURNAMENT RESULTS")
+            print("="*50)
+            
+            for i, result in enumerate(tournament_results, 1):
+                print(f"{i:2d}. {result['agent']:20s} | score: {result['total score']:6.1f} | "
+                      f"avg: {result['average score']:5.1f} | "
+                      f"w/l/t: {result['wins']}/{result['losses']}/{result['ties']} | "
+                      f"win rate: {result['win rate']:.1%}")
+            
+            print("="*50)
+            self.log("Tournament completed successfully", "info")
 
         
         return False 
@@ -435,7 +501,7 @@ class AGTClient:
             
             # Add timeout to prevent hanging
             try:
-                data = await asyncio.wait_for(self.reader.readline(), timeout=30.0)
+                data = await asyncio.wait_for(self.reader.readline(), timeout=300.0)
             except asyncio.TimeoutError:
                 self.log("Receive timeout", "debug")
                 return None
@@ -452,7 +518,6 @@ class AGTClient:
                 
             try:
                 message = json.loads(decoded_data)
-                self.log(f"Received: {message}", "debug")
                 return message
             except json.JSONDecodeError as e:
                 self.log(f"JSON decode error: {e}", "error")

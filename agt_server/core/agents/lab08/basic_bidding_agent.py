@@ -2,13 +2,17 @@ import sys, os
 # Add the core directory to the path (same approach as server.py)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
-from core.game.AdxOneDayGame import OneDayBidBundle
+from core.game.AdxOneDayGame import OneDayBidBundle, AdxOneDayGame
 from core.game.bid_entry import SimpleBidEntry
 from core.game.market_segment import MarketSegment
-
+from core.game.campaign import Campaign
+from typing import Dict, Any
 from server.connect_stencil import connect_agent_to_server
 from core.agents.lab08.random_agent import RandomAdXAgent
-class BasicBiddingAgent:
+from core.agents.lab08.aggressive_bidding_agent import AggressiveBiddingAgent
+from core.local_arena import LocalArena
+from core.agents.common.base_agent import BaseAgent
+class BasicBiddingAgent(BaseAgent):
     """
     Basic bidding agent for Lab 8: Simple but effective strategy.
     
@@ -17,9 +21,10 @@ class BasicBiddingAgent:
     - Uses the campaign's budget as both day limit and spending limits
     - Focuses on reaching the target audience without overbidding
     """
-    def __init__(self):
-        self.name = "basic_bidding_agent"
-        self.campaign = None  # Will be set by the game environment
+    def __init__(self, name: str = "BasicBiddingAgent"):
+        super().__init__(name)
+        self.game_title = "adx_oneday"
+
     
     def reset(self):
         """Reset the agent for a new game."""
@@ -29,7 +34,11 @@ class BasicBiddingAgent:
         """Initialize the agent for a new game."""
         pass
 
-    def get_bid_bundle(self) -> OneDayBidBundle:
+    def get_action(self, observation: Dict[str, Any]) -> OneDayBidBundle:
+        # Convert campaign dictionary to Campaign object if needed
+        campaign_data = observation['campaign']
+        self.campaign = Campaign.from_dict(campaign_data) if isinstance(campaign_data, dict) else campaign_data
+
         """
         Basic bidding strategy: bid $1.0 on all matching segments.
         
@@ -89,13 +98,22 @@ if __name__ == "__main__":
         
         
         # Create all agents for testing
-        agent = BasicBiddingAgent()
+        agent = BasicBiddingAgent(name="BasicBiddingAgent")
         opponent1 = AggressiveBiddingAgent()
         random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(8)]
         
         # Create arena and run tournament
         agents = [agent, opponent1] + random_agents
-        arena = AdXLocalArena(agents, num_agents_per_game=10, num_games=10, verbose=True)
+        arena = LocalArena(
+            game_title="adx_oneday",
+            game_class=AdxOneDayGame,
+            agents=agents,
+            num_agents_per_game=10,
+            num_rounds=10,
+            timeout=30.0,
+            save_results=False,
+            verbose=True
+        )
         arena.run_tournament()
         
         print("\nLocal test completed!")

@@ -3,13 +3,14 @@ from core.game.AdxOneDayGame import OneDayBidBundle
 from core.game.bid_entry import SimpleBidEntry
 from core.game.market_segment import MarketSegment
 import random
+from typing import Dict, Any
+from core.agents.common.base_agent import BaseAgent
 
 
-
-class RandomAdXAgent:
-    def __init__(self, name):
-        self.name = name
-        self.campaign = None
+class RandomAdXAgent(BaseAgent):
+    def __init__(self, name: str = "RandomAgent"):
+        super().__init__(name)
+        self.game_title = "adx_oneday"
     
     def reset(self):
         """Reset the agent for a new game."""
@@ -19,7 +20,8 @@ class RandomAdXAgent:
         """Initialize the agent for a new game."""
         pass
     
-    def get_bid_bundle(self) -> OneDayBidBundle:
+    def get_action(self, observation: Dict[str, Any]) -> OneDayBidBundle:
+        self.campaign = observation['campaign']
         bid_entries = []
         for segment in MarketSegment.all_segments():
             if MarketSegment.is_subset(self.campaign.market_segment, segment):

@@ -2,6 +2,6 @@
 
 
 
-def debug_print(message: str, flush: bool = True):
-    """Print debug message."""
-    print(f"[SERVER DEBUG] {message}", flush=flush)
+def server_print(message: str, flush: bool = True):
+    """Unified print method for all server output."""
+    print(f"[SERVER] {message}", flush=flush)
