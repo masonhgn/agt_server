@@ -18,7 +18,7 @@ class AdxTwoDayGame(BaseGame):
     The game uses AdxTwoDayStage to handle the actual auction logic.
     """
     
-    def __init__(self, num_players: int = 2, rival_sampler=None):
+    def __init__(self, num_players: int, rival_sampler=None):
         super().__init__()
         self._num_players = num_players
         self.rival_sampler = rival_sampler
@@ -75,3 +75,15 @@ class AdxTwoDayGame(BaseGame):
             "reach": campaign.reach,
             "budget": campaign.budget
         }
+    
+
+    @classmethod
+    def _campaign_from_dict(self, campaign: dict) -> Dict:
+        """Convert Campaign from dictionary"""
+
+        return Campaign(
+            campaign=campaign['id'],
+            market_segment=campaign['market_segment'],
+            reach=campaign['reach'],
+            budget=campaign['budget']
+        )

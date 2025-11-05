@@ -1,7 +1,7 @@
 import sys, os
 import math
 # Add the core directory to the path (same approach as server.py)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..','..'))
 
 from core.game.AdxTwoDayGame import TwoDaysBidBundle
 from core.game.bid_entry import SimpleBidEntry
@@ -91,7 +91,49 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
         - TwoDaysBidBundle containing all bids for the specified day
         """
         """Aggressive bidding strategy prioritizing quality score."""
-        raise NotImplementedError("get_bid_bundle() not implemented!")
+        if day == 1:
+            campaign = self.campaign_day1
+            # Aggressive day 1 strategy: high bids to maximize quality score
+            bid_amount = 2.5  # High bid to win more impressions
+            budget_usage = 0.95  # Use almost all budget
+        elif day == 2:
+            campaign = self.campaign_day2
+            # Day 2 strategy: capitalize on high quality score from day 1
+            if self.quality_score > 0.9:
+                # Very high quality score - be very aggressive
+                bid_amount = 3.0
+                budget_usage = 1.0
+            elif self.quality_score > 0.7:
+                # Good quality score - moderately aggressive
+                bid_amount = 2.0
+                budget_usage = 0.9
+            else:
+                # Lower quality score - still aggressive but careful
+                bid_amount = 1.5
+                budget_usage = 0.8
+        else:
+            raise ValueError("Day must be 1 or 2")
+
+
+
+        if campaign is None:
+            raise ValueError(f"Campaign is not set for day {day}")
+        
+        bid_entries = []
+        for segment in MarketSegment.all_segments():
+            if MarketSegment.is_subset(campaign.market_segment, segment):
+                bid_entries.append(SimpleBidEntry(
+                    market_segment=segment,
+                    bid=bid_amount,
+                    spending_limit=campaign.budget * budget_usage
+                ))
+        
+        return TwoDaysBidBundle(
+            day=day,
+            campaign_id=campaign.id,
+            day_limit=campaign.budget,
+            bid_entries=bid_entries
+        )
     
     def calculate_quality_score(self, impressions_achieved: int, campaign_reach: int) -> float:
         """
@@ -133,7 +175,7 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
+    server = True  # Set to True to connect to server, False for local testing
     name = "MyBiddingAgent"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port

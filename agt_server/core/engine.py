@@ -128,6 +128,8 @@ class Engine:
                             # Log error but continue - agent might not need valuations
                             print(f"Warning: Could not set valuations for agent {i}: {e}")
                             pass
+
+
             
             # get actions from all agents
             actions = {}
@@ -138,6 +140,37 @@ class Engine:
                 actions[i] = action
                 if hasattr(agent, 'action_history'):
                     agent.action_history.append(action)
+
+
+
+
+            
+            #  CONVERT DICT ONLY FOR ADX GAMES
+            converted_actions = {}
+            for agent_id, action in actions.items():
+                if isinstance(action, dict) and 'campaign_id' in action and 'bid_entries' in action:
+
+
+                    #two day version
+                    if 'day' in action:
+                        from core.stage.AdxTwoDayStage import TwoDaysBidBundle
+                        converted_actions[agent_id] = TwoDaysBidBundle.from_dict(action)
+                    #ONE DAY VERSION
+                    else:
+                        # This is a serialized OneDayBidBundle - convert it back
+                        from core.game.AdxOneDayGame import OneDayBidBundle
+                        converted_actions[agent_id] = OneDayBidBundle.from_dict(action)
+
+
+
+                else:
+                    # This is already an object or a different type of action
+                    converted_actions[agent_id] = action
+
+
+
+
+
             
             # step the game
             obs, rewards, done, info = self.game.step(actions)
@@ -175,6 +208,9 @@ class Engine:
         # get current observation
         obs = self.game.get_observation()
         
+
+
+
         # For auction games, set valuations on agents before getting actions
         if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
             for i, agent in enumerate(self.agents):
@@ -193,6 +229,9 @@ class Engine:
                         # Log error but continue - agent might not need valuations
                         print(f"Warning: Could not set valuations for agent {i}: {e}")
                         pass
+        
+
+
         
         # get actions from all agents
         actions = {}
@@ -385,13 +424,28 @@ class Engine:
                 if hasattr(agent, 'action_history'):
                     agent.action_history.append(action)
             
-            # Convert dictionary actions back to objects if needed (for ADX games)
+
+
+
+
+            #  CONVERT DICT ONLY FOR ADX GAMES
             converted_actions = {}
             for agent_id, action in actions.items():
                 if isinstance(action, dict) and 'campaign_id' in action and 'bid_entries' in action:
-                    # This is a serialized OneDayBidBundle - convert it back
-                    from core.game.AdxOneDayGame import OneDayBidBundle
-                    converted_actions[agent_id] = OneDayBidBundle.from_dict(action)
+
+
+                    #two day version
+                    if 'day' in action:
+                        from core.stage.AdxTwoDayStage import TwoDaysBidBundle
+                        converted_actions[agent_id] = TwoDaysBidBundle.from_dict(action)
+                    #ONE DAY VERSION
+                    else:
+                        # This is a serialized OneDayBidBundle - convert it back
+                        from core.game.AdxOneDayGame import OneDayBidBundle
+                        converted_actions[agent_id] = OneDayBidBundle.from_dict(action)
+
+
+
                 else:
                     # This is already an object or a different type of action
                     converted_actions[agent_id] = action

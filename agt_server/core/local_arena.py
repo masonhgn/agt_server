@@ -110,7 +110,7 @@ class LocalArena:
             for g in grouping: g.reset() #initialize
             
             #we'll run a game between the pairing
-            game = self.game_class()  # type: ignore
+            game = self.game_class(num_players=len(grouping)) 
 
             try:
                 engine = Engine(game, grouping, rounds=self.num_rounds, game_title=self.game_title)
@@ -261,7 +261,7 @@ class LocalArena:
             # create engine for this game
             from core.engine import Engine
             # Create game with the correct number of agents
-            game = self.game_class(num_agents=len(grouping))
+            game = self.game_class(num_players=len(grouping))
             engine = Engine(
                 game=game,
                 agents=grouping,
@@ -271,27 +271,25 @@ class LocalArena:
             
             # run the game asynchronously
             arena_print(f"game {game_num}: {[g.name for g in grouping]}")
-            try:
-                rewards = await engine.run_async(self.num_rounds)
-                arena_print(f"game {game_num} completed: {rewards}")
+
+            rewards = await engine.run_async(self.num_rounds)
+            arena_print(f"game {game_num} completed: {rewards}")
+            
+            # update results
+            for i, agent in enumerate(grouping):
+                # Store the reward for this agent in this game
+                self.agent_stats[agent.name][f"game_{game_num}"] = rewards[i]
                 
-                # update results
-                for i, agent in enumerate(grouping):
-                    # Store the reward for this agent in this game
-                    self.agent_stats[agent.name][f"game_{game_num}"] = rewards[i]
-                    
-                    # For pairwise results, we need to think about this differently
-                    # The current logic is wrong - it's adding the same reward multiple times
-                    # Let's just store the total reward for each agent
-                    if 'total_reward' not in self.agent_stats[agent.name]:
-                        self.agent_stats[agent.name]['total_reward'] = 0
-                    self.agent_stats[agent.name]['total_reward'] += rewards[i]
-                
-                game_num += 1
-                
-            except Exception as e:
-                arena_print(f"error in game {game_num}: {e}")
-                continue
+                # For pairwise results, we need to think about this differently
+                # The current logic is wrong - it's adding the same reward multiple times
+                # Let's just store the total reward for each agent
+                if 'total_reward' not in self.agent_stats[agent.name]:
+                    self.agent_stats[agent.name]['total_reward'] = 0
+                self.agent_stats[agent.name]['total_reward'] += rewards[i]
+            
+            game_num += 1
+            
+
         
         # create results dataframe
         results_data = []

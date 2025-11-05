@@ -43,8 +43,41 @@ class TwoDaysBidBundle:
                     "spending_limit": entry.spending_limit
                 }
                 for entry in self.bid_entries
-            ]
+            ],
+            "total_spent": self.total_spent,
+            "impressions_won": {segment.value: count for segment, count in self.impressions_won.items()},
+            "segment_spending": {segment.value: amount for segment, amount in self.segment_spending.items()}
         }
+    
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'TwoDaysBidBundle':
+        """Create from dictionary."""
+        # Convert bid_entries back to SimpleBidEntry objects
+        bid_entries = []
+        for entry_data in data['bid_entries']:
+            bid_entries.append(SimpleBidEntry.from_dict(entry_data))
+        
+        # Convert impressions_won and segment_spending back to MarketSegment keys
+        impressions_won = {}
+        for segment_str, count in data['impressions_won'].items():
+            impressions_won[MarketSegment(segment_str)] = count
+            
+        segment_spending = {}
+        for segment_str, amount in data['segment_spending'].items():
+            segment_spending[MarketSegment(segment_str)] = amount
+        
+        return cls(
+            day=data['day'],
+            campaign_id=data['campaign_id'],
+            day_limit=data['day_limit'],
+            bid_entries=bid_entries,
+            total_spent=data['total_spent'],
+            impressions_won=impressions_won,
+            segment_spending=segment_spending
+        )
+    
+    
 
 
 class AdxTwoDayStage(BaseStage):
@@ -133,7 +166,7 @@ class AdxTwoDayStage(BaseStage):
             done = False
         else:
             # Day 2 complete, game finished
-            obs = {pid: {} for pid in range(self.n)}
+            obs = {pid: {'none':'none'} for pid in range(self.n)}
             done = True
             self._done = True
             print(f"[ADX_TWO_DAY] Day 2 complete, game finished")
