@@ -1,2 +1,13 @@
 my_adx_agent.py
 # Main agent file: MyTwoDaysTwoCampaignsAgent class
+
+
+
+
+
+checklist
+
+- remove debugging statements
+- change writeup for lab 2
+- publish package
+- send text for how to publish

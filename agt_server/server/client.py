@@ -319,7 +319,7 @@ class AGTClient:
         elif msg_type == "agent_setup":
             # Handle agent setup from async engine
             game_type = message.get("game_type", "unknown")
-            print(f"[CLIENT DEBUG] {self.agent.name}: Received agent setup for {game_type}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Received agent setup for {game_type}")
             
             # Reset the agent for a new game
             if hasattr(self.agent, 'reset'):
@@ -334,7 +334,7 @@ class AGTClient:
         elif msg_type == "agent_valuations":
             # Handle valuations from async engine (for auction games)
             valuations = message.get("valuations", [])
-            print(f"[CLIENT DEBUG] {self.agent.name}: Received valuations: {valuations}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Received valuations: {valuations}")
             
             # Set valuations on the agent
             if hasattr(self.agent, 'set_valuations'):
@@ -350,7 +350,7 @@ class AGTClient:
             done = message.get("done", False)
             info = message.get("info", {})
             
-            print(f"[CLIENT DEBUG] {self.agent.name}: Received agent update - reward: {reward}, done: {done}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Received agent update - reward: {reward}, done: {done}")
             
             # Update the agent with the results
             if hasattr(self.agent, 'update'):
@@ -362,7 +362,7 @@ class AGTClient:
         elif msg_type == "request_action":
             # Handle action request silently unless verbose
             observation = message.get("observation", {})
-            print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
             
             
             # # Special handling for auction games - setup agent and set valuations
@@ -379,7 +379,7 @@ class AGTClient:
             
             
             action = self.agent.get_action(observation)
-            print(f"[CLIENT DEBUG] {self.agent.name}: Sending action: {action}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Sending action: {action}")
             
             # For ADX games, we need to serialize the OneDayBidBundle to a simple format
             if hasattr(action, 'to_dict'):
@@ -406,7 +406,7 @@ class AGTClient:
             # Handle round result
             reward = message.get("reward", 0)
             info = message.get("info", {})
-            print(f"[CLIENT DEBUG] {self.agent.name}: Received round result - reward: {reward}, info: {info}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Received round result - reward: {reward}, info: {info}")
             # Note: The server already called update() on the agent, so we don't need to call it again here
             round_num = message.get('round', 0)
             self.log(f"Round {round_num}: +{reward:.2f} points", "info")
@@ -415,12 +415,12 @@ class AGTClient:
             # Handle waiting message from server
             status = message.get("status", "unknown")
             message_text = message.get("message_text", "Waiting for tournament...")
-            print(f"[CLIENT DEBUG] {self.agent.name}: {message_text}")
-            print(f"[CLIENT DEBUG] {self.agent.name}: Status: {status}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: {message_text}")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Status: {status}")
             self.log(f"Status: {status} - {message_text}", "info")
             
             # Continue waiting for tournament messages
-            print(f"[CLIENT DEBUG] {self.agent.name}: Ready for tournament messages")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Ready for tournament messages")
 
         elif msg_type == "tournament_complete":
             # Handle tournament completion with JSON results
@@ -428,8 +428,8 @@ class AGTClient:
             tournament_results = results.get("tournament_results", [])
             summary = results.get("summary", {})
             
-            print(f"[CLIENT DEBUG] {self.agent.name}: Tournament completed!")
-            print(f"[CLIENT DEBUG] {self.agent.name}: Results: {len(tournament_results)} players")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Tournament completed!")
+            #print(f"[CLIENT DEBUG] {self.agent.name}: Results: {len(tournament_results)} players")
             
             # Display results
             print("\n" + "="*50)

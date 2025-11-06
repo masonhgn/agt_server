@@ -55,15 +55,10 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
             self.quality_score = observation["campaign"]["qc"]
             # print(f"[DEBUG] AggressiveAdXAgent: Found qc in campaign: {self.quality_score}")
         else:
-            print(f"[DEBUG] AggressiveAdXAgent: No qc found, using default: {self.quality_score}")
+            print(f" No qc found, using default: {self.quality_score}")
         
-        # print(f"[DEBUG] AggressiveAdXAgent: Final state - campaign_day1 is None: {self.campaign_day1 is None}")
-        # print(f"[DEBUG] AggressiveAdXAgent: Final state - campaign_day2 is None: {self.campaign_day2 is None}")
-        if self.campaign_day1:
-            print(f"[DEBUG] AggressiveAdXAgent: campaign_day1 details: id={self.campaign_day1.id}, segment={self.campaign_day1.market_segment}, reach={self.campaign_day1.reach}, budget={self.campaign_day1.budget}")
-        if self.campaign_day2:
-            print(f"[DEBUG] AggressiveAdXAgent: campaign_day2 details: id={self.campaign_day2.id}, segment={self.campaign_day2.market_segment}, reach={self.campaign_day2.reach}, budget={self.campaign_day2.budget}")
-        
+
+
         return self.get_bid_bundle(day)
 
     def get_bid_bundle(self, day: int) -> TwoDaysBidBundle:
@@ -156,7 +151,7 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = False  # Set to True to connect to server, False for local testing
+    server = True  # Set to True to connect to server, False for local testing
     name = "hrithik"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port

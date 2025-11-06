@@ -6,7 +6,7 @@
     "allowed_games": ["adx_twoday"],
     "name": "Ad Exchange (Two Day)",
     "game_class": "AdxTwoDayGame",
-    "num_players": 2,
-    "num_rounds": 2,
+    "num_players": 10,
+    "num_rounds": 10,
     "description": "Two-day ad exchange game"
 } 
