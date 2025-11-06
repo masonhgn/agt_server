@@ -191,7 +191,8 @@ class AdxTwoDayStage(BaseStage):
         segment = random.choice(eligible_segments)
         avg_users = self.USER_FREQUENCIES.get(segment, 1000)
         reach = int(avg_users * random.choice(self.REACH_FACTORS))
-        budget = float(reach)  # $1 per impression
+        
+        budget = float(reach) if day == 1 else float(reach) * self.qc_score
         return Campaign(id=player_id * 10 + day, market_segment=segment, reach=reach, budget=budget)
 
     def _generate_user_arrivals(self):
