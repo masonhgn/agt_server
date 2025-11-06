@@ -24,9 +24,11 @@ class AggressiveAdXAgent(BaseAgent):
     def get_action(self, observation: dict = None) -> TwoDaysBidBundle:
         """Get the agent's action based on the current observation."""
 
-        self.campaign_day1 = Campaign.from_dict(observation["campaign_day1"])
-        self.campaign_day2 = Campaign.from_dict(observation["campaign_day2"])
         day = observation["day"]
+        if day == 1:
+            self.campaign_day1 = Campaign.from_dict(observation["campaign_day1"])
+        elif day == 2:
+            self.campaign_day2 = Campaign.from_dict(observation["campaign_day2"])
                 
         # Check for quality score in both locations
         if "qc" in observation:

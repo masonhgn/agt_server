@@ -131,7 +131,7 @@ class AdxTwoDayStage(BaseStage):
         self.user_arrivals: List[MarketSegment] = []
         
         # Generate campaigns and user arrivals
-        self._generate_campaigns()
+        self._generate_campaigns(day=1)
         self._generate_user_arrivals()
 
     def legal_actions(self, player_id: PlayerId) -> str:
@@ -173,16 +173,23 @@ class AdxTwoDayStage(BaseStage):
         
         return obs, rewards, done, info
 
-    def _generate_campaigns(self):
+    def _generate_campaigns(self, day: int):
         """Generate campaigns for both days."""
-        self.campaigns_day1.clear()
-        self.campaigns_day2.clear()
-        
-        for player_id in range(self.n):
-            # Generate day 1 campaign
-            self.campaigns_day1[player_id] = self._generate_campaign(player_id, day=1)
-            # Generate day 2 campaign  
-            self.campaigns_day2[player_id] = self._generate_campaign(player_id, day=2)
+
+        if day == 1:
+            
+            self.campaigns_day1.clear()
+
+            for player_id in range(self.n):
+                # Generate day 1 campaign
+                self.campaigns_day1[player_id] = self._generate_campaign(player_id, day=1)
+
+        else:
+            self.campaigns_day2.clear()
+            
+            for player_id in range(self.n):
+
+                self.campaigns_day2[player_id] = self._generate_campaign(player_id, day=2)
 
     def _generate_campaign(self, player_id: int, day: int) -> Campaign:
         """Generate a campaign for a specific player and day."""
@@ -298,18 +305,23 @@ class AdxTwoDayStage(BaseStage):
     def _calculate_qc_multiplier(self, info: InfoDict) -> float:
         """Calculate QC multiplier for day 2 based on day 1 performance."""
         # Use the QC score from the first player (they should all be similar)
+
         if info and 0 in info and "qc" in info[0]:
+            
             return info[0]["qc"]
         return 1.0
 
     def _prepare_day2_observations(self) -> ObsDict:
         """Prepare observations for day 2."""
+
+        self._generate_campaigns(day=2)
+
         obs = {}
         for i in range(self.n):
             obs[i] = {
                 "day": 2,
                 "qc": self.qc_multiplier,
-                "campaign_day1": self._campaign_to_dict(self.campaigns_day1[i]),
+                # "campaign_day1": self._campaign_to_dict(self.campaigns_day1[i]),
                 "campaign_day2": self._campaign_to_dict(self.campaigns_day2[i])
             }
         return obs

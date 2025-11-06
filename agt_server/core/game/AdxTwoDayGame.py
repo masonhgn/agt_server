@@ -39,7 +39,7 @@ class AdxTwoDayGame(BaseGame):
             obs[i] = {
                 "day": 1,
                 "campaign_day1": self._campaign_to_dict(self.stage.get_campaigns_day1()[i]),
-                "campaign_day2": self._campaign_to_dict(self.stage.get_campaigns_day2()[i])
+                # "campaign_day2": self._campaign_to_dict(self.stage.get_campaigns_day2()[i])
             }
         
         return cast(ObsDict, obs)
