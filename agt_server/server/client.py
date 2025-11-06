@@ -362,7 +362,7 @@ class AGTClient:
         elif msg_type == "request_action":
             # Handle action request silently unless verbose
             observation = message.get("observation", {})
-            #print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
+            print(f"[CLIENT DEBUG] {self.agent.name}: Received observation: {observation}")
             
             
             # # Special handling for auction games - setup agent and set valuations

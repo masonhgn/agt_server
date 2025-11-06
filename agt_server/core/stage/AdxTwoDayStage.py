@@ -76,9 +76,6 @@ class TwoDaysBidBundle:
             impressions_won=impressions_won,
             segment_spending=segment_spending
         )
-    
-    
-
 
 class AdxTwoDayStage(BaseStage):
     """
@@ -221,11 +218,6 @@ class AdxTwoDayStage(BaseStage):
             self._run_single_auction(user_segment, auction_num)
 
 
-
-
-
-
-
     def _run_single_auction(self, user_segment: MarketSegment, auction_num: int):
         """Run a single auction for a user segment."""
         # Get rival price
@@ -298,7 +290,7 @@ class AdxTwoDayStage(BaseStage):
         R = reach_goal
         
         x_over_R = x / R
-        quality_score = (2 / a) * (math.atan(a * (x_over_R - b)) - math.atan(-b)) + 1
+        quality_score = (2 / a) * (math.atan(a * (x_over_R) - b) - math.atan(-b)) 
         
         return max(0.0, quality_score)
 
@@ -307,7 +299,6 @@ class AdxTwoDayStage(BaseStage):
         # Use the QC score from the first player (they should all be similar)
 
         if info and 0 in info and "qc" in info[0]:
-            
             return info[0]["qc"]
         return 1.0
 

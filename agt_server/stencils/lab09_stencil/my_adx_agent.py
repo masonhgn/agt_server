@@ -97,7 +97,7 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
             return 0.0
             
         x_over_R = x / R
-        quality_score = (2 / a) * (math.atan(a * (x_over_R - b)) - math.atan(-b)) + 1
+        quality_score = (2 / a) * (math.atan(a * (x_over_R) - b) - math.atan(-b))
         
         return max(0.0, quality_score)  # Ensure non-negative
     

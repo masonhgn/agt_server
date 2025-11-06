@@ -60,6 +60,8 @@ agt_server/core/agents/lab08/__init__.py
 agt_server/core/agents/lab08/aggressive_bidding_agent.py
 agt_server/core/agents/lab08/basic_bidding_agent.py
 agt_server/core/agents/lab08/random_agent.py
+agt_server/core/agents/lab09/aggressive_agent.py
+agt_server/core/agents/lab09/random_agent.py
 agt_server/core/game/AdxOneDayGame.py
 agt_server/core/game/AdxTwoDayGame.py
 agt_server/core/game/AuctionGame.py
@@ -1104,10 +1106,7 @@ agt_server/stencils/lab07_stencil/solutions/single_good_histogram.py
 agt_server/stencils/lab07_stencil/solutions/test_auction_agents.py
 agt_server/stencils/lab08_stencil/my_adx_agent.py
 agt_server/stencils/lab09_stencil/my_adx_agent.py
-agt_server/stencils/lab09_stencil/solutions/aggressive_agent.py
-agt_server/stencils/lab09_stencil/solutions/conservative_agent.py
-agt_server/stencils/lab09_stencil/solutions/example_solution.py
-agt_server/stencils/lab09_stencil/solutions/random_agent.py
+agt_server/stencils/lab09_stencil/solutions/my_adx_agent.py
 agt_server/tests/__init__.py
 agt_server/tests/test_lab_integration.py
 agt_server/tests/test_server.py
