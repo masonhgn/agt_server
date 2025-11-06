@@ -192,7 +192,7 @@ class AdxTwoDayStage(BaseStage):
         avg_users = self.USER_FREQUENCIES.get(segment, 1000)
         reach = int(avg_users * random.choice(self.REACH_FACTORS))
         
-        budget = float(reach) if day == 1 else float(reach) * self.qc_score
+        budget = float(reach) if day == 1 else float(reach) * self.qc_multiplier
         return Campaign(id=player_id * 10 + day, market_segment=segment, reach=reach, budget=budget)
 
     def _generate_user_arrivals(self):
@@ -212,6 +212,12 @@ class AdxTwoDayStage(BaseStage):
         # Run auctions
         for auction_num, user_segment in enumerate(self.user_arrivals[:self.n_auctions]):
             self._run_single_auction(user_segment, auction_num)
+
+
+
+
+
+
 
     def _run_single_auction(self, user_segment: MarketSegment, auction_num: int):
         """Run a single auction for a user segment."""
