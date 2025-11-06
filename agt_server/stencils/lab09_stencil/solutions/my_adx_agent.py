@@ -40,10 +40,12 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
 
     def get_action(self, observation: dict = None) -> TwoDaysBidBundle:
         """Get the agent's action based on the current observation."""
-
-        self.campaign_day1 = Campaign.from_dict(observation["campaign_day1"])
-        self.campaign_day2 = Campaign.from_dict(observation["campaign_day2"])
         day = observation["day"]
+        if day == 1:
+            self.campaign_day1 = Campaign.from_dict(observation["campaign_day1"])
+        elif day == 2:
+            self.campaign_day2 = Campaign.from_dict(observation["campaign_day2"])
+        
                 
         # Check for quality score in both locations
         if "qc" in observation:
@@ -154,7 +156,7 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
 
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
-    server = True  # Set to True to connect to server, False for local testing
+    server = False  # Set to True to connect to server, False for local testing
     name = "hrithik"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port
