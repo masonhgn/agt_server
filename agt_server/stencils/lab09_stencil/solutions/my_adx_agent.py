@@ -32,15 +32,11 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
     """
     
     def __init__(self, name: str = "MyTwoDaysAdxAgent"):
-        super().__init__("TODO: Enter your name or ID here")
+        super().__init__(name)
         self.campaign_day1 = None  # Will be set by the game environment
         self.campaign_day2 = None  # Will be set by the game environment
         self.quality_score = 1.0  # Quality score from day 1 (affects day 2 budget)
         self.game_title = "adx_twoday"
-
-
-
-
 
     def get_action(self, observation: dict = None) -> TwoDaysBidBundle:
         """Get the agent's action based on the current observation."""
@@ -67,18 +63,6 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
             print(f"[DEBUG] AggressiveAdXAgent: campaign_day2 details: id={self.campaign_day2.id}, segment={self.campaign_day2.market_segment}, reach={self.campaign_day2.reach}, budget={self.campaign_day2.budget}")
         
         return self.get_bid_bundle(day)
-    
-
-
-
-
-
-
-
-
-
-
-
 
     def get_bid_bundle(self, day: int) -> TwoDaysBidBundle:
         """
@@ -113,8 +97,6 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
                 budget_usage = 0.8
         else:
             raise ValueError("Day must be 1 or 2")
-
-
 
         if campaign is None:
             raise ValueError(f"Campaign is not set for day {day}")
@@ -170,13 +152,10 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
         """Get the campaign assigned for the second day."""
         return self.campaign_day2
 
-
-
-
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
     server = True  # Set to True to connect to server, False for local testing
-    name = "MyBiddingAgent"  # Agent name
+    name = "hrithik"  # Agent name
     host = "localhost"  # Server host
     port = 8080  # Server port
     verbose = False  # Enable verbose debug output
@@ -187,8 +166,6 @@ if __name__ == "__main__":
         async def main():
             # Create agent and adapter
             agent = MyTwoDaysTwoCampaignsAgent(name=name)
-            
-
             # Connect to server
             await connect_agent_to_server(agent, game, name, host, port, verbose)
         
@@ -199,11 +176,8 @@ if __name__ == "__main__":
         # Test the basic bidding agent locally
         print("Testing BasicBiddingAgent locally...")
         print("=" * 50)
-        
-            
-        
         # Create all agents for testing
-        agent = MyTwoDaysTwoCampaignsAgent(name="MyTestAgent")
+        agent = MyTwoDaysTwoCampaignsAgent(name=name)
         opponent1 = AggressiveAdXAgent()
         random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(8)]
         

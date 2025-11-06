@@ -38,10 +38,6 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
         self.quality_score = 1.0  # Quality score from day 1 (affects day 2 budget)
         self.game_title = "adx_twoday"
 
-
-
-
-
     def get_action(self, observation: dict = None) -> TwoDaysBidBundle:
         """Get the agent's action based on the current observation."""
 
@@ -67,18 +63,6 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
             print(f"[DEBUG] AggressiveAdXAgent: campaign_day2 details: id={self.campaign_day2.id}, segment={self.campaign_day2.market_segment}, reach={self.campaign_day2.reach}, budget={self.campaign_day2.budget}")
         
         return self.get_bid_bundle(day)
-    
-
-
-
-
-
-
-
-
-
-
-
 
     def get_bid_bundle(self, day: int) -> TwoDaysBidBundle:
         """
@@ -129,8 +113,6 @@ class MyTwoDaysTwoCampaignsAgent(BaseAgent):
         return self.campaign_day2
 
 
-
-
 if __name__ == "__main__":
     # Configuration variables - modify these as needed
     server = False  # Set to True to connect to server, False for local testing
@@ -145,8 +127,6 @@ if __name__ == "__main__":
         async def main():
             # Create agent and adapter
             agent = MyTwoDaysTwoCampaignsAgent(name=name)
-            
-
             # Connect to server
             await connect_agent_to_server(agent, game, name, host, port, verbose)
         
@@ -157,14 +137,10 @@ if __name__ == "__main__":
         # Test the basic bidding agent locally
         print("Testing BasicBiddingAgent locally...")
         print("=" * 50)
-        
-            
-        
         # Create all agents for testing
-        agent = MyTwoDaysTwoCampaignsAgent(name="MyTestAgent")
+        agent = MyTwoDaysTwoCampaignsAgent(name=name)
         opponent1 = AggressiveAdXAgent()
         random_agents = [RandomAdXAgent(f"RandomAgent_{i}") for i in range(8)]
-        
         # Create arena and run tournament
         agents = [agent, opponent1] + random_agents
         arena = LocalArena(
@@ -178,7 +154,6 @@ if __name__ == "__main__":
             verbose=True
         )
         arena.run_tournament()
-        
         print("\nLocal test completed!")
 
 # Export for server testing

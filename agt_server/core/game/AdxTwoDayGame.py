@@ -75,7 +75,6 @@ class AdxTwoDayGame(BaseGame):
             "reach": campaign.reach,
             "budget": campaign.budget
         }
-    
 
     @classmethod
     def _campaign_from_dict(self, campaign: dict) -> Dict:
