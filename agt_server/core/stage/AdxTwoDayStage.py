@@ -59,11 +59,11 @@ class TwoDaysBidBundle:
             bid_entries.append(SimpleBidEntry.from_dict(entry_data))
         
         # Convert impressions_won and segment_spending back to MarketSegment keys
-        impressions_won = {}
+        impressions_won = defaultdict(int)
         for segment_str, count in data['impressions_won'].items():
             impressions_won[MarketSegment(segment_str)] = count
             
-        segment_spending = {}
+        segment_spending = defaultdict(float)
         for segment_str, amount in data['segment_spending'].items():
             segment_spending[MarketSegment(segment_str)] = amount
         
