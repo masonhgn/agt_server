@@ -11,7 +11,7 @@ from core.game import PlayerId, ObsDict, ActionDict, RewardDict, InfoDict
 from core.game.market_segment import MarketSegment
 from core.game.bid_entry import SimpleBidEntry
 from core.game.campaign import Campaign
-
+from collections import defaultdict
 
 @dataclass
 class TwoDaysBidBundle:
@@ -22,8 +22,8 @@ class TwoDaysBidBundle:
     bid_entries: List[SimpleBidEntry]
     # Internal tracking for simulation
     total_spent: float = 0.0
-    impressions_won: Dict[MarketSegment, int] = field(default_factory=dict)
-    segment_spending: Dict[MarketSegment, float] = field(default_factory=dict)
+    impressions_won: Dict[MarketSegment, int] = field(default_factory=lambda: defaultdict(int))
+    segment_spending: Dict[MarketSegment, float] = field(default_factory=lambda: defaultdict(float))
 
     def __post_init__(self):
         for entry in self.bid_entries:
