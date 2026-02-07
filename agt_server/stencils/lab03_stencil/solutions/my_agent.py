@@ -11,9 +11,10 @@ import argparse
 import numpy as np
 
 # Add the core directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from q_learning import QLearning
+from server.connect_stencil import connect_agent_to_server
 
 
 class MyChickenAgentSolution(QLearning):
@@ -128,23 +129,11 @@ if __name__ == "__main__":
     if server:
         # Server mode - connect to competition server
         print(f"Connecting to server at {host}:{port}")
-        
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
+
         async def main():
-            # Create agent and adapter
             agent = MyChickenAgentSolution(agent_name)
-            server_agent = create_adapter(agent, game)
-            
-            # Connect to server
-            await connect_agent_to_server(server_agent, game, agent_name, host, port, verbose)
-        
-        # Run the async main function
+            await connect_agent_to_server(agent, game, agent_name, host, port, verbose)
+
         asyncio.run(main())
         
     else:

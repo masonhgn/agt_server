@@ -1,24 +1,26 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Set, Callable, Any
 import random
+import time
 
 
 class BaseAuctionAgent(ABC):
     """
     Base class for auction agents.
-    
+
     Auction agents participate in simultaneous sealed bid auctions.
     They receive valuations for goods and must submit bids.
     """
-    
+
     def __init__(self, name: str | None = None):
         """
         Initialize the auction agent.
-        
+
         Args:
             name: Name of the agent
         """
         self.name = name or f"AuctionAgent_{random.randint(1000, 9999)}"
+        self.device_id = f"{self.name}_{int(time.time() * 1000000)}_{random.randint(1000, 9999)}"
         self.goods = set()
         self.kth_price = 1
         self.current_round = 0
@@ -33,14 +35,23 @@ class BaseAuctionAgent(ABC):
         self._goods_to_index = {}
         self._index_to_goods = {}
         
-    def setup(self, goods: Set[str], kth_price: int = 1):
+    def setup(self, goods: Set[str] = None, kth_price: int = 1):
         """
         Set up the agent with game parameters.
-        
+
         Args:
-            goods: Set of goods available for auction
+            goods: Set of goods available for auction (None for server-mode no-op)
             kth_price: Which price to use (1st price = 1, 2nd price = 2, etc.)
         """
+        # when called with no args (server mode agent_setup), just reset round state
+        if goods is None:
+            self.current_round = 0
+            self.bid_history = []
+            self.utility_history = []
+            self.allocation_history = []
+            self.price_history = []
+            return
+
         self.goods = goods
         self.kth_price = kth_price
         self.current_round = 0
@@ -48,8 +59,8 @@ class BaseAuctionAgent(ABC):
         self.utility_history = []
         self.allocation_history = []
         self.price_history = []
-        
-        # Initialize valuation-related attributes
+
+        # initialize valuation-related attributes
         self.valuations = [0] * len(goods)
         self._goods_to_index = {good: idx for idx, good in enumerate(goods)}
         self._index_to_goods = {idx: good for good, idx in self._goods_to_index.items()}
@@ -58,14 +69,15 @@ class BaseAuctionAgent(ABC):
         """
         Set the agent's valuations for the current round.
         This is called by the game each round.
-        
+
         Args:
             valuations: List of valuations for each good (in order)
         """
         if not isinstance(valuations, list):
             raise TypeError("Valuations must be a list")
-        
-        if len(valuations) != len(self.goods):
+
+        # in server mode, goods may not be set yet — store raw valuations
+        if self.goods and len(valuations) != len(self.goods):
             raise ValueError(f"Expected {len(self.goods)} valuations, got {len(valuations)}")
         
         self.valuations = valuations.copy()

@@ -1,0 +1,12 @@
+{
+    "server_name": "AGT Lab 2 - Battle of the Sexes II",
+    "max_players": 50,
+    "timeout": 30,
+    "save_results": true,
+    "allowed_games": ["bosii"],
+    "name": "Battle of the Sexes II",
+    "game_class": "BOSIIGame",
+    "num_players": 2,
+    "num_rounds": 100,
+    "description": "Battle of the Sexes with Incomplete Information"
+}

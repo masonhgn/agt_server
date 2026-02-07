@@ -14,6 +14,7 @@ import random
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from core.agents.common.chicken_agent import ChickenAgent
+from server.connect_stencil import connect_agent_to_server
 
 
 class CompetitionAgent(ChickenAgent):
@@ -81,53 +82,31 @@ if __name__ == "__main__":
     game = "chicken"  # Game type (hardcoded for this agent)
     
     if server:
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
         async def main():
-            # Generate unique name if not provided
-            if not name:
-                import random
-                agent_name = f"CompetitionAgent_{random.randint(1000, 9999)}"
-            else:
-                agent_name = name
-                
-            # Create agent and adapter
-            agent = CompetitionAgent(agent_name)
-            server_agent = create_adapter(agent, game)
-            
-            # Connect to server
-            await connect_agent_to_server(server_agent, game, agent_name, host, port, verbose)
-        
-        # Run the async main function
+            agent = CompetitionAgent(name)
+            await connect_agent_to_server(agent, game, name, host, port, verbose)
+
         asyncio.run(main())
     else:
         # Test your agent locally
         print("Testing Chicken Competition Agent locally...")
         print("=" * 50)
-        
-        # Import opponent agents and arena for testing
-        from core.agents.lab03.swerve_agent import SwerveAgent
-        from core.agents.lab03.continue_agent import ContinueAgent
-        from core.agents.lab03.random_chicken_agent import RandomChickenAgent
-        from core.local_arena import LocalArena
+
+        from core.engine import Engine
         from core.game.ChickenGame import ChickenGame
-        
-        # Create agents for testing
+        from core.agents.lab03.random_chicken_agent import RandomChickenAgent
+
         agent = CompetitionAgent("CompetitionAgent")
-        opponent1 = SwerveAgent("SwerveAgent")
-        opponent2 = ContinueAgent("ContinueAgent")
-        opponent3 = RandomChickenAgent("RandomAgent")
-        
-        # Create arena and run tournament
-        agents = [agent, opponent1, opponent2, opponent3]
-        arena = LocalArena(ChickenGame, agents, num_rounds=1000, verbose=True)
-        arena.run_tournament()
-        
+        opponent = RandomChickenAgent("RandomAgent")
+
+        agents = [agent, opponent]
+        game_instance = ChickenGame(rounds=1000)
+        engine = Engine(game_instance, agents, rounds=1000)
+        final_rewards = engine.run()
+
+        for i, a in enumerate(agents):
+            print(f"{a.name}: {final_rewards[i]:.2f}")
+
         print("\nLocal test completed!")
 
 # Export for server testing

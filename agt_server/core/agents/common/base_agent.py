@@ -27,10 +27,9 @@ class BaseAgent(ABC):
         self.reward_history = []
         self.action_history = []
         self.observation_history = []
-        self.game_round = 0  # Current round number
-
-        # self.opp_action_history = []  # Track opponent's actions
-        # self.opp_reward_history = []  # Track opponent's rewards
+        self.game_round = 0
+        self.opp_action_history = []
+        self.opp_reward_history = []
         
     @abstractmethod
     def get_action(self, observation: Dict[str, Any] = None) -> Any:
@@ -76,11 +75,8 @@ class BaseAgent(ABC):
         self.action_history = []
         self.observation_history = []
         self.game_round = 0
-
-
-        #these could be specific to a certain game so idk if we need them in the base agent class. like idk if auctions or games with several opponents need these.
-        # self.opp_action_history = []
-        # self.opp_reward_history = []
+        self.opp_action_history = []
+        self.opp_reward_history = []
 
 
         
@@ -101,69 +97,67 @@ class BaseAgent(ABC):
         
         return stats
     
-    # def get_last_action(self) -> Any:
-    #     """Get the last action taken by this agent."""
-    #     return self.action_history[-1] if self.action_history else None
-    
-    # def get_last_reward(self) -> float | None:
-    #     """Get the last reward received by this agent."""
-    #     return self.reward_history[-1] if self.reward_history else None
-    
-    # def get_action_history(self) -> List[Any]:
-    #     """Get the complete action history."""
-    #     return self.action_history.copy()
-    
-    # def get_reward_history(self) -> List[float]:
-    #     """Get the complete reward history."""
-    #     return self.reward_history.copy()
-    
-    # # New methods for Lab 1 compatibility
-    # def get_util_history(self) -> List[float]:
-    #     """Get the complete utility history (alias for reward_history)."""
-    #     return self.reward_history.copy()
-    
-    # def get_last_util(self) -> float | None:
-    #     """Get the last utility received (alias for last_reward)."""
-    #     return self.reward_history[-1] if self.reward_history else None
-    
-    # def get_opp_action_history(self) -> List[Any]:
-    #     """Get the complete opponent action history."""
-    #     return self.opp_action_history.copy()
-    
-    # def get_opp_reward_history(self) -> List[float]:
-    #     """Get the complete opponent reward history."""
-    #     return self.opp_reward_history.copy()
-    
-    # def get_opp_last_action(self) -> Any:
-    #     """Get the opponent's last action."""
-    #     return self.opp_action_history[-1] if self.opp_action_history else None
-    
-    # def get_opp_last_util(self) -> float | None:
-    #     """Get the opponent's last utility."""
-    #     return self.opp_reward_history[-1] if self.opp_reward_history else None
-    
-    # def calculate_utils(self, a1: Any, a2: Any) -> List[float]:
-    #     """
-    #     Calculate utilities for actions a1 and a2.
-    #     This is a placeholder - subclasses should override this.
-        
-    #     args:
-    #         a1: action of player 1
-    #         a2: action of player 2
-            
-    #     returns:
-    #         [u1, u2] where u1 is player 1's utility and u2 is player 2's utility
-    #     """
-    #     # Default implementation - subclasses should override
-    #     return [0, 0]
-    
-    # def add_opponent_action(self, action: Any):
-    #     """Add opponent's action to history."""
-    #     self.opp_action_history.append(action)
-    
-    # def add_opponent_reward(self, reward: float):
-    #     """Add opponent's reward to history."""
-    #     self.opp_reward_history.append(reward)
+    def get_last_action(self) -> Any:
+        """get the last action taken by this agent."""
+        return self.action_history[-1] if self.action_history else None
+
+    def get_last_reward(self) -> float | None:
+        """get the last reward received by this agent."""
+        return self.reward_history[-1] if self.reward_history else None
+
+    def get_action_history(self) -> List[Any]:
+        """get the complete action history."""
+        return self.action_history.copy()
+
+    def get_reward_history(self) -> List[float]:
+        """get the complete reward history."""
+        return self.reward_history.copy()
+
+    def get_util_history(self) -> List[float]:
+        """get the complete utility history (alias for reward_history)."""
+        return self.reward_history.copy()
+
+    def get_last_util(self) -> float | None:
+        """get the last utility received (alias for last_reward)."""
+        return self.reward_history[-1] if self.reward_history else None
+
+    def get_opp_action_history(self) -> List[Any]:
+        """get the complete opponent action history."""
+        return self.opp_action_history.copy()
+
+    def get_opp_reward_history(self) -> List[float]:
+        """get the complete opponent reward history."""
+        return self.opp_reward_history.copy()
+
+    def get_opp_last_action(self) -> Any:
+        """get the opponent's last action."""
+        return self.opp_action_history[-1] if self.opp_action_history else None
+
+    def get_opp_last_util(self) -> float | None:
+        """get the opponent's last utility."""
+        return self.opp_reward_history[-1] if self.opp_reward_history else None
+
+    def calculate_utils(self, a1: Any, a2: Any) -> List[float]:
+        """
+        calculate utilities for actions a1 and a2.
+        subclasses should override this with game-specific logic.
+
+        args:
+            a1: action of player 1
+            a2: action of player 2
+
+        returns:
+            [u1, u2] where u1 is player 1's utility and u2 is player 2's utility
+        """
+        return [0, 0]
+
+    def add_opponent_action(self, action: Any):
+        """add opponent's action to history."""
+        self.opp_action_history.append(action)
+
+    def add_opponent_reward(self, reward: float):
+        """add opponent's reward to history."""
+        self.opp_reward_history.append(reward)
     
     def __str__(self) -> str:
         return self.name

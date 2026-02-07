@@ -53,7 +53,8 @@ class LocalArena:
         timeout: float = 1.0,
         save_results: bool = True,
         results_path: Optional[str] = None,
-        verbose: bool = True
+        verbose: bool = True,
+        game_kwargs: Optional[Dict[str, Any]] = None
     ):
         self.game_title = game_title
         self.game_class = game_class
@@ -64,14 +65,41 @@ class LocalArena:
         self.save_results = save_results
         self.results_path = results_path or "results"
         self.verbose = verbose
-        
+        self.game_kwargs = game_kwargs or {}
+
         # results tracking
         self.game_results: Dict[str, Dict[str, float]] = {}
         self.agent_stats: Dict[str, Dict[str, Any]] = {}
-        
+
         # create results directory
         if self.save_results:
             Path(self.results_path).mkdir(exist_ok=True)
+
+    def _create_game(self, grouping):
+        """create a game instance with constructor args derived via introspection."""
+        sig = inspect.signature(self.game_class.__init__)
+        params = set(sig.parameters.keys()) - {'self'}
+
+        kwargs = {}
+        if 'rounds' in params:
+            kwargs['rounds'] = self.num_rounds
+        if 'num_rounds' in params:
+            kwargs['num_rounds'] = self.num_rounds
+        if 'num_players' in params:
+            kwargs['num_players'] = len(grouping)
+        if 'num_agents' in params:
+            kwargs['num_agents'] = len(grouping)
+        if 'player_names' in params:
+            kwargs['player_names'] = [a.name for a in grouping]
+        if 'goods' in params:
+            kwargs['goods'] = self.game_kwargs.get('goods', {"A", "B", "C"})
+
+        # let explicit game_kwargs override anything
+        for k, v in self.game_kwargs.items():
+            if k in params:
+                kwargs[k] = v
+
+        return self.game_class(**kwargs)
     
 
 
@@ -110,7 +138,7 @@ class LocalArena:
             for g in grouping: g.reset() #initialize
             
             #we'll run a game between the pairing
-            game = self.game_class(num_players=len(grouping)) 
+            game = self._create_game(grouping)
 
             try:
                 engine = Engine(game, grouping, rounds=self.num_rounds, game_title=self.game_title)
@@ -260,8 +288,7 @@ class LocalArena:
             
             # create engine for this game
             from core.engine import Engine
-            # Create game with the correct number of agents
-            game = self.game_class(num_players=len(grouping))
+            game = self._create_game(grouping)
             engine = Engine(
                 game=game,
                 agents=grouping,

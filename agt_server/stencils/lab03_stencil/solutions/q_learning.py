@@ -104,20 +104,20 @@ class QLearning(BaseAgent):
             Next action to take
         """
         if self.training_mode:
-            # Exploration-exploitation trade-off
+            # exploration-exploitation trade-off
             if np.random.random() < self.exploration_rate:
-                # Exploration: choose random action
-                return np.random.randint(0, self.num_possible_actions)
+                # exploration: choose random action
+                return int(np.random.randint(0, self.num_possible_actions))
             else:
-                # Exploitation: choose best action
-                return np.argmax(self.q[s_prime])
+                # exploitation: choose best action
+                return int(np.argmax(self.q[s_prime]))
         else:
-            # Pure exploitation: always choose best action
-            return np.argmax(self.q[s_prime])
+            # pure exploitation: always choose best action
+            return int(np.argmax(self.q[s_prime]))
     
-    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
+    def update(self, observation=None, action=None, reward=None, done=None, info=None):
         """Update the agent with the reward from the last action."""
-        super().update(reward, info)
+        super().update(observation, action, reward, done, info)
         
         # Update Q-table using the Q-learning update rule
         if reward is not None:

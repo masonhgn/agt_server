@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
 from local_bid import expected_local_bid
+from server.connect_stencil import connect_agent_to_server
 
 class CompetitionAgent(BaseAuctionAgent):
     def __init__(self, name: str | None = None):
@@ -32,19 +33,22 @@ class CompetitionAgent(BaseAuctionAgent):
         super().set_valuations(valuations)
         print(f"[DEBUG] {self.name}: valuations set to: {self.valuations}")
         
-    def setup(self, goods, kth_price=1):
+    def setup(self, goods=None, kth_price=1):
         super().setup(goods, kth_price)
-        
-        print(f"[DEBUG] {self.name}: setup called with goods: {goods}, kth_price: {kth_price}")
-        
-        # Initialize histogram for price prediction
+
+        # skip histogram init when called with no goods (server mode)
+        if goods is None:
+            return
+
+        self._init_histogram(goods)
+
+    def _init_histogram(self, goods):
+        """initialize price histogram for the given goods."""
         self.price_histogram = IndependentHistogram(
             goods,
             bucket_sizes=[5 for _ in range(len(goods))],
             max_bids=[100 for _ in range(len(goods))]
         )
-        
-        print(f"[DEBUG] {self.name}: setup completed, goods: {self.goods}, valuations: {self.valuations}")
 
     def get_action(self, observation):
         """
@@ -54,14 +58,24 @@ class CompetitionAgent(BaseAuctionAgent):
         3. Exploration vs exploitation
         """
         goods = observation.get("goods", set())
-        
-        print(f"[DEBUG] {self.name}: get_action called with goods: {goods}")
-        print(f"[DEBUG] {self.name}: current valuations: {self.valuations}")
-        print(f"[DEBUG] {self.name}: goods to index mapping: {self._goods_to_index}")
-        
+        # convert list to set if needed (json deserializes sets as lists)
+        if isinstance(goods, list):
+            goods = set(goods)
+
         if not goods:
-            # This is a major issue - no goods available
             raise ValueError(f"[ERROR] {self.name}: No goods available in observation: {observation}")
+
+        # lazy init for server mode: first request_action provides goods
+        if not self.goods:
+            kth_price = observation.get("kth_price", 1)
+            self.goods = goods
+            self.kth_price = kth_price
+            self._goods_to_index = {good: idx for idx, good in enumerate(goods)}
+            self._index_to_goods = {idx: good for good, idx in self._goods_to_index.items()}
+            # only reset valuations if not already set by set_valuations()
+            if not self.valuations or len(self.valuations) != len(goods):
+                self.valuations = [0] * len(goods)
+            self._init_histogram(goods)
         
         # Strategy 1: Marginal value bidding with price prediction
         if random.random() > self.exploration_rate and len(self.price_history) > 10:
@@ -187,23 +201,12 @@ if __name__ == "__main__":
     verbose = False  # Enable verbose debug output
     
     if server:
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
-        async def main():
-            # Create agent and adapter
-            agent = CompetitionAgent(name)
-            server_agent = create_adapter(agent, "auction")
-            
-            # Connect to server
-            await connect_agent_to_server(server_agent, "auction", name, host, port, verbose)
-        
-        # Run the async main function
         import asyncio
+
+        async def main():
+            agent = CompetitionAgent(name)
+            await connect_agent_to_server(agent, "auction", name, host, port, verbose)
+
         asyncio.run(main())
     else:
         # Use the proper game infrastructure for local testing

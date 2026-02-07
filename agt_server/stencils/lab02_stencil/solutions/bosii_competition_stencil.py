@@ -8,6 +8,7 @@ from core.agents.common.bosii_agent import BOSIIAgent
 from core.engine import Engine
 from core.game.BOSIIGame import BOSIIGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
+from server.connect_stencil import connect_agent_to_server
 
 
 class BOSIICompetitionAgent(BOSIIAgent):
@@ -189,42 +190,10 @@ if __name__ == "__main__":
     verbose = False  # Enable verbose debug output
     
     if server:
-        # Connect to server
-        print(f"Starting {name} for bosii game...")
-        print(f"Connecting to server at {host}:{port}")
-        
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from client import AGTClient
-        from adapters import create_adapter
-        
         async def main():
-            # Create agent
             agent = BOSIICompetitionAgent(name)
-            
-            # Create adapter for server communication
-            server_agent = create_adapter(agent, "bosii")
-            
-            # Create client and connect
-            client = AGTClient(server_agent, host, port, verbose=verbose)
-            await client.connect()
-            
-            if client.connected:
-                print("Connected to server!")
-                print("Joining bosii game...")
-                
-                if await client.join_game("bosii"):
-                    print("Joined game successfully!")
-                    print("Waiting for tournament to start...")
-                    await client.run()
-                else:
-                    print("Failed to join game")
-            else:
-                print("Failed to connect to server")
-        
-        # Run the async main function
+            await connect_agent_to_server(agent, "bosii", name, host, port, verbose)
+
         asyncio.run(main())
         
     else:

@@ -8,6 +8,7 @@ from core.agents.common.bosii_agent import BOSIIAgent
 from core.engine import Engine
 from core.game.BOSIIGame import BOSIIGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
+from server.connect_stencil import connect_agent_to_server
 
 
 class BOSIICompetitionAgent(BOSIIAgent):
@@ -109,47 +110,26 @@ if __name__ == "__main__":
     verbose = False  # Enable verbose debug output
     
     if server:
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
         async def main():
-            # Create agent and adapter
             agent = BOSIICompetitionAgent(name)
-            server_agent = create_adapter(agent, "bosii")
-            
-            # Connect to server
-            await connect_agent_to_server(server_agent, "bosii", name, host, port, verbose)
-        
-        # Run the async main function
+            await connect_agent_to_server(agent, "bosii", name, host, port, verbose)
+
         asyncio.run(main())
         
     else:
         # Test your agent locally
         print("Testing BOSII Competition Agent locally...")
         print("=" * 50)
-        
-        # Import opponent agent for testing
-        try:
-            from solutions.BOSIIMoodAwareAgent import BOSIICompetitionAgent as BOSIIMoodAwareAgent
-            opponent = BOSIIMoodAwareAgent("MoodAwareAgent")
-        except ImportError:
-            print("Note: Mood-aware agent not found, using random agent instead")
-            from core.agents.lab02.random_bos_agent import RandomBOSAgent
-            opponent = RandomBOSAgent("RandomAgent")
-        
-        # Create agents for testing
+
         agent = BOSIICompetitionAgent("CompetitionAgent")
-        
-        # Create arena and run tournament
-        from core.local_arena import LocalArena
-        from core.game.BOSIIGame import BOSIIGame
-        
+        opponent = RandomBOSAgent("RandomAgent")
+
         agents = [agent, opponent]
-        arena = LocalArena(BOSIIGame, agents, num_rounds=100, verbose=True)
-        arena.run_tournament()
-        
+        game_instance = BOSIIGame(rounds=100)
+        engine = Engine(game_instance, agents, rounds=100)
+        final_rewards = engine.run()
+
+        for i, a in enumerate(agents):
+            print(f"{a.name}: {final_rewards[i]:.2f}")
+
         print("\nLocal test completed!")

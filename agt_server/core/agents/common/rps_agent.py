@@ -1,94 +1,107 @@
-#!/usr/bin/env python3
 """
-RPS agent base class for Rock-Paper-Scissors games.
+base class for rock-paper-scissors agents.
+
+provides common functionality including action constants, payoff matrix,
+and default implementations of strategy methods.
 """
 
+import random
+from typing import Dict, Any, List
 from core.agents.common.base_agent import BaseAgent
 
 
 class RPSAgent(BaseAgent):
-    """Base class for Rock-Paper-Scissors agents."""
-    
+    """
+    base class for rock-paper-scissors agents.
+
+    provides action constants (ROCK=0, PAPER=1, SCISSORS=2), the payoff
+    matrix, and default implementations of predict/optimize methods.
+    """
+
     def __init__(self, name: str = "RPSAgent"):
         super().__init__(name)
         self.ROCK, self.PAPER, self.SCISSORS = 0, 1, 2
         self.actions = [self.ROCK, self.PAPER, self.SCISSORS]
-        
-        # RPS payoff matrix (row player, column player)
-        # R\C  R  P  S
-        # R    0 -1  1
-        # P    1  0 -1
-        # S   -1  1  0
+
+        # payoff matrix: payoff_matrix[my_action][opp_action] = my_reward
         self.payoff_matrix = [
-            [0, -1, 1],   # Rock vs Rock, Paper, Scissors
-            [1, 0, -1],   # Paper vs Rock, Paper, Scissors
-            [-1, 1, 0]    # Scissors vs Rock, Paper, Scissors
+            [0, -1, 1],   # rock vs rock, paper, scissors
+            [1, 0, -1],   # paper vs rock, paper, scissors
+            [-1, 1, 0]    # scissors vs rock, paper, scissors
         ]
-    
-    def calculate_utils(self, a1: int, a2: int) -> list[float]:
+
+    def calculate_utils(self, a1: int, a2: int) -> List[float]:
         """
-        Calculate utilities for actions a1 and a2 in RPS.
-        
+        calculate utilities for actions a1 and a2 in rps.
+
         args:
-            a1: action of player 1 (0=Rock, 1=Paper, 2=Scissors)
-            a2: action of player 2 (0=Rock, 1=Paper, 2=Scissors)
-            
+            a1: action of player 1 (0=rock, 1=paper, 2=scissors)
+            a2: action of player 2 (0=rock, 1=paper, 2=scissors)
+
         returns:
-            [u1, u2] where u1 is player 1's utility and u2 is player 2's utility
+            [u1, u2] where u1 is player 1's utility and u2 is player 2's
         """
         if a1 not in self.actions or a2 not in self.actions:
-            return [0, 0]
-        
-        u1 = self.payoff_matrix[a1][a2]
-        u2 = self.payoff_matrix[a2][a1]  # Opponent's utility is the transpose
+            return [0.0, 0.0]
+
+        u1 = float(self.payoff_matrix[a1][a2])
+        u2 = float(self.payoff_matrix[a2][a1])
         return [u1, u2]
-    
-    def get_action(self, observation=None):
+
+    def get_action(self, observation: Dict[str, Any] = None) -> int:
         """
-        Get the agent's action. Subclasses should override this.
-        
+        get the agent's action. subclasses should override this.
+
         args:
-            observation: current game state observation (optional)
-            
+            observation: current game state observation
+
         returns:
-            the action to take (0=Rock, 1=Paper, 2=Scissors)
+            the action to take (0=rock, 1=paper, 2=scissors)
         """
-        raise NotImplementedError("Subclasses must implement get_action")
-    
-    def update(self, reward=None, info=None):
+        raise NotImplementedError("subclasses must implement get_action")
+
+    def update(self, observation: Dict[str, Any] = None, action: Any = None,
+               reward: float = None, done: bool = None, info: Dict[str, Any] = None):
         """
-        Update the agent with the reward from the last action.
-        
+        update the agent with the reward from the last action.
+
         args:
+            observation: current game state observation
+            action: action taken
             reward: reward received from the last action
-            info: additional information (optional)
+            done: whether the game is done
+            info: additional information
         """
         if reward is not None:
             self.reward_history.append(reward)
-    
+
     def setup(self):
-        """Initialize the agent for a new game."""
+        """initialize the agent for a new game."""
         pass
-    
-    # Default implementations for Lab 1 abstract methods
-    def predict(self) -> list[float]:
+
+    def predict(self) -> List[float]:
         """
-        Default implementation: predict uniform distribution.
-        Subclasses should override this for Fictitious Play.
+        predict opponent's action distribution.
+
+        default implementation returns uniform distribution.
+        subclasses should override for fictitious play or other strategies.
         """
         return [1/3, 1/3, 1/3]
-    
-    def optimize(self, dist: list[float]) -> int:
+
+    def optimize(self, dist: List[float]) -> int:
         """
-        Default implementation: return random action.
-        Subclasses should override this for Fictitious Play.
+        return the best response to a given opponent distribution.
+
+        default implementation returns random action.
+        subclasses should override for strategic play.
         """
-        import random
         return random.choice(self.actions)
-    
-    def calc_move_probs(self) -> list[float]:
+
+    def calc_move_probs(self) -> List[float]:
         """
-        Default implementation: return uniform distribution.
-        Subclasses should override this for Exponential Weights.
+        calculate this agent's mixed strategy probabilities.
+
+        default implementation returns uniform distribution.
+        subclasses should override for exponential weights or other strategies.
         """
         return [1/3, 1/3, 1/3]

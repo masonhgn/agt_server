@@ -54,13 +54,16 @@ class ChickenAgent(BaseAgent):
         """
         raise NotImplementedError("Subclasses must implement get_action")
     
-    def update(self, reward=None, info=None):
+    def update(self, observation=None, action=None, reward=None, done=None, info=None):
         """
-        Update the agent with the reward from the last action.
-        
+        Update the agent with results from the last action.
+
         args:
+            observation: current game state observation
+            action: action taken by this agent
             reward: reward received from the last action
-            info: additional information (optional)
+            done: whether the game is done
+            info: additional information
         """
         if reward is not None:
             self.reward_history.append(reward)

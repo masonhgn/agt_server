@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.agents.lab06.base_auction_agent import BaseAuctionAgent
 from independent_histogram import IndependentHistogram
 from local_bid import expected_local_bid
+from server.connect_stencil import connect_agent_to_server
 
 class CompetitionAgent(BaseAuctionAgent):
     def setup(self, goods, kth_price=1):
@@ -78,23 +79,12 @@ if __name__ == "__main__":
     verbose = False  # Enable verbose debug output
     
     if server:
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
-        async def main():
-            # Create agent and adapter
-            agent = CompetitionAgent(name)
-            server_agent = create_adapter(agent, "auction")
-            
-            # Connect to server
-            await connect_agent_to_server(server_agent, "auction", name, host, port, verbose)
-        
-        # Run the async main function
         import asyncio
+
+        async def main():
+            agent = CompetitionAgent(name)
+            await connect_agent_to_server(agent, "auction", name, host, port, verbose)
+
         asyncio.run(main())
     else:
         # Use the proper game infrastructure for local testing

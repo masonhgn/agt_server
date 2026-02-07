@@ -36,6 +36,9 @@ async def connect_agent_to_server(agent, game_type: str, name: str = None,
         bool: True if connection and game join successful, False otherwise
     """
     try:
+        # Set game_title so the client handshake can report it
+        agent.game_title = game_type
+
         # Set name if provided
         if name:
             agent.name = name

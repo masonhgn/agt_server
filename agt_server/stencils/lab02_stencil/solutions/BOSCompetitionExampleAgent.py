@@ -8,6 +8,7 @@ from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
 from core.game.BOSGame import BOSGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
+from server.connect_stencil import connect_agent_to_server
 
 
 class BOSCompetitionExampleAgent(BaseAgent):
@@ -49,12 +50,13 @@ class BOSCompetitionExampleAgent(BaseAgent):
         else:
             return self.COMPROMISE  # Default fallback
     
-    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
+    def update(self, observation=None, action=None, reward=None, done=None, info=None):
         """
         Update the current state based on the game history.
         This should update self.curr_state based on your FSM transition rules.
         """
-        self.reward_history.append(reward)
+        if reward is not None:
+            self.reward_history.append(reward)
         
         # Get opponent's last action
         opponent_action = self.get_opponent_last_action()
@@ -145,42 +147,10 @@ if __name__ == "__main__":
     verbose = False  # Enable verbose debug output
     
     if server:
-        # Connect to server
-        print(f"Starting {name} for bos game...")
-        print(f"Connecting to server at {host}:{port}")
-        
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from client import AGTClient
-        from adapters import create_adapter
-        
         async def main():
-            # Create agent
             agent = BOSCompetitionExampleAgent(name)
-            
-            # Create adapter for server communication
-            server_agent = create_adapter(agent, "bos")
-            
-            # Create client and connect
-            client = AGTClient(server_agent, host, port, verbose=verbose)
-            await client.connect()
-            
-            if client.connected:
-                print("Connected to server!")
-                print("Joining bos game...")
-                
-                if await client.join_game("bos"):
-                    print("Joined game successfully!")
-                    print("Waiting for tournament to start...")
-                    await client.run()
-                else:
-                    print("Failed to join game")
-            else:
-                print("Failed to connect to server")
-        
-        # Run the async main function
+            await connect_agent_to_server(agent, "bos", name, host, port, verbose)
+
         asyncio.run(main())
         
     else:

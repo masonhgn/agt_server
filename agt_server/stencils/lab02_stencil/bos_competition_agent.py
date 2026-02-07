@@ -8,6 +8,7 @@ from core.agents.common.base_agent import BaseAgent
 from core.engine import Engine
 from core.game.BOSGame import BOSGame
 from core.agents.lab02.random_bos_agent import RandomBOSAgent
+from server.connect_stencil import connect_agent_to_server
 
 
 class BOSCompetitionAgent(BaseAgent):
@@ -32,12 +33,13 @@ class BOSCompetitionAgent(BaseAgent):
         # This is for the competition where you don't know the opponent's strategy
         raise NotImplementedError
     
-    def update(self, reward: float, info=None, observation: dict = None, action: dict = None, done: bool = None):
+    def update(self, observation=None, action=None, reward=None, done=None, info=None):
         """
         Update the current state based on the game history.
         This should update self.curr_state based on your FSM transition rules.
         """
-        self.reward_history.append(reward)
+        if reward is not None:
+            self.reward_history.append(reward)
         
         # TODO: Implement your state transition logic here
         # Use self.get_last_action() and self.get_opponent_last_action() 
@@ -89,50 +91,26 @@ if __name__ == "__main__":
     verbose = False  # Enable verbose debug output
     
     if server:
-        # Add server directory to path for imports
-        server_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'server')
-        sys.path.insert(0, server_dir)
-        
-        from connect_stencil import connect_agent_to_server
-        from adapters import create_adapter
-        
         async def main():
-            # Create agent and adapter
             agent = BOSCompetitionAgent(name)
-            server_agent = create_adapter(agent, "bos")
-            
-            # Connect to server
-            await connect_agent_to_server(server_agent, "bos", name, host, port, verbose)
-        
-        # Run the async main function
+            await connect_agent_to_server(agent, "bos", name, host, port, verbose)
+
         asyncio.run(main())
         
     else:
         # Test your agent locally
         print("Testing BOS Competition Agent locally...")
         print("=" * 50)
-        
-        # Import opponent agents for testing
-        try:
-            from bos_punitive import BOSPunitiveAgent
-            from bos_reluctant import BOSReluctantAgent
-        except ImportError:
-            print("Note: Opponent agents not found, using random agents instead")
-            from core.agents.lab02.random_bos_agent import RandomBOSAgent
-            BOSPunitiveAgent = RandomBOSAgent
-            BOSReluctantAgent = RandomBOSAgent
-        
-        # Create agents for testing
+
         agent = BOSCompetitionAgent("CompetitionAgent")
-        opponent1 = BOSPunitiveAgent("PunitiveAgent")
-        opponent2 = BOSReluctantAgent("ReluctantAgent")
-        
-        # Create arena and run tournament
-        from core.local_arena import LocalArena
-        from core.game.BOSGame import BOSGame
-        
-        agents = [agent, opponent1, opponent2]
-        arena = LocalArena(BOSGame, agents, num_rounds=1000, verbose=True)
-        arena.run_tournament()
-        
+        opponent = RandomBOSAgent("RandomAgent")
+
+        agents = [agent, opponent]
+        game_instance = BOSGame(rounds=1000)
+        engine = Engine(game_instance, agents, rounds=1000)
+        final_rewards = engine.run()
+
+        for i, a in enumerate(agents):
+            print(f"{a.name}: {final_rewards[i]:.2f}")
+
         print("\nLocal test completed!")

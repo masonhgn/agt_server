@@ -109,9 +109,9 @@ class QLearning(BaseAgent):
         #   - Always choose best action (pure exploitation)
         raise NotImplementedError("Implement exploration-exploitation strategy")
     
-    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
+    def update(self, observation=None, action=None, reward=None, done=None, info=None):
         """Update the agent with the reward from the last action."""
-        super().update(reward, info)
+        super().update(observation, action, reward, done, info)
         
         # Update Q-table using the Q-learning update rule
         if reward is not None:

@@ -297,10 +297,10 @@ class Engine:
             # This is a PlayerConnection - send request and wait for response
             import json
             import time
-            
+
             # Clear any pending action
             agent.pending_action = None
-            
+
             # Send request to client
             message = {
                 "message": "request_action",
@@ -309,13 +309,13 @@ class Engine:
             message_str = json.dumps(message) + "\n"
             agent.writer.write(message_str.encode())
             await agent.writer.drain()
-            
+
             # Wait for response with timeout
             timeout = 5.0
             start_time = time.time()
             while agent.pending_action is None and (time.time() - start_time) < timeout:
-                await asyncio.sleep(0.1)
-            
+                await asyncio.sleep(0.001)
+
             if agent.pending_action is not None:
                 action = agent.pending_action
                 agent.pending_action = None
@@ -374,7 +374,7 @@ class Engine:
             # For auction games, generate valuations BEFORE getting actions
             if hasattr(self.game, 'generate_valuations_for_round'):
                 self.game.generate_valuations_for_round()
-            
+
             # For auction games, set valuations on agents before getting actions
             if hasattr(self.game, 'current_valuations') and hasattr(self.game, 'players'):
                 for i, agent in enumerate(self.agents):
@@ -389,7 +389,7 @@ class Engine:
                                 else:
                                     # Fallback for non-auction games
                                     player_name = f"player_{i}"
-                                
+
                                 valuations = self.game.current_valuations[player_name]
                                 await self._send_agent_valuations(agent, valuations)
                             except (IndexError, KeyError) as e:

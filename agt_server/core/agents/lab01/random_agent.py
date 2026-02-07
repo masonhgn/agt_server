@@ -1,20 +1,30 @@
+"""
+random agent for rock-paper-scissors.
+"""
+
 import random
+from typing import Dict, Any
 from core.agents.common.rps_agent import RPSAgent
 
 
 class RandomAgent(RPSAgent):
-    """Agent that plays random moves in Rock Paper Scissors."""
-    
-    def get_action(self, obs=None):
-        """Return a random action."""
-        action = random.choice(self.actions)
-        return action
-    
-    def update(self, obs=None, actions=None, reward=None, done=None, info=None):
-        """Store the reward received."""
+    """
+    agent that plays uniformly random moves in rock-paper-scissors.
+
+    useful as a baseline for measuring performance of learning agents.
+    expected reward against any opponent is 0 in the long run.
+    """
+
+    def get_action(self, obs: Dict[str, Any] = None) -> int:
+        """return a uniformly random action."""
+        return random.choice(self.actions)
+
+    def update(self, observation: Dict[str, Any] = None, action: Any = None,
+               reward: float = None, done: bool = None, info: Dict[str, Any] = None):
+        """store the reward received."""
         if reward is not None:
             self.reward_history.append(reward)
-    
+
     def setup(self):
-        """Initialize the agent for a new game."""
-        self.actions = [self.ROCK, self.PAPER] 
+        """initialize the agent for a new game."""
+        self.actions = [self.ROCK, self.PAPER, self.SCISSORS]
